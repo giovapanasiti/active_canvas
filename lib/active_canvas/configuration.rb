@@ -18,6 +18,13 @@ module ActiveCanvas
     # Allowed upload content types
     attr_accessor :allowed_content_types
 
+    # Storage service name for media uploads (should match a service in storage.yml)
+    # Set to :public for a public S3 bucket, or nil to use the default service
+    attr_accessor :storage_service
+
+    # Whether to make uploaded files publicly accessible (sets ACL to public-read on S3)
+    attr_accessor :public_uploads
+
     def initialize
       @css_framework = :tailwind
       @include_host_assets = true
@@ -31,6 +38,8 @@ module ActiveCanvas
         image/webp
         image/svg+xml
       ]
+      @storage_service = nil  # Use default Active Storage service
+      @public_uploads = true  # Make uploads public by default
     end
 
     def css_framework_url
