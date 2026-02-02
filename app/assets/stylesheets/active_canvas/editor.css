@@ -114,6 +114,68 @@
   overflow: hidden;
 }
 
+/* ==================== Canvas ==================== */
+
+.editor-canvas {
+  flex: 1;
+  position: relative;
+}
+
+.add-section-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--editor-primary, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.add-section-btn:hover {
+  background: var(--editor-primary-hover, #4f46e5);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.add-section-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ==================== Empty Section Placeholder ==================== */
+
+/* Style for empty sections in the editor canvas */
+.gjs-frame [data-gjs-type="section"]:empty,
+.gjs-frame .ac-section:empty,
+.gjs-frame section:empty {
+  min-height: 100px !important;
+  background-color: #fef2f2 !important;
+  border: 2px dashed #fca5a5 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.gjs-frame [data-gjs-type="section"]:empty::before,
+.gjs-frame .ac-section:empty::before,
+.gjs-frame section:empty::before {
+  content: "Empty section - drag content here";
+  color: #f87171;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* ==================== Code Panel ==================== */
 
 .editor-code-panel {

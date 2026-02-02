@@ -231,8 +231,46 @@
     // Setup save functionality
     setupSave(editor, config, csrfToken);
 
+    // Setup add section button
+    setupAddSection(editor);
+
     // Expose editor instance for debugging
     window.ActiveCanvasEditor.instance = editor;
+  }
+
+  // ==================== Add Section ====================
+
+  function setupAddSection(editor) {
+    const btnAddSection = document.getElementById('btn-add-section');
+
+    if (!btnAddSection) return;
+
+    btnAddSection.addEventListener('click', function() {
+      // Add a new empty section at the end of the page
+      const wrapper = editor.getWrapper();
+
+      const section = wrapper.append({
+        tagName: 'section',
+        classes: ['ac-section'],
+        style: {
+          'min-height': '100px',
+          'padding': '2rem'
+        },
+        content: ''
+      })[0];
+
+      // Select the new section
+      editor.select(section);
+
+      // Scroll to the new section in the canvas
+      const frame = editor.Canvas.getFrameEl();
+      if (frame && frame.contentWindow) {
+        const el = section.getEl();
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
   }
 
   // ==================== Component Code Editing ====================
@@ -279,6 +317,33 @@
       setTimeout(() => {
         const frame = editor.Canvas.getFrameEl();
         if (!frame || !frame.contentDocument) return;
+
+        // Inject editor-specific CSS (for empty sections, etc.)
+        const editorStyle = frame.contentDocument.createElement('style');
+        editorStyle.id = 'active-canvas-editor-css';
+        editorStyle.textContent = `
+          /* Empty section placeholder styling */
+          section:empty,
+          .ac-section:empty,
+          [data-gjs-type="section"]:empty {
+            min-height: 100px !important;
+            background-color: #fef2f2 !important;
+            border: 2px dashed #fca5a5 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative;
+          }
+          section:empty::after,
+          .ac-section:empty::after,
+          [data-gjs-type="section"]:empty::after {
+            content: "Empty section - drag content here";
+            color: #f87171;
+            font-size: 14px;
+            font-weight: 500;
+          }
+        `;
+        frame.contentDocument.head.appendChild(editorStyle);
 
         // Inject global CSS
         if (config.globalCss && config.globalCss.trim()) {
