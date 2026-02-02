@@ -375,7 +375,13 @@
   };
 </script>
 
-<!-- Editor JavaScript -->
+<!-- Editor JavaScript Modules (order matters) -->
+<%= javascript_include_tag "active_canvas/editor/utils" %>
+<%= javascript_include_tag "active_canvas/editor/blocks" %>
+<%= javascript_include_tag "active_canvas/editor/asset_manager" %>
+<%= javascript_include_tag "active_canvas/editor/code_panel" %>
+<%= javascript_include_tag "active_canvas/editor/component_toolbar" %>
+<%= javascript_include_tag "active_canvas/editor/panels" %>
 <%= javascript_include_tag "active_canvas/editor" %>
 
 <!-- AI Panel JavaScript -->
