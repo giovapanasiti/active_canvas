@@ -477,6 +477,284 @@
   border-radius: var(--editor-radius) !important;
 }
 
+/* ==================== Custom Asset Manager Modal ==================== */
+
+.ac-asset-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ac-asset-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.ac-asset-modal-dialog {
+  position: relative;
+  background: var(--editor-surface);
+  border: 1px solid var(--editor-border);
+  border-radius: var(--editor-radius-lg);
+  box-shadow: var(--editor-shadow-md);
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ac-asset-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--editor-border);
+}
+
+.ac-asset-modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--editor-text);
+}
+
+.ac-asset-modal-close {
+  background: none;
+  border: none;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.ac-asset-modal-close:hover {
+  background: var(--editor-surface-hover);
+  color: var(--editor-text);
+}
+
+.ac-asset-modal-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--editor-bg);
+  padding: 0;
+  border-bottom: 1px solid var(--editor-border);
+}
+
+.ac-asset-tab {
+  background: none;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s ease;
+}
+
+.ac-asset-tab:hover {
+  color: var(--editor-text);
+  background: var(--editor-surface-hover);
+}
+
+.ac-asset-tab.active {
+  color: var(--editor-primary);
+  border-bottom-color: var(--editor-primary);
+  background: var(--editor-surface);
+}
+
+.ac-asset-modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ac-asset-tab-content {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.ac-asset-tab-content.active {
+  display: flex;
+}
+
+/* Media Grid */
+.ac-asset-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.ac-asset-item {
+  background: var(--editor-bg);
+  border: 1px solid var(--editor-border);
+  border-radius: var(--editor-radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ac-asset-item:hover {
+  border-color: var(--editor-primary);
+  box-shadow: 0 0 0 1px var(--editor-primary);
+}
+
+.ac-asset-thumb {
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--editor-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ac-asset-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ac-asset-name {
+  padding: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--editor-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.ac-asset-loading,
+.ac-asset-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: var(--editor-text-muted);
+}
+
+/* Pagination */
+.ac-asset-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--editor-border);
+  background: var(--editor-surface);
+}
+
+.ac-pagination-info {
+  font-size: 0.75rem;
+  color: var(--editor-text-muted);
+}
+
+.ac-pagination-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ac-pagination-btn {
+  background: var(--editor-bg);
+  border: 1px solid var(--editor-border);
+  color: var(--editor-text);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ac-pagination-btn:hover {
+  background: var(--editor-surface-hover);
+  border-color: var(--editor-border-light);
+}
+
+.ac-pagination-btn.active {
+  background: var(--editor-primary);
+  border-color: var(--editor-primary);
+  color: white;
+}
+
+/* Upload Zone */
+.ac-asset-upload-zone {
+  flex: 1;
+  margin: 1rem;
+  border: 2px dashed var(--editor-border);
+  border-radius: var(--editor-radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--editor-text-muted);
+}
+
+.ac-asset-upload-zone:hover,
+.ac-asset-upload-zone.dragover {
+  border-color: var(--editor-primary);
+  background: var(--editor-primary-light);
+}
+
+.ac-asset-upload-zone svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.ac-asset-upload-zone p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.ac-upload-hint {
+  font-size: 0.75rem !important;
+  opacity: 0.7;
+}
+
+.ac-upload-progress {
+  margin: 1rem;
+  padding: 1rem;
+  background: var(--editor-bg);
+  border-radius: var(--editor-radius);
+}
+
+.ac-upload-progress-bar {
+  height: 4px;
+  background: var(--editor-primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.ac-upload-progress-text {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--editor-text-muted);
+}
+
 /* Canvas responsive device preview */
 .gjs-cv-canvas {
   top: 0 !important;

@@ -5,6 +5,8 @@ module ActiveCanvas
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
+        @media_count = ActiveCanvas::Media.count
+        @media_total_size = ActiveCanvas::Media.sum(:byte_size)
       end
 
       def show

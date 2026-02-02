@@ -237,8 +237,290 @@
     // Setup assets panel
     setupAssetsPanel(editor, config, csrfToken);
 
+    // Setup custom asset manager modal
+    setupCustomAssetManager(editor, config, csrfToken);
+
     // Expose editor instance for debugging
     window.ActiveCanvasEditor.instance = editor;
+  }
+
+  // ==================== Custom Asset Manager Modal ====================
+
+  function setupCustomAssetManager(editor, config, csrfToken) {
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentTarget = null;
+
+    // Override the default asset manager open behavior
+    editor.on('run:open-assets', () => {
+      // Get the target (what's requesting the image)
+      const am = editor.AssetManager;
+      currentTarget = am.getConfig().target;
+
+      // Show our custom modal instead
+      openCustomAssetModal();
+
+      // Prevent default modal
+      return false;
+    });
+
+    // Also listen for asset manager open command
+    const originalOpen = editor.AssetManager.open;
+    editor.AssetManager.open = function(options) {
+      currentTarget = options?.target;
+      openCustomAssetModal();
+    };
+
+    function openCustomAssetModal() {
+      // Remove existing modal if any
+      const existing = document.querySelector('.ac-asset-modal');
+      if (existing) existing.remove();
+
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'ac-asset-modal';
+      modal.innerHTML = `
+        <div class="ac-asset-modal-overlay"></div>
+        <div class="ac-asset-modal-dialog">
+          <div class="ac-asset-modal-header">
+            <h3>Select Image</h3>
+            <button class="ac-asset-modal-close" title="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="ac-asset-modal-tabs">
+            <button class="ac-asset-tab active" data-tab="library">Media Library</button>
+            <button class="ac-asset-tab" data-tab="upload">Upload New</button>
+          </div>
+          <div class="ac-asset-modal-body">
+            <div class="ac-asset-tab-content active" data-tab="library">
+              <div class="ac-asset-grid" id="ac-asset-grid">
+                <div class="ac-asset-loading">Loading media...</div>
+              </div>
+              <div class="ac-asset-pagination" id="ac-asset-pagination"></div>
+            </div>
+            <div class="ac-asset-tab-content" data-tab="upload">
+              <div class="ac-asset-upload-zone" id="ac-upload-zone">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>Drag & drop images here or click to browse</p>
+                <p class="ac-upload-hint">Supports: JPEG, PNG, GIF, WebP, SVG</p>
+                <input type="file" id="ac-upload-input" accept="image/*" multiple style="display:none">
+              </div>
+              <div class="ac-upload-progress" id="ac-upload-progress" style="display:none">
+                <div class="ac-upload-progress-bar"></div>
+                <span class="ac-upload-progress-text">Uploading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Setup event handlers
+      setupModalHandlers(modal);
+
+      // Load first page of media
+      loadMediaPage(1);
+    }
+
+    function setupModalHandlers(modal) {
+      // Close button
+      modal.querySelector('.ac-asset-modal-close').addEventListener('click', () => {
+        modal.remove();
+      });
+
+      // Overlay click to close
+      modal.querySelector('.ac-asset-modal-overlay').addEventListener('click', () => {
+        modal.remove();
+      });
+
+      // Tab switching
+      modal.querySelectorAll('.ac-asset-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          modal.querySelectorAll('.ac-asset-tab').forEach(t => t.classList.remove('active'));
+          modal.querySelectorAll('.ac-asset-tab-content').forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          modal.querySelector(`.ac-asset-tab-content[data-tab="${tab.dataset.tab}"]`).classList.add('active');
+        });
+      });
+
+      // Upload zone
+      const uploadZone = modal.querySelector('#ac-upload-zone');
+      const uploadInput = modal.querySelector('#ac-upload-input');
+
+      uploadZone.addEventListener('click', () => uploadInput.click());
+
+      uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+      });
+
+      uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+      });
+
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleFileUpload(e.dataTransfer.files, modal);
+      });
+
+      uploadInput.addEventListener('change', (e) => {
+        handleFileUpload(e.target.files, modal);
+      });
+    }
+
+    async function loadMediaPage(page) {
+      currentPage = page;
+      const grid = document.getElementById('ac-asset-grid');
+      const pagination = document.getElementById('ac-asset-pagination');
+
+      if (!grid) return;
+
+      grid.innerHTML = '<div class="ac-asset-loading">Loading media...</div>';
+
+      try {
+        const response = await fetch(`${config.mediaUrl}?page=${page}&per_page=20`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        const result = await response.json();
+
+        if (result.data && result.data.length > 0) {
+          totalPages = result.meta?.total_pages || 1;
+          renderMediaGrid(result.data, grid);
+          renderPagination(pagination, result.meta);
+        } else {
+          grid.innerHTML = '<div class="ac-asset-empty">No media found. Upload some images to get started.</div>';
+          pagination.innerHTML = '';
+        }
+      } catch (error) {
+        console.error('Failed to load media:', error);
+        grid.innerHTML = '<div class="ac-asset-empty">Failed to load media.</div>';
+      }
+    }
+
+    function renderMediaGrid(media, container) {
+      container.innerHTML = media.map(item => `
+        <div class="ac-asset-item" data-src="${item.src}" data-name="${item.name || ''}">
+          <div class="ac-asset-thumb">
+            <img src="${item.src}" alt="${item.name || 'Image'}" loading="lazy">
+          </div>
+          <div class="ac-asset-name">${item.name || 'Untitled'}</div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      container.querySelectorAll('.ac-asset-item').forEach(item => {
+        item.addEventListener('click', () => {
+          selectAsset(item.dataset.src, item.dataset.name);
+        });
+      });
+    }
+
+    function renderPagination(container, meta) {
+      if (!meta || meta.total_pages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '<div class="ac-pagination-info">';
+      html += `Page ${meta.current_page} of ${meta.total_pages} (${meta.total_count} items)`;
+      html += '</div><div class="ac-pagination-buttons">';
+
+      if (meta.current_page > 1) {
+        html += `<button class="ac-pagination-btn" data-page="${meta.current_page - 1}">Previous</button>`;
+      }
+
+      // Page numbers
+      const startPage = Math.max(1, meta.current_page - 2);
+      const endPage = Math.min(meta.total_pages, meta.current_page + 2);
+
+      for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="ac-pagination-btn ${i === meta.current_page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+      }
+
+      if (meta.current_page < meta.total_pages) {
+        html += `<button class="ac-pagination-btn" data-page="${meta.current_page + 1}">Next</button>`;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+
+      // Add click handlers
+      container.querySelectorAll('.ac-pagination-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          loadMediaPage(parseInt(btn.dataset.page));
+        });
+      });
+    }
+
+    function selectAsset(src, name) {
+      // Add to GrapeJS asset manager
+      editor.AssetManager.add({ src, name, type: 'image' });
+
+      // If there's a target component, set the image
+      if (currentTarget) {
+        currentTarget.set('src', src);
+      }
+
+      // Close modal
+      const modal = document.querySelector('.ac-asset-modal');
+      if (modal) modal.remove();
+
+      showToast('Image selected', 'success');
+    }
+
+    async function handleFileUpload(files, modal) {
+      const progressContainer = modal.querySelector('#ac-upload-progress');
+      const progressBar = modal.querySelector('.ac-upload-progress-bar');
+      const progressText = modal.querySelector('.ac-upload-progress-text');
+
+      progressContainer.style.display = 'block';
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        progressText.textContent = `Uploading ${file.name}... (${i + 1}/${files.length})`;
+        progressBar.style.width = `${((i + 1) / files.length) * 100}%`;
+
+        const formData = new FormData();
+        formData.append('media[file]', file);
+        formData.append('media[filename]', file.name);
+
+        try {
+          const response = await fetch(config.uploadUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': csrfToken },
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.src) {
+            editor.AssetManager.add(result);
+            showToast(`Uploaded ${file.name}`, 'success');
+          } else if (result.errors) {
+            showToast(`Failed: ${result.errors.join(', ')}`, 'error');
+          }
+        } catch (error) {
+          showToast(`Error uploading ${file.name}`, 'error');
+        }
+      }
+
+      progressContainer.style.display = 'none';
+      progressBar.style.width = '0';
+
+      // Reload media library and switch to it
+      loadMediaPage(1);
+      modal.querySelector('.ac-asset-tab[data-tab="library"]').click();
+    }
   }
 
   // ==================== Add Section ====================
