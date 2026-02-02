@@ -1,0 +1,411 @@
+<% content_for :page_title, "Media Library" %>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Media Library</h2>
+    <p class="page-header-subtitle">Manage images and files for your pages</p>
+  </div>
+  <div class="page-header-actions">
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('media-upload-input').click()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Upload Media
+    </button>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+    </div>
+    <div class="stat-content">
+      <h3><%= @media.count %></h3>
+      <p>Total Files</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    </div>
+    <div class="stat-content">
+      <h3><%= number_to_human_size(@media.sum(:byte_size)) %></h3>
+      <p>Total Size</p>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden Upload Form -->
+<%= form_with url: admin_media_path, method: :post, multipart: true, id: "media-upload-form", style: "display: none;" do |f| %>
+  <%= f.file_field :file, id: "media-upload-input", accept: "image/*", multiple: true, onchange: "handleMediaUpload(this)" %>
+<% end %>
+
+<!-- Upload Zone -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('media-upload-input').click()">
+    <div class="upload-zone-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <h3>Drop files here or click to upload</h3>
+      <p>Supports JPEG, PNG, GIF, WebP, SVG (max 10MB)</p>
+    </div>
+    <div class="upload-progress" id="upload-progress" style="display: none;">
+      <div class="upload-progress-bar" id="upload-progress-bar"></div>
+      <p id="upload-status">Uploading...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Media Grid -->
+<% if @media.any? %>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">All Media</span>
+    </div>
+    <div class="media-grid">
+      <% @media.each do |media| %>
+        <div class="media-item" data-media-id="<%= media.id %>">
+          <%= link_to admin_medium_path(media), class: "media-thumbnail-link" do %>
+            <div class="media-thumbnail">
+              <% if media.file.attached? %>
+                <%= image_tag media.url, alt: media.filename %>
+              <% end %>
+            </div>
+            <div class="media-info">
+              <p class="media-filename" title="<%= media.filename %>"><%= truncate(media.filename, length: 20) %></p>
+              <p class="media-meta"><%= number_to_human_size(media.byte_size) %></p>
+            </div>
+          <% end %>
+          <div class="media-actions">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); copyMediaUrl('<%= media.url %>')" title="Copy URL">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <%= button_to admin_medium_path(media), method: :delete, class: "btn btn-sm btn-danger", data: { confirm: "Are you sure you want to delete this file?" }, title: "Delete" do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% else %>
+  <div class="card">
+    <div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <h3>No media uploaded yet</h3>
+      <p>Upload images to use them in your pages</p>
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('media-upload-input').click()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Upload Your First Image
+      </button>
+    </div>
+  </div>
+<% end %>
+
+<style>
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-main);
+  }
+
+  .upload-zone:hover,
+  .upload-zone.dragover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+
+  .upload-zone-content svg {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .upload-zone-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-zone-content p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .upload-progress {
+    padding: 1rem;
+  }
+
+  .upload-progress-bar {
+    height: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-progress p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .media-item {
+    background: var(--bg-main);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .media-item:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .media-thumbnail-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .media-thumbnail-link:hover .media-filename {
+    color: var(--primary);
+  }
+
+  .media-thumbnail {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--sidebar-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .media-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .media-info {
+    padding: 0.75rem;
+  }
+
+  .media-filename {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+  }
+
+  .media-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .media-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .media-actions .btn {
+    flex: 1;
+  }
+
+  .media-actions form {
+    flex: 1;
+    display: flex;
+  }
+
+  .media-actions form .btn {
+    width: 100%;
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--sidebar-bg);
+    color: white;
+    padding: 0.875rem 1.25rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+  }
+
+  .toast.success {
+    background: var(--success);
+  }
+
+  .toast.error {
+    background: var(--danger);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  // Drag and drop handling
+  const uploadZone = document.getElementById('upload-zone');
+  const uploadInput = document.getElementById('media-upload-input');
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, () => {
+      uploadZone.classList.add('dragover');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, () => {
+      uploadZone.classList.remove('dragover');
+    }, false);
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  });
+
+  function handleMediaUpload(input) {
+    if (input.files.length > 0) {
+      handleFiles(input.files);
+    }
+  }
+
+  async function handleFiles(files) {
+    const uploadProgress = document.getElementById('upload-progress');
+    const uploadZoneContent = document.querySelector('.upload-zone-content');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const uploadStatus = document.getElementById('upload-status');
+
+    uploadZoneContent.style.display = 'none';
+    uploadProgress.style.display = 'block';
+
+    const total = files.length;
+    let completed = 0;
+
+    for (const file of files) {
+      uploadStatus.textContent = `Uploading ${file.name}...`;
+
+      const formData = new FormData();
+      formData.append('media[file]', file);
+      formData.append('media[filename]', file.name);
+
+      try {
+        const response = await fetch('<%= admin_media_path %>', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          }
+        });
+
+        if (response.ok) {
+          completed++;
+          progressBar.style.width = `${(completed / total) * 100}%`;
+        } else {
+          const data = await response.json();
+          showToast(`Failed to upload ${file.name}: ${data.errors.join(', ')}`, 'error');
+        }
+      } catch (error) {
+        showToast(`Error uploading ${file.name}`, 'error');
+      }
+    }
+
+    uploadStatus.textContent = 'Upload complete!';
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  }
+
+  function copyMediaUrl(url) {
+    const fullUrl = window.location.origin + url;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      showToast('URL copied to clipboard!', 'success');
+    }).catch(() => {
+      showToast('Failed to copy URL', 'error');
+    });
+  }
+
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+</script>

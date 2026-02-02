@@ -42,7 +42,8 @@ module ActiveCanvas
       self.byte_size = file.blob.byte_size
       self.filename = file.blob.filename.to_s if filename.blank?
 
-      if file.blob.analyzable? && file.blob.analyzed?
+      # Store blob metadata (dimensions for images) if available
+      if file.blob.metadata.present?
         self.metadata = file.blob.metadata
       end
     end

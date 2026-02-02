@@ -1,0 +1,297 @@
+<% content_for :page_title, @medium.filename %>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2><%= truncate(@medium.filename, length: 40) %></h2>
+    <p class="page-header-subtitle">
+      Uploaded <%= time_ago_in_words(@medium.created_at) %> ago
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <button type="button" class="btn btn-secondary" onclick="copyMediaUrl('<%= @medium.url %>')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Copy URL
+    </button>
+    <%= link_to @medium.url, target: "_blank", class: "btn btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      Open Original
+    <% end %>
+    <%= link_to admin_media_path, class: "btn btn-ghost" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to Library
+    <% end %>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem;">
+  <!-- Preview -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Preview</span>
+    </div>
+    <div class="media-preview-container">
+      <% if @medium.file.attached? %>
+        <%= image_tag @medium.url, alt: @medium.filename, class: "media-preview-image" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Details Sidebar -->
+  <div>
+    <!-- File Information -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">File Information</span>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="detail-row">
+          <div class="detail-label">Filename</div>
+          <div class="detail-value" style="word-break: break-all;"><%= @medium.filename %></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Type</div>
+          <div class="detail-value">
+            <span class="badge badge-gray"><%= @medium.content_type %></span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Size</div>
+          <div class="detail-value"><%= number_to_human_size(@medium.byte_size) %></div>
+        </div>
+        <% if @medium.metadata["width"].present? && @medium.metadata["height"].present? %>
+          <div class="detail-row">
+            <div class="detail-label">Dimensions</div>
+            <div class="detail-value"><%= @medium.metadata["width"] %> × <%= @medium.metadata["height"] %> px</div>
+          </div>
+        <% end %>
+        <div class="detail-row">
+          <div class="detail-label">Uploaded</div>
+          <div class="detail-value"><%= @medium.created_at.strftime("%B %d, %Y at %l:%M %p") %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- URL -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">URL</span>
+      </div>
+      <div class="card-body">
+        <div class="url-display">
+          <code id="media-url"><%= @medium.url %></code>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="copyMediaUrl('<%= @medium.url %>')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <p class="help-text" style="margin-top: 0.75rem;">Use this URL in your pages or external applications.</p>
+      </div>
+    </div>
+
+    <!-- Usage (placeholder for future) -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">Embed Code</span>
+      </div>
+      <div class="card-body">
+        <div class="embed-code">
+          <pre><code>&lt;img src="<%= @medium.url %>" alt="<%= @medium.filename %>" /&gt;</code></pre>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 0.75rem;" onclick="copyEmbedCode()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy Embed Code
+        </button>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: #fecaca;">
+      <div class="card-header" style="background: var(--danger-light);">
+        <span class="card-title" style="color: var(--danger);">Danger Zone</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Deleting this file will remove it permanently. Any pages using this image will show a broken image.
+        </p>
+        <%= button_to admin_medium_path(@medium), method: :delete, class: "btn btn-danger", style: "width: 100%;", data: { confirm: "Are you sure you want to delete this file? This action cannot be undone." } do %>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+          Delete File
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .media-preview-container {
+    background: var(--sidebar-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 2rem;
+  }
+
+  .media-preview-image {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+
+  .detail-row {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-row .detail-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .detail-row .detail-value {
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+
+  .url-display {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .url-display code {
+    flex: 1;
+    padding: 0.625rem 0.875rem;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    word-break: break-all;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  }
+
+  .embed-code {
+    background: var(--sidebar-bg);
+    border-radius: var(--radius);
+    padding: 0.875rem;
+    overflow-x: auto;
+  }
+
+  .embed-code pre {
+    margin: 0;
+  }
+
+  .embed-code code {
+    color: #e2e8f0;
+    font-size: 0.75rem;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--sidebar-bg);
+    color: white;
+    padding: 0.875rem 1.25rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+  }
+
+  .toast.success {
+    background: var(--success);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 900px) {
+    div[style*="grid-template-columns: 1fr 380px"] {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+
+<script>
+  function copyMediaUrl(url) {
+    const fullUrl = window.location.origin + url;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      showToast('URL copied to clipboard!');
+    }).catch(() => {
+      // Fallback
+      const input = document.createElement('input');
+      input.value = fullUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      showToast('URL copied to clipboard!');
+    });
+  }
+
+  function copyEmbedCode() {
+    const code = document.querySelector('.embed-code code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      showToast('Embed code copied!');
+    }).catch(() => {
+      showToast('Failed to copy');
+    });
+  }
+
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast success';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+</script>

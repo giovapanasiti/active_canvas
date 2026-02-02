@@ -14,6 +14,10 @@ module ActiveCanvas
         end
       end
 
+      def show
+        @medium = Media.find(params[:id])
+      end
+
       def create
         @media = Media.new(media_params)
 
@@ -29,7 +33,7 @@ module ActiveCanvas
         @media.destroy
 
         respond_to do |format|
-          format.html { redirect_to admin_media_path, notice: "Media deleted successfully." }
+          format.html { redirect_to admin_media_url, notice: "Media deleted successfully." }
           format.json { head :no_content }
         end
       end

@@ -9,7 +9,7 @@ ActiveCanvas::Engine.routes.draw do
       end
     end
     resources :page_types
-    resources :media, only: [:index, :create, :destroy]
+    resources :media, only: [:index, :show, :create, :destroy]
     resource :settings, only: [:show, :update] do
       patch :update_global_css
       patch :update_global_js
