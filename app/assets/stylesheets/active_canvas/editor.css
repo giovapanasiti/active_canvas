@@ -150,13 +150,17 @@
   color: var(--editor-text-muted) !important;
 }
 
-/* Blocks container/grid */
+/* Blocks container/grid - only style when visible (open accordion) */
 .gjs-blocks-c {
   padding: 0.75rem !important;
-  display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 0.5rem !important;
   background-color: var(--editor-bg) !important;
+}
+
+/* Apply grid display only when the container is visible (not collapsed) */
+.gjs-block-category.gjs-open .gjs-blocks-c {
+  display: grid !important;
 }
 
 /* Block items - proper sizing */
