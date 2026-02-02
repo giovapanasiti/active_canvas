@@ -58,6 +58,7 @@ module ActiveCanvas
             render json: {
               content: @page.content,
               content_css: @page.content_css,
+              content_js: @page.content_js,
               content_components: @page.content_components
             }
           end
@@ -89,7 +90,7 @@ module ActiveCanvas
       end
 
       def editor_params
-        params.require(:page).permit(:content, :content_css, :content_components)
+        params.require(:page).permit(:content, :content_css, :content_js, :content_components)
       end
     end
   end

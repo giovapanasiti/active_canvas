@@ -2,34 +2,302 @@
   <h2>Settings</h2>
 </div>
 
-<div class="card" style="padding: 1.5rem;">
-  <%= form_with url: admin_settings_path, method: :patch do |form| %>
-    <div class="form-group">
-      <%= form.label :homepage_page_id, "Homepage" %>
-      <%= form.select :homepage_page_id,
-            options_for_select(
-              [["— No homepage —", ""]] + @pages.map { |p| [p.title, p.id] },
-              @homepage_page_id
-            ),
-            {},
-            class: "form-control" %>
-      <p class="help-text">Select which published page to display when visiting the root URL.</p>
-    </div>
-
-    <div class="form-group">
-      <%= form.label :css_framework, "CSS Framework" %>
-      <%= form.select :css_framework,
-            options_for_select(
-              ActiveCanvas::Setting::CSS_FRAMEWORKS.map { |key, config| [config[:name], key] },
-              @css_framework
-            ),
-            {},
-            class: "form-control" %>
-      <p class="help-text">Choose the CSS framework for the visual editor and published pages.</p>
-    </div>
-
-    <div class="form-actions">
-      <%= form.submit "Save Settings", class: "btn btn-primary" %>
-    </div>
-  <% end %>
+<div class="settings-tabs">
+  <%= link_to "General", admin_settings_path(tab: "general"), class: "settings-tab #{'active' if @active_tab == 'general'}" %>
+  <%= link_to "Global Styles", admin_settings_path(tab: "styles"), class: "settings-tab #{'active' if @active_tab == 'styles'}" %>
+  <%= link_to "Global Scripts", admin_settings_path(tab: "scripts"), class: "settings-tab #{'active' if @active_tab == 'scripts'}" %>
 </div>
+
+<% if @active_tab == "general" %>
+  <div class="card" style="padding: 1.5rem;">
+    <%= form_with url: admin_settings_path, method: :patch do |form| %>
+      <div class="form-group">
+        <%= form.label :homepage_page_id, "Homepage" %>
+        <%= form.select :homepage_page_id,
+              options_for_select(
+                [["— No homepage —", ""]] + @pages.map { |p| [p.title, p.id] },
+                @homepage_page_id
+              ),
+              {},
+              class: "form-control" %>
+        <p class="help-text">Select which published page to display when visiting the root URL.</p>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :css_framework, "CSS Framework" %>
+        <%= form.select :css_framework,
+              options_for_select(
+                ActiveCanvas::Setting::CSS_FRAMEWORKS.map { |key, config| [config[:name], key] },
+                @css_framework
+              ),
+              {},
+              class: "form-control" %>
+        <p class="help-text">Choose the CSS framework for the visual editor and published pages.</p>
+      </div>
+
+      <div class="form-actions">
+        <%= form.submit "Save Settings", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+<% elsif @active_tab == "styles" %>
+  <div class="card settings-code-card">
+    <div class="settings-code-header">
+      <h3>Global CSS</h3>
+      <p class="help-text">This CSS will be included in all published pages.</p>
+    </div>
+    <div id="global-css-editor" class="settings-monaco-editor"></div>
+    <div class="settings-code-actions">
+      <button type="button" id="format-css-btn" class="btn btn-secondary">Format</button>
+      <button type="button" id="save-css-btn" class="btn btn-primary">Save Global CSS</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script>
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    window.MonacoEnvironment = {
+      getWorkerUrl: function() {
+        return URL.createObjectURL(new Blob([`
+          self.MonacoEnvironment = {
+            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min'
+          };
+          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+      }
+    };
+
+    require(['vs/editor/editor.main'], function() {
+      const existingCss = <%= raw @global_css.to_json %>;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      monaco.editor.defineTheme('activeCanvasDark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#1e1e1e',
+          'editor.foreground': '#d4d4d4',
+          'editorLineNumber.foreground': '#858585',
+          'editorCursor.foreground': '#aeafad',
+          'editor.selectionBackground': '#264f78',
+          'editor.lineHighlightBackground': '#2d2d2d'
+        }
+      });
+
+      const cssEditor = monaco.editor.create(document.getElementById('global-css-editor'), {
+        value: existingCss || '',
+        language: 'css',
+        theme: 'activeCanvasDark',
+        fontSize: 13,
+        lineNumbers: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        wordWrap: 'on',
+        folding: true
+      });
+
+      // Format button
+      document.getElementById('format-css-btn').addEventListener('click', () => {
+        cssEditor.getAction('editor.action.formatDocument').run();
+      });
+
+      // Save button
+      document.getElementById('save-css-btn').addEventListener('click', () => {
+        const btn = document.getElementById('save-css-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        fetch('<%= update_global_css_admin_settings_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ global_css: cssEditor.getValue() })
+        })
+        .then(response => response.json())
+        .then(result => {
+          btn.textContent = result.success ? 'Saved!' : 'Error';
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = 'Save Global CSS';
+          }, 2000);
+        })
+        .catch(error => {
+          btn.disabled = false;
+          btn.textContent = 'Save Global CSS';
+          console.error('Save error:', error);
+        });
+      });
+
+      // Keyboard shortcuts
+      cssEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        document.getElementById('save-css-btn').click();
+      });
+    });
+  </script>
+<% elsif @active_tab == "scripts" %>
+  <div class="card settings-code-card">
+    <div class="settings-code-header">
+      <h3>Global JavaScript</h3>
+      <p class="help-text">This JavaScript will be included in all published pages.</p>
+    </div>
+    <div id="global-js-editor" class="settings-monaco-editor"></div>
+    <div class="settings-code-actions">
+      <button type="button" id="format-js-btn" class="btn btn-secondary">Format</button>
+      <button type="button" id="save-js-btn" class="btn btn-primary">Save Global JavaScript</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script>
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    window.MonacoEnvironment = {
+      getWorkerUrl: function() {
+        return URL.createObjectURL(new Blob([`
+          self.MonacoEnvironment = {
+            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min'
+          };
+          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+      }
+    };
+
+    require(['vs/editor/editor.main'], function() {
+      const existingJs = <%= raw @global_js.to_json %>;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      monaco.editor.defineTheme('activeCanvasDark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#1e1e1e',
+          'editor.foreground': '#d4d4d4',
+          'editorLineNumber.foreground': '#858585',
+          'editorCursor.foreground': '#aeafad',
+          'editor.selectionBackground': '#264f78',
+          'editor.lineHighlightBackground': '#2d2d2d'
+        }
+      });
+
+      const jsEditor = monaco.editor.create(document.getElementById('global-js-editor'), {
+        value: existingJs || '',
+        language: 'javascript',
+        theme: 'activeCanvasDark',
+        fontSize: 13,
+        lineNumbers: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        wordWrap: 'on',
+        folding: true
+      });
+
+      // Format button
+      document.getElementById('format-js-btn').addEventListener('click', () => {
+        jsEditor.getAction('editor.action.formatDocument').run();
+      });
+
+      // Save button
+      document.getElementById('save-js-btn').addEventListener('click', () => {
+        const btn = document.getElementById('save-js-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        fetch('<%= update_global_js_admin_settings_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ global_js: jsEditor.getValue() })
+        })
+        .then(response => response.json())
+        .then(result => {
+          btn.textContent = result.success ? 'Saved!' : 'Error';
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = 'Save Global JavaScript';
+          }, 2000);
+        })
+        .catch(error => {
+          btn.disabled = false;
+          btn.textContent = 'Save Global JavaScript';
+          console.error('Save error:', error);
+        });
+      });
+
+      // Keyboard shortcuts
+      jsEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        document.getElementById('save-js-btn').click();
+      });
+    });
+  </script>
+<% end %>
+
+<style>
+  .settings-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  }
+
+  .settings-tab {
+    padding: 0.75rem 1.5rem;
+    color: var(--text-muted, #6b7280);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .settings-tab:hover {
+    color: var(--text-color, #374151);
+  }
+
+  .settings-tab.active {
+    color: var(--primary-color, #3b82f6);
+    border-bottom-color: var(--primary-color, #3b82f6);
+  }
+
+  .settings-code-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .settings-code-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  }
+
+  .settings-code-header h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .settings-code-header .help-text {
+    margin: 0;
+  }
+
+  .settings-monaco-editor {
+    height: 500px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  }
+
+  .settings-code-actions {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    background: var(--bg-secondary, #f9fafb);
+  }
+</style>

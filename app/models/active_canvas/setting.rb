@@ -65,6 +65,22 @@ module ActiveCanvas
       def css_framework_type
         css_framework_config[:type]
       end
+
+      def global_css
+        get("global_css") || ""
+      end
+
+      def global_css=(css)
+        set("global_css", css)
+      end
+
+      def global_js
+        get("global_js") || ""
+      end
+
+      def global_js=(js)
+        set("global_js", js)
+      end
     end
   end
 end

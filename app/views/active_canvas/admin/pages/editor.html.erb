@@ -124,6 +124,16 @@
       <div class="code-panel-tabs">
         <button class="code-panel-tab active" data-type="html">HTML</button>
         <button class="code-panel-tab" data-type="css">CSS</button>
+        <button class="code-panel-tab" data-type="js">JavaScript</button>
+      </div>
+      <div class="code-panel-mode" id="code-panel-mode" style="display: none;">
+        <span class="mode-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          </svg>
+          <span id="component-name">Component</span>
+        </span>
+        <button class="code-panel-btn" id="code-full-page" title="Switch to full page">Full Page</button>
       </div>
       <div class="code-panel-actions">
         <span id="code-status" class="code-status synced">Synced</span>
@@ -141,6 +151,7 @@
     <div class="code-panel-content">
       <div id="monaco-html-container" class="monaco-container"></div>
       <div id="monaco-css-container" class="monaco-container" style="display: none;"></div>
+      <div id="monaco-js-container" class="monaco-container" style="display: none;"></div>
     </div>
   </div>
 </div>
@@ -337,6 +348,46 @@
     width: 100%;
     height: 100%;
   }
+
+  /* Component mode styles */
+  .code-panel-mode {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 1px solid #3d3d3d;
+  }
+
+  .mode-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    background: #7c3aed;
+    color: white;
+    border-radius: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  .mode-badge svg {
+    opacity: 0.8;
+  }
+
+  /* GrapeJS toolbar code button */
+  .gjs-toolbar .gjs-toolbar-item[data-command="edit-component-code"] {
+    order: -1;
+  }
+
+  .gjs-toolbar .gjs-toolbar-item .fa-code {
+    font-size: 12px;
+  }
+
+  /* Highlight code button on hover */
+  .gjs-toolbar .gjs-toolbar-item:hover .fa-code {
+    color: var(--editor-primary);
+  }
 </style>
 
 <script>
@@ -350,6 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Existing page content
   const existingContent = <%= raw (@page.content || '').to_json %>;
   const existingCss = <%= raw (@page.content_css || '').to_json %>;
+  const existingJs = <%= raw (@page.content_js || '').to_json %>;
   const existingComponentsRaw = <%= raw (@page.content_components || '').to_json %>;
 
   // Parse components JSON if available, otherwise use HTML content
@@ -367,6 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const cssFramework = '<%= ActiveCanvas::Setting.css_framework %>';
   const cssFrameworkUrl = <%= raw (ActiveCanvas::Setting.css_framework_url || '').to_json %>;
   const cssFrameworkType = '<%= ActiveCanvas::Setting.css_framework_type %>';
+  const globalCss = <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>;
+  const globalJs = <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>;
 
   // Determine canvas configuration based on framework
   let canvasStyles = [];
@@ -545,6 +599,72 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load existing assets
   loadAssets();
 
+  // --- Component Code Editing ---
+  // Add code button to component toolbar
+  editor.on('component:selected', (component) => {
+    if (!component) return;
+
+    let toolbar = component.get('toolbar') || [];
+
+    // Ensure toolbar is an array
+    if (!Array.isArray(toolbar)) {
+      toolbar = [];
+    }
+
+    // Check if code button already exists
+    const hasCodeBtn = toolbar.some(item => item.command === 'edit-component-code');
+
+    if (!hasCodeBtn) {
+      toolbar.unshift({
+        attributes: { class: 'fa-solid fa-code', title: 'Edit Code' },
+        command: 'edit-component-code'
+      });
+      component.set('toolbar', toolbar);
+    }
+  });
+
+  // Add command for editing component code
+  editor.Commands.add('edit-component-code', {
+    run(editor) {
+      const selected = editor.getSelected();
+      if (!selected) return;
+
+      openComponentCodeEditor(selected);
+    }
+  });
+
+  // Inject global and page-specific CSS/JS into canvas when it's ready
+  editor.on('load', () => {
+    setTimeout(() => {
+      const frame = editor.Canvas.getFrameEl();
+      if (!frame || !frame.contentDocument) return;
+
+      // Inject global CSS
+      if (globalCss && globalCss.trim()) {
+        const globalStyle = frame.contentDocument.createElement('style');
+        globalStyle.id = 'active-canvas-global-css';
+        globalStyle.textContent = globalCss;
+        frame.contentDocument.head.appendChild(globalStyle);
+      }
+
+      // Inject global JS
+      if (globalJs && globalJs.trim()) {
+        const globalScript = frame.contentDocument.createElement('script');
+        globalScript.id = 'active-canvas-global-js';
+        globalScript.textContent = globalJs;
+        frame.contentDocument.body.appendChild(globalScript);
+      }
+
+      // Inject page-specific JS
+      if (existingJs && existingJs.trim()) {
+        const script = frame.contentDocument.createElement('script');
+        script.id = 'active-canvas-custom-js';
+        script.textContent = existingJs;
+        frame.contentDocument.body.appendChild(script);
+      }
+    }, 500);
+  });
+
   // --- Panel Toggle ---
   const panelLeft = document.getElementById('panel-left');
   const panelRight = document.getElementById('panel-right');
@@ -625,11 +745,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const codePanel = document.getElementById('code-panel');
   const btnCode = document.getElementById('btn-code');
   const statusEl = document.getElementById('code-status');
+  const codePanelMode = document.getElementById('code-panel-mode');
+  const componentNameEl = document.getElementById('component-name');
   let currentCodeTab = 'html';
   let codeDebounceTimer = null;
   let htmlMonacoEditor = null;
   let cssMonacoEditor = null;
+  let jsMonacoEditor = null;
   let monacoInitialized = false;
+
+  // Component editing mode
+  let editingComponent = null;  // The GrapeJS component being edited
+  let isComponentMode = false;  // Whether we're in component edit mode
 
   // Initialize Monaco editors
   function initMonacoEditors() {
@@ -685,13 +812,22 @@ document.addEventListener('DOMContentLoaded', function() {
         ...editorOptions
       });
 
+      // Create JS editor
+      jsMonacoEditor = monaco.editor.create(document.getElementById('monaco-js-container'), {
+        value: existingJs || '',
+        language: 'javascript',
+        ...editorOptions
+      });
+
       // Live update on content change
       htmlMonacoEditor.onDidChangeModelContent(scheduleCodeUpdate);
       cssMonacoEditor.onDidChangeModelContent(scheduleCodeUpdate);
+      jsMonacoEditor.onDidChangeModelContent(scheduleJsUpdate);
 
       // Add keyboard shortcuts to Monaco
       addMonacoCommands(htmlMonacoEditor);
       addMonacoCommands(cssMonacoEditor);
+      addMonacoCommands(jsMonacoEditor);
 
       monacoInitialized = true;
 
@@ -703,7 +839,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Sync GrapeJS content to Monaco editors
   function syncGrapeJSToMonaco() {
     if (!monacoInitialized) return;
-    htmlMonacoEditor.setValue(editor.getHtml());
+
+    if (isComponentMode && editingComponent) {
+      // In component mode, show only the component's HTML
+      htmlMonacoEditor.setValue(editingComponent.toHTML());
+    } else {
+      // Full page mode
+      htmlMonacoEditor.setValue(editor.getHtml());
+    }
     cssMonacoEditor.setValue(editor.getCss());
     setTimeout(formatAllCode, 50);
   }
@@ -712,18 +855,136 @@ document.addEventListener('DOMContentLoaded', function() {
   function updatePreviewFromCode() {
     if (!monacoInitialized) return;
 
-    const newHtml = htmlMonacoEditor.getValue();
-    const newCss = cssMonacoEditor.getValue();
-
     try {
-      editor.setComponents(newHtml);
-      editor.setStyle(newCss);
+      if (isComponentMode && editingComponent) {
+        // In component mode, only update the specific component HTML
+        const newHtml = htmlMonacoEditor.getValue();
+        updateComponentFromHtml(editingComponent, newHtml);
+      } else {
+        // Full page mode - update both HTML and CSS
+        const newHtml = htmlMonacoEditor.getValue();
+        const newCss = cssMonacoEditor.getValue();
+        editor.setComponents(newHtml);
+        editor.setStyle(newCss);
+      }
       statusEl.textContent = 'Synced';
       statusEl.className = 'code-status synced';
     } catch (e) {
       statusEl.textContent = 'Error';
       statusEl.className = 'code-status modified';
       console.error('Code parse error:', e);
+    }
+  }
+
+  // Update a component from HTML string
+  function updateComponentFromHtml(component, html) {
+    if (!component) return;
+
+    try {
+      // Use GrapeJS replaceWith method to properly replace the component
+      const newComponents = component.replaceWith(html);
+
+      if (newComponents && newComponents.length > 0) {
+        // Update reference to the new component
+        editingComponent = newComponents[0];
+        // Select the new component
+        editor.select(editingComponent);
+      }
+    } catch (e) {
+      console.error('Error replacing component:', e);
+      // Fallback: try updating inner content only
+      try {
+        component.components(html);
+      } catch (e2) {
+        console.error('Error updating component content:', e2);
+      }
+    }
+  }
+
+  // Open code panel in component editing mode
+  function openComponentCodeEditor(component) {
+    editingComponent = component;
+    isComponentMode = true;
+
+    // Show component mode UI
+    codePanelMode.style.display = 'flex';
+    componentNameEl.textContent = getComponentName(component);
+
+    // Hide CSS/JS tabs in component mode (only HTML editing)
+    document.querySelectorAll('.code-panel-tab').forEach(t => {
+      if (t.dataset.type === 'html') {
+        t.style.display = '';
+        t.classList.add('active');
+      } else {
+        t.style.display = 'none';
+        t.classList.remove('active');
+      }
+    });
+    currentCodeTab = 'html';
+
+    // Open code panel
+    codePanel.classList.add('open');
+    btnCode.classList.add('active');
+
+    if (!monacoInitialized) {
+      initMonacoEditors();
+      // Wait for Monaco to initialize, then set component HTML
+      setTimeout(() => {
+        htmlMonacoEditor.setValue(component.toHTML());
+        setTimeout(() => htmlMonacoEditor.getAction('editor.action.formatDocument').run(), 50);
+
+        // Show HTML container, hide others
+        document.getElementById('monaco-html-container').style.display = 'block';
+        document.getElementById('monaco-css-container').style.display = 'none';
+        document.getElementById('monaco-js-container').style.display = 'none';
+
+        htmlMonacoEditor.layout();
+        htmlMonacoEditor.focus();
+      }, 200);
+    } else {
+      htmlMonacoEditor.setValue(component.toHTML());
+      setTimeout(() => htmlMonacoEditor.getAction('editor.action.formatDocument').run(), 50);
+
+      // Show HTML container, hide others
+      document.getElementById('monaco-html-container').style.display = 'block';
+      document.getElementById('monaco-css-container').style.display = 'none';
+      document.getElementById('monaco-js-container').style.display = 'none';
+
+      htmlMonacoEditor.layout();
+      htmlMonacoEditor.focus();
+    }
+
+    setTimeout(() => editor.refresh(), 50);
+  }
+
+  // Get a friendly name for a component
+  function getComponentName(component) {
+    const type = component.get('type');
+    const tagName = component.get('tagName') || 'div';
+    const classes = component.getClasses().slice(0, 2).join('.');
+    const id = component.getId();
+
+    if (id) return `#${id}`;
+    if (classes) return `${tagName}.${classes}`;
+    if (type && type !== 'default') return type;
+    return tagName;
+  }
+
+  // Exit component mode and return to full page mode
+  function exitComponentMode() {
+    const wasInComponentMode = isComponentMode;
+    isComponentMode = false;
+    editingComponent = null;
+    codePanelMode.style.display = 'none';
+
+    // Show all tabs again
+    document.querySelectorAll('.code-panel-tab').forEach(t => {
+      t.style.display = '';
+    });
+
+    // Only sync if we were in component mode and Monaco is initialized
+    if (wasInComponentMode && monacoInitialized) {
+      syncGrapeJSToMonaco();
     }
   }
 
@@ -737,11 +998,50 @@ document.addEventListener('DOMContentLoaded', function() {
     codeDebounceTimer = setTimeout(updatePreviewFromCode, 200);
   }
 
-  // Format both editors
+  // Format all editors
   async function formatAllCode() {
     if (!monacoInitialized) return;
     await htmlMonacoEditor.getAction('editor.action.formatDocument').run();
     await cssMonacoEditor.getAction('editor.action.formatDocument').run();
+    await jsMonacoEditor.getAction('editor.action.formatDocument').run();
+  }
+
+  // Schedule JS update (doesn't update GrapeJS preview, just marks as modified)
+  function scheduleJsUpdate() {
+    statusEl.textContent = 'Modified...';
+    statusEl.className = 'code-status modified';
+
+    if (codeDebounceTimer) {
+      clearTimeout(codeDebounceTimer);
+    }
+    codeDebounceTimer = setTimeout(() => {
+      injectJsIntoCanvas();
+      statusEl.textContent = 'Synced';
+      statusEl.className = 'code-status synced';
+    }, 200);
+  }
+
+  // Inject JS into GrapeJS canvas iframe
+  function injectJsIntoCanvas() {
+    if (!monacoInitialized) return;
+
+    const jsCode = jsMonacoEditor.getValue();
+    const frame = editor.Canvas.getFrameEl();
+    if (!frame || !frame.contentDocument) return;
+
+    // Remove existing injected script
+    const existingScript = frame.contentDocument.getElementById('active-canvas-custom-js');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Inject new script
+    if (jsCode.trim()) {
+      const script = frame.contentDocument.createElement('script');
+      script.id = 'active-canvas-custom-js';
+      script.textContent = jsCode;
+      frame.contentDocument.body.appendChild(script);
+    }
   }
 
   // Add keyboard shortcuts to Monaco editors
@@ -768,6 +1068,9 @@ document.addEventListener('DOMContentLoaded', function() {
     btnCode.classList.toggle('active', isOpen);
 
     if (isOpen) {
+      // Exit component mode when opening via main button
+      exitComponentMode();
+
       if (!monacoInitialized) {
         initMonacoEditors();
       } else {
@@ -776,9 +1079,11 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         if (htmlMonacoEditor) htmlMonacoEditor.layout();
         if (cssMonacoEditor) cssMonacoEditor.layout();
+        if (jsMonacoEditor) jsMonacoEditor.layout();
         editor.refresh();
       }, 50);
     } else {
+      exitComponentMode();
       editor.refresh();
     }
   }
@@ -788,9 +1093,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Close button
   document.getElementById('code-close').addEventListener('click', () => {
+    exitComponentMode();
     codePanel.classList.remove('open');
     btnCode.classList.remove('active');
     editor.refresh();
+  });
+
+  // Full Page button (exit component mode)
+  document.getElementById('code-full-page').addEventListener('click', () => {
+    exitComponentMode();
   });
 
   // Tab switching in code panel
@@ -802,20 +1113,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const htmlContainer = document.getElementById('monaco-html-container');
       const cssContainer = document.getElementById('monaco-css-container');
+      const jsContainer = document.getElementById('monaco-js-container');
 
+      // Hide all containers
+      htmlContainer.style.display = 'none';
+      cssContainer.style.display = 'none';
+      jsContainer.style.display = 'none';
+
+      // Show and focus the selected editor
       if (currentCodeTab === 'html') {
         htmlContainer.style.display = 'block';
-        cssContainer.style.display = 'none';
         if (htmlMonacoEditor) {
           htmlMonacoEditor.layout();
           htmlMonacoEditor.focus();
         }
-      } else {
-        htmlContainer.style.display = 'none';
+      } else if (currentCodeTab === 'css') {
         cssContainer.style.display = 'block';
         if (cssMonacoEditor) {
           cssMonacoEditor.layout();
           cssMonacoEditor.focus();
+        }
+      } else if (currentCodeTab === 'js') {
+        jsContainer.style.display = 'block';
+        if (jsMonacoEditor) {
+          jsMonacoEditor.layout();
+          jsMonacoEditor.focus();
         }
       }
     });
@@ -857,6 +1179,7 @@ document.addEventListener('DOMContentLoaded', function() {
     codePanel.style.height = newHeight + 'px';
     if (htmlMonacoEditor) htmlMonacoEditor.layout();
     if (cssMonacoEditor) cssMonacoEditor.layout();
+    if (jsMonacoEditor) jsMonacoEditor.layout();
     editor.refresh();
   });
 
@@ -896,6 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const html = editor.getHtml();
     const css = editor.getCss();
+    const js = jsMonacoEditor ? jsMonacoEditor.getValue() : (existingJs || '');
     const components = JSON.stringify(editor.getComponents());
 
     fetch(saveUrl, {
@@ -909,6 +1233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         page: {
           content: html,
           content_css: css,
+          content_js: js,
           content_components: components
         }
       })

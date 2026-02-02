@@ -2,3 +2,6 @@
   <style><%= @page.content_css.html_safe %></style>
 <% end %>
 <%= @page.rendered_content %>
+<% if @page.content_js.present? %>
+  <script><%= @page.content_js.html_safe %></script>
+<% end %>

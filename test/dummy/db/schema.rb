@@ -10,7 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_02_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_02_000006) do
+  create_table "active_canvas_media", force: :cascade do |t|
+    t.integer "byte_size"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.text "metadata"
+    t.datetime "updated_at", null: false
+    t.index ["content_type"], name: "index_active_canvas_media_on_content_type"
+    t.index ["created_at"], name: "index_active_canvas_media_on_created_at"
+  end
+
   create_table "active_canvas_page_types", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "key", null: false
@@ -21,6 +32,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_02_000003) do
 
   create_table "active_canvas_pages", force: :cascade do |t|
     t.text "content"
+    t.text "content_components"
+    t.text "content_css"
+    t.text "content_js"
     t.datetime "created_at", null: false
     t.integer "page_type_id", null: false
     t.boolean "published", default: false, null: false

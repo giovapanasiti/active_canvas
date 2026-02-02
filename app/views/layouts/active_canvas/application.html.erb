@@ -16,10 +16,17 @@
   <% end %>
 
   <%= stylesheet_link_tag "active_canvas/application", media: "all" %>
+
+  <% if ActiveCanvas::Setting.global_css.present? %>
+    <style><%= ActiveCanvas::Setting.global_css.html_safe %></style>
+  <% end %>
 </head>
 <body>
 
 <%= yield %>
 
+<% if ActiveCanvas::Setting.global_js.present? %>
+  <script><%= ActiveCanvas::Setting.global_js.html_safe %></script>
+<% end %>
 </body>
 </html>

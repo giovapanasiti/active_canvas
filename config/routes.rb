@@ -10,7 +10,10 @@ ActiveCanvas::Engine.routes.draw do
     end
     resources :page_types
     resources :media, only: [:index, :create, :destroy]
-    resource :settings, only: [:show, :update]
+    resource :settings, only: [:show, :update] do
+      patch :update_global_css
+      patch :update_global_js
+    end
 
     root to: "pages#index"
   end
