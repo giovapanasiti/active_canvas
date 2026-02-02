@@ -2,13 +2,63 @@
  * ActiveCanvas Visual Editor Styles
  */
 
+/* ==================== Hide GrapeJS Default Panels ==================== */
+
+.gjs-pn-panels {
+  display: none !important;
+}
+
+.gjs-pn-views-container {
+  display: none !important;
+}
+
+.gjs-pn-views {
+  display: none !important;
+}
+
+.gjs-pn-options {
+  display: none !important;
+}
+
+.gjs-pn-commands {
+  display: none !important;
+}
+
 /* ==================== Header ==================== */
+
+.editor-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  margin-right: 0.5rem;
+}
+
+.editor-logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.editor-logo-icon:hover {
+  transform: scale(1.05);
+}
+
+.editor-logo-icon svg {
+  width: 14px;
+  height: 14px;
+  color: white;
+}
 
 .header-separator {
   width: 1px;
   height: 24px;
   background: var(--editor-border);
-  margin: 0 0.25rem;
+  margin: 0 0.5rem;
 }
 
 /* ==================== Panels ==================== */

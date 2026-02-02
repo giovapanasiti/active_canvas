@@ -225,9 +225,6 @@
     // Setup undo/redo
     setupUndoRedo(editor);
 
-    // Setup preview
-    setupPreview(editor);
-
     // Setup code panel
     setupCodePanel(editor, config);
 
@@ -387,14 +384,6 @@
 
     document.getElementById('btn-redo').addEventListener('click', () => {
       editor.UndoManager.redo();
-    });
-  }
-
-  // ==================== Preview ====================
-
-  function setupPreview(editor) {
-    document.getElementById('btn-preview').addEventListener('click', () => {
-      editor.runCommand('preview');
     });
   }
 

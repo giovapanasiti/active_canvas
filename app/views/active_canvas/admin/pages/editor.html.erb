@@ -1,12 +1,22 @@
 <!-- Editor Header -->
 <header class="editor-header">
   <div class="editor-header-left">
+    <%= link_to admin_pages_path, class: "editor-logo" do %>
+      <div class="editor-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+      </div>
+    <% end %>
     <%= link_to admin_page_path(@page), class: "editor-back" do %>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="m15 18-6-6 6-6"/>
       </svg>
       Back
     <% end %>
+    <div class="header-separator"></div>
     <div class="editor-title"><%= @page.title %></div>
   </div>
 
@@ -57,13 +67,6 @@
         <path d="M21 7v6h-6"/>
         <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
       </svg>
-    </button>
-    <button class="header-btn header-btn-secondary" id="btn-preview" title="Preview">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      Preview
     </button>
     <button class="header-btn header-btn-secondary" id="btn-code" title="View Code (Ctrl+E)">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
