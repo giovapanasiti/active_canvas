@@ -8,21 +8,21 @@
     <!-- Font Awesome for toolbar icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- GrapeJS Core - load first before any AMD loaders -->
-    <link rel="stylesheet" href="https://unpkg.com/grapesjs@0.21.13/dist/css/grapes.min.css">
-    <script src="https://unpkg.com/grapesjs@0.21.13/dist/grapes.min.js"></script>
+    <!-- GrapeJS Core -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/grapesjs/dist/css/grapes.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs"></script>
 
     <!-- GrapeJS Plugins -->
-    <script src="https://unpkg.com/grapesjs-blocks-basic@1.0.2/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-plugin-forms@2.0.6/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-style-bg@2.0.2/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-tabs@1.0.6/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-custom-code@1.0.2/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-touch@0.1.1/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-parser-postcss@1.0.3/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-tooltip@0.1.8/dist/index.min.js"></script>
-    <script src="https://unpkg.com/grapesjs-typed@2.0.1/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-blocks-basic"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-plugin-forms"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-preset-webpage"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-style-bg"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-tabs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-custom-code"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-touch"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-parser-postcss"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-tooltip"></script>
+    <script src="https://cdn.jsdelivr.net/npm/grapesjs-typed"></script>
 
     <!-- Monaco Editor - load after GrapeJS to avoid AMD conflicts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
@@ -317,8 +317,8 @@
 
       /* Left Panel - Blocks */
       .editor-panel-left {
-        width: 260px;
-        min-width: 260px;
+        width: 320px;
+        min-width: 320px;
         background: var(--editor-surface);
         border-right: 1px solid var(--editor-border);
         display: flex;
@@ -833,6 +833,9 @@
         opacity: 1;
       }
     </style>
+
+    <!-- ActiveCanvas Editor Overrides (loaded last to override all styles) -->
+    <%= stylesheet_link_tag "active_canvas/editor", media: "all" %>
   </head>
   <body>
     <%= yield %>

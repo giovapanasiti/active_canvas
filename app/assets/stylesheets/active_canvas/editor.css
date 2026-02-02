@@ -1,43 +1,8 @@
 /**
  * ActiveCanvas Visual Editor Styles
- * Uses the same color palette as the admin UI
+ * Overrides for GrapeJS components
+ * CSS variables are defined in the layout with theme support
  */
-
-:root {
-  /* Primary colors - matching admin UI */
-  --editor-primary: #6366f1;
-  --editor-primary-hover: #4f46e5;
-  --editor-primary-light: #e0e7ff;
-
-  /* Dark theme - based on admin sidebar colors */
-  --editor-bg: #0f172a;
-  --editor-surface: #1e293b;
-  --editor-surface-hover: #334155;
-  --editor-border: #334155;
-  --editor-border-light: #475569;
-
-  /* Text colors */
-  --editor-text: #f8fafc;
-  --editor-text-muted: #94a3b8;
-  --editor-text-dim: #64748b;
-
-  /* Status colors - matching admin UI */
-  --editor-success: #10b981;
-  --editor-success-light: #d1fae5;
-  --editor-danger: #ef4444;
-  --editor-danger-light: #fee2e2;
-  --editor-warning: #f59e0b;
-  --editor-warning-light: #fef3c7;
-
-  /* Shadows */
-  --editor-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --editor-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-  --editor-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-
-  /* Radii */
-  --editor-radius: 0.5rem;
-  --editor-radius-lg: 0.75rem;
-}
 
 /* ==================== Hide GrapeJS Default UI ==================== */
 
@@ -51,6 +16,452 @@
 .gjs-cv-canvas__top,
 .gjs-frame-wrapper__top {
   display: none !important;
+}
+
+/* ==================== Override GrapeJS Default Colors ==================== */
+
+/* These are the main GrapeJS color utility classes */
+.gjs-one-bg {
+  background-color: var(--editor-surface) !important;
+}
+
+.gjs-two-color {
+  color: var(--editor-text) !important;
+}
+
+.gjs-three-bg {
+  background-color: var(--editor-bg) !important;
+}
+
+.gjs-four-color,
+.gjs-four-color-h:hover {
+  color: var(--editor-primary) !important;
+}
+
+/* Block manager container background */
+.gjs-blocks-cs {
+  background-color: var(--editor-bg) !important;
+}
+
+#blocks-container {
+  background-color: var(--editor-bg) !important;
+}
+
+/* Any remaining brownish backgrounds */
+.gjs-editor-cont,
+.gjs-editor {
+  background-color: var(--editor-bg) !important;
+}
+
+.gjs-clm-tags,
+.gjs-clm-sels-info {
+  background-color: var(--editor-bg) !important;
+}
+
+/* ==================== GrapeJS Blocks ==================== */
+
+/* Block items */
+.gjs-block {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  color: var(--editor-text) !important;
+  padding: 0.625rem !important;
+  min-height: 70px !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.gjs-block:hover {
+  background: var(--editor-surface-hover) !important;
+  border-color: var(--editor-primary) !important;
+  box-shadow: 0 0 0 1px var(--editor-primary) !important;
+}
+
+.gjs-block.gjs-block--active {
+  background: var(--editor-primary-light) !important;
+  border-color: var(--editor-primary) !important;
+}
+
+/* Block media/icon container */
+.gjs-block__media {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 0.375rem !important;
+}
+
+.gjs-block__media svg {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* Block label */
+.gjs-block-label {
+  color: var(--editor-text) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  margin-top: 0.5rem !important;
+}
+
+/* Block SVG/icon */
+.gjs-block svg {
+  fill: var(--editor-text-muted) !important;
+}
+
+.gjs-block:hover svg {
+  fill: var(--editor-primary) !important;
+}
+
+/* Block categories */
+.gjs-block-category {
+  background: transparent !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+}
+
+.gjs-block-category .gjs-title {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.75rem 1rem !important;
+  border: none !important;
+}
+
+.gjs-block-category .gjs-title:hover {
+  background: var(--editor-surface-hover) !important;
+}
+
+.gjs-block-category .gjs-caret-icon {
+  color: var(--editor-text-muted) !important;
+}
+
+/* Blocks container/grid */
+.gjs-blocks-c {
+  padding: 0.75rem !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.5rem !important;
+  background-color: var(--editor-bg) !important;
+}
+
+/* Block items - proper sizing */
+.gjs-blocks-c .gjs-block {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Scrollbar for blocks panel */
+.gjs-blocks-c::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gjs-blocks-c::-webkit-scrollbar-track {
+  background: var(--editor-bg);
+}
+
+.gjs-blocks-c::-webkit-scrollbar-thumb {
+  background: var(--editor-border);
+  border-radius: 3px;
+}
+
+.gjs-blocks-c::-webkit-scrollbar-thumb:hover {
+  background: var(--editor-border-light);
+}
+
+/* ==================== GrapeJS Style Manager ==================== */
+
+.gjs-sm-sector {
+  background: transparent !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+}
+
+.gjs-sm-sector .gjs-sm-sector-title {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.75rem 1rem !important;
+  border: none !important;
+}
+
+.gjs-sm-sector .gjs-sm-sector-title:hover {
+  background: var(--editor-surface-hover) !important;
+}
+
+.gjs-sm-sector .gjs-sm-sector-caret {
+  color: var(--editor-text-muted) !important;
+}
+
+.gjs-sm-properties {
+  padding: 0.75rem !important;
+  background: var(--editor-bg) !important;
+}
+
+.gjs-sm-property {
+  margin-bottom: 0.75rem !important;
+}
+
+.gjs-sm-label {
+  color: var(--editor-text-muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.375rem !important;
+}
+
+/* Style manager inputs */
+.gjs-field {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 4px !important;
+  color: var(--editor-text) !important;
+}
+
+.gjs-field:focus-within {
+  border-color: var(--editor-primary) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+}
+
+.gjs-field input,
+.gjs-field select,
+.gjs-field textarea {
+  background: transparent !important;
+  color: var(--editor-text) !important;
+  border: none !important;
+}
+
+.gjs-field-arrows {
+  color: var(--editor-text-muted) !important;
+}
+
+/* Color picker */
+.gjs-field-color-picker {
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 4px !important;
+}
+
+/* Radio/checkbox buttons */
+.gjs-sm-btn {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  color: var(--editor-text) !important;
+}
+
+.gjs-sm-btn:hover {
+  background: var(--editor-surface-hover) !important;
+}
+
+.gjs-sm-btn.gjs-sm-btn--active {
+  background: var(--editor-primary) !important;
+  border-color: var(--editor-primary) !important;
+  color: white !important;
+}
+
+/* ==================== GrapeJS Layer Manager ==================== */
+
+.gjs-layer {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+}
+
+.gjs-layer:hover {
+  background: var(--editor-surface-hover) !important;
+}
+
+.gjs-layer.gjs-selected {
+  background: var(--editor-primary) !important;
+  color: white !important;
+}
+
+.gjs-layer-title {
+  padding: 0.5rem 0.75rem !important;
+}
+
+.gjs-layer-name {
+  font-size: 0.8125rem !important;
+}
+
+.gjs-layer-caret {
+  color: var(--editor-text-muted) !important;
+}
+
+.gjs-layer-vis {
+  color: var(--editor-text-muted) !important;
+}
+
+/* ==================== GrapeJS Selector Manager ==================== */
+
+.gjs-clm-tags {
+  padding: 0.5rem !important;
+  background: var(--editor-bg) !important;
+}
+
+.gjs-clm-tag {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: 4px !important;
+  color: var(--editor-text) !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.gjs-clm-tag:hover {
+  background: var(--editor-surface-hover) !important;
+}
+
+.gjs-clm-tag.gjs-clm-tag--active {
+  background: var(--editor-primary) !important;
+  border-color: var(--editor-primary) !important;
+  color: white !important;
+}
+
+.gjs-clm-tag-close {
+  color: var(--editor-text-muted) !important;
+}
+
+.gjs-clm-sels-info {
+  color: var(--editor-text-muted) !important;
+  font-size: 0.75rem !important;
+  padding: 0.5rem !important;
+}
+
+/* ==================== GrapeJS Trait Manager ==================== */
+
+.gjs-trt-trait {
+  padding: 0.5rem 0 !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+}
+
+.gjs-trt-trait__wrp-title {
+  color: var(--editor-text-muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+/* ==================== GrapeJS Modal / Asset Manager ==================== */
+
+/* Modal overlay */
+.gjs-mdl-container {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Modal dialog */
+.gjs-mdl-dialog {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius-lg) !important;
+  box-shadow: var(--editor-shadow-md) !important;
+}
+
+/* Modal header */
+.gjs-mdl-header {
+  background: var(--editor-surface) !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.gjs-mdl-title {
+  color: var(--editor-text) !important;
+  font-weight: 600 !important;
+}
+
+.gjs-mdl-btn-close {
+  color: var(--editor-text-muted) !important;
+}
+
+.gjs-mdl-btn-close:hover {
+  color: var(--editor-text) !important;
+}
+
+/* Modal content */
+.gjs-mdl-content {
+  background: var(--editor-bg) !important;
+  padding: 0 !important;
+}
+
+/* Asset Manager */
+.gjs-am-assets-cont {
+  background: var(--editor-bg) !important;
+  padding: 1rem !important;
+}
+
+.gjs-am-assets-header {
+  background: var(--editor-surface) !important;
+  padding: 1rem !important;
+  border-bottom: 1px solid var(--editor-border) !important;
+}
+
+/* Asset items */
+.gjs-am-asset {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  overflow: hidden !important;
+  margin: 0.25rem !important;
+}
+
+.gjs-am-asset:hover {
+  border-color: var(--editor-primary) !important;
+}
+
+.gjs-am-asset-image {
+  background: var(--editor-bg) !important;
+}
+
+.gjs-am-meta {
+  background: var(--editor-surface) !important;
+  color: var(--editor-text) !important;
+  padding: 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.gjs-am-close {
+  color: var(--editor-text-muted) !important;
+}
+
+.gjs-am-close:hover {
+  color: var(--editor-danger) !important;
+}
+
+/* File uploader */
+.gjs-am-file-uploader {
+  background: var(--editor-bg) !important;
+  border: 2px dashed var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  padding: 2rem !important;
+  margin: 1rem !important;
+  text-align: center;
+}
+
+.gjs-am-file-uploader:hover {
+  border-color: var(--editor-primary) !important;
+}
+
+.gjs-am-file-uploader form {
+  color: var(--editor-text-muted) !important;
+}
+
+/* Add asset button */
+.gjs-am-add-asset {
+  background: var(--editor-primary) !important;
+  color: white !important;
+  border-radius: var(--editor-radius) !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.gjs-am-add-asset:hover {
+  background: var(--editor-primary-hover) !important;
+}
+
+/* Asset preview */
+.gjs-am-preview-cont {
+  background: var(--editor-bg) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
 }
 
 /* Canvas responsive device preview */
@@ -778,16 +1189,123 @@
 
 /* ==================== GrapeJS Toolbar ==================== */
 
-.gjs-toolbar .gjs-toolbar-item[data-command="edit-component-code"] {
-  order: -1;
+.gjs-toolbar {
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  padding: 4px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 2px !important;
+  box-shadow: var(--editor-shadow-md) !important;
+  z-index: 10 !important;
+  white-space: nowrap !important;
+}
+
+.gjs-toolbar .gjs-toolbar-item {
+  cursor: pointer;
+  padding: 6px 8px !important;
+  border-radius: 4px !important;
+  color: var(--editor-text) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.gjs-toolbar .gjs-toolbar-item:hover {
+  background: var(--editor-surface-hover) !important;
+  color: var(--editor-primary) !important;
 }
 
 .gjs-toolbar .gjs-toolbar-item .fa-code {
   font-size: 12px;
 }
 
-.gjs-toolbar .gjs-toolbar-item:hover .fa-code {
-  color: var(--editor-primary);
+/* Menu button styling - toolbar item with the ⋮ label */
+.gjs-toolbar .gjs-toolbar-item.toolbar-menu-btn {
+  font-size: 16px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  padding: 4px 6px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+/* Hide empty spans inside toolbar items (GrapeJS adds them for icons) */
+.gjs-toolbar .gjs-toolbar-item span:empty {
+  display: none !important;
+}
+
+/* Style for the icon span inside toolbar items */
+.gjs-toolbar .gjs-toolbar-item span.fa {
+  font-size: 12px !important;
+}
+
+/* ==================== Component Context Menu ==================== */
+
+.component-context-menu {
+  background: var(--editor-surface);
+  border: 1px solid var(--editor-border);
+  border-radius: var(--editor-radius);
+  box-shadow: var(--editor-shadow-md);
+  min-width: 160px;
+  padding: 0.375rem;
+  z-index: 10000;
+  animation: contextMenuFadeIn 0.15s ease;
+}
+
+@keyframes contextMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--editor-text);
+  cursor: pointer;
+  border-radius: calc(var(--editor-radius) - 2px);
+  transition: background 0.15s ease;
+}
+
+.context-menu-item:hover {
+  background: var(--editor-surface-hover);
+}
+
+.context-menu-item svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.context-menu-item:hover svg {
+  opacity: 1;
+}
+
+.context-menu-item-danger {
+  color: var(--editor-danger);
+}
+
+.context-menu-item-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--editor-border);
+  margin: 0.375rem 0;
 }
 
 /* ==================== Panel Placeholder ==================== */
