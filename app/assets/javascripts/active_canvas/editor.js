@@ -234,6 +234,9 @@
     // Setup add section button
     setupAddSection(editor);
 
+    // Setup assets panel
+    setupAssetsPanel(editor, config, csrfToken);
+
     // Expose editor instance for debugging
     window.ActiveCanvasEditor.instance = editor;
   }
@@ -411,6 +414,7 @@
         // Show/hide content
         if (parent.classList.contains('editor-panel-left')) {
           document.getElementById('blocks-container').style.display = panel === 'blocks' ? 'block' : 'none';
+          document.getElementById('assets-container').style.display = panel === 'assets' ? 'block' : 'none';
           document.getElementById('layers-container').style.display = panel === 'layers' ? 'block' : 'none';
           document.getElementById('ai-container').style.display = panel === 'ai' ? 'block' : 'none';
         } else {
@@ -968,10 +972,188 @@
     .then(result => {
       if (result.data) {
         editor.AssetManager.add(result.data);
+        renderAssetsPanel(result.data, editor);
       }
     })
     .catch(error => {
       console.error('Failed to load assets:', error);
+      const grid = document.getElementById('assets-grid');
+      if (grid) {
+        grid.innerHTML = '<div class="assets-empty">Failed to load assets</div>';
+      }
+    });
+  }
+
+  function renderAssetsPanel(assets, editor) {
+    const grid = document.getElementById('assets-grid');
+    if (!grid) return;
+
+    if (!assets || assets.length === 0) {
+      grid.innerHTML = `
+        <div class="assets-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <p>No assets yet</p>
+          <span>Upload images to use them here</span>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = assets.map(asset => `
+      <div class="asset-item" draggable="true" data-src="${asset.src}" data-name="${asset.name || 'Image'}" title="${asset.name || 'Image'}">
+        <img src="${asset.src}" alt="${asset.name || 'Image'}" loading="lazy">
+        <div class="asset-item-overlay">
+          <button class="asset-insert-btn" data-src="${asset.src}" title="Insert image">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    // Add drag and insert functionality
+    grid.querySelectorAll('.asset-item').forEach(item => {
+      // Drag to canvas
+      item.addEventListener('dragstart', (e) => {
+        const src = item.dataset.src;
+        e.dataTransfer.setData('text/html', `<img src="${src}" alt="Image" style="max-width: 100%;">`);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+
+      // Click to insert
+      const insertBtn = item.querySelector('.asset-insert-btn');
+      if (insertBtn) {
+        insertBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const src = insertBtn.dataset.src;
+          insertImageToCanvas(editor, src);
+        });
+      }
+
+      // Double-click to insert
+      item.addEventListener('dblclick', () => {
+        const src = item.dataset.src;
+        insertImageToCanvas(editor, src);
+      });
+    });
+  }
+
+  function insertImageToCanvas(editor, src) {
+    const selected = editor.getSelected();
+    const wrapper = editor.getWrapper();
+
+    const imageComponent = {
+      type: 'image',
+      attributes: { src: src, alt: 'Image' },
+      style: { 'max-width': '100%' }
+    };
+
+    if (selected) {
+      // Insert after selected component
+      const parent = selected.parent();
+      if (parent) {
+        const index = parent.components().indexOf(selected);
+        parent.components().add(imageComponent, { at: index + 1 });
+      } else {
+        wrapper.append(imageComponent);
+      }
+    } else {
+      // Append to wrapper
+      wrapper.append(imageComponent);
+    }
+
+    showToast('Image inserted', 'success');
+  }
+
+  function setupAssetsPanel(editor, config, csrfToken) {
+    const uploadBtn = document.getElementById('btn-upload-asset');
+    const refreshBtn = document.getElementById('btn-refresh-assets');
+    const uploadInput = document.getElementById('asset-upload-input');
+
+    if (!uploadBtn || !refreshBtn || !uploadInput) return;
+
+    // Upload button click
+    uploadBtn.addEventListener('click', () => {
+      uploadInput.click();
+    });
+
+    // Refresh button click
+    refreshBtn.addEventListener('click', () => {
+      const grid = document.getElementById('assets-grid');
+      if (grid) {
+        grid.innerHTML = '<div class="assets-loading">Loading assets...</div>';
+      }
+      loadAssets(editor, config.mediaUrl);
+    });
+
+    // Handle file selection
+    uploadInput.addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `
+        <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="2" x2="12" y2="6"/>
+          <line x1="12" y1="18" x2="12" y2="22"/>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+          <line x1="2" y1="12" x2="6" y2="12"/>
+          <line x1="18" y1="12" x2="22" y2="12"/>
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+        </svg>
+        Uploading...
+      `;
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('media[file]', file);
+        formData.append('media[filename]', file.name);
+
+        try {
+          const response = await fetch(config.uploadUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRF-Token': csrfToken
+            },
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.src) {
+            editor.AssetManager.add(result);
+            showToast(`Uploaded ${file.name}`, 'success');
+          } else if (result.errors) {
+            showToast(`Failed: ${result.errors.join(', ')}`, 'error');
+          }
+        } catch (error) {
+          showToast(`Error uploading ${file.name}`, 'error');
+          console.error('Upload error:', error);
+        }
+      }
+
+      // Reset and refresh
+      uploadInput.value = '';
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Upload
+      `;
+
+      // Refresh assets panel
+      loadAssets(editor, config.mediaUrl);
     });
   }
 
