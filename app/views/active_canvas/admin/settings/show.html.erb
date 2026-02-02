@@ -1,0 +1,23 @@
+<div class="page-header">
+  <h2>Settings</h2>
+</div>
+
+<div class="card" style="padding: 1.5rem;">
+  <%= form_with url: admin_settings_path, method: :patch do |form| %>
+    <div class="form-group">
+      <%= form.label :homepage_page_id, "Homepage" %>
+      <%= form.select :homepage_page_id,
+            options_for_select(
+              [["— No homepage —", ""]] + @pages.map { |p| [p.title, p.id] },
+              @homepage_page_id
+            ),
+            {},
+            class: "form-control" %>
+      <p class="help-text">Select which published page to display when visiting the root URL.</p>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Save Settings", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

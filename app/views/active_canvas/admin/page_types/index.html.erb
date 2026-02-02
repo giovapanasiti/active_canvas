@@ -1,0 +1,29 @@
+<div class="page-header">
+  <h2>Page Types</h2>
+  <%= link_to "New Page Type", new_admin_page_type_path, class: "btn btn-primary" %>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Key</th>
+        <th>Pages</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @page_types.each do |page_type| %>
+        <tr>
+          <td><%= link_to page_type.name, admin_page_type_path(page_type) %></td>
+          <td><code><%= page_type.key %></code></td>
+          <td><%= page_type.pages.count %></td>
+          <td class="actions">
+            <%= link_to "Edit", edit_admin_page_type_path(page_type), class: "btn btn-secondary" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

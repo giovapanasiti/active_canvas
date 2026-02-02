@@ -1,0 +1,25 @@
+<% if page_type.errors.any? %>
+  <div class="error-messages">
+    <strong><%= pluralize(page_type.errors.count, "error") %> prohibited this page type from being saved:</strong>
+    <ul>
+      <% page_type.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="form-group">
+  <%= form.label :name %>
+  <%= form.text_field :name, class: "form-control" %>
+</div>
+
+<div class="form-group">
+  <%= form.label :key %>
+  <%= form.text_field :key, class: "form-control", placeholder: "Leave blank for auto-generated key" %>
+</div>
+
+<div class="form-actions">
+  <%= form.submit class: "btn btn-primary" %>
+  <%= link_to "Cancel", admin_page_types_path, class: "btn btn-secondary" %>
+</div>

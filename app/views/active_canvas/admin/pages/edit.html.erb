@@ -1,0 +1,13 @@
+<div class="page-header">
+  <h2>Edit Page</h2>
+</div>
+
+<div class="card" style="padding: 1.5rem;">
+  <%= form_with model: @page, url: admin_page_path(@page) do |form| %>
+    <%= render "form", form: form, page: @page %>
+  <% end %>
+</div>
+
+<div style="margin-top: 1rem;">
+  <%= button_to "Delete Page", admin_page_path(@page), method: :delete, class: "btn btn-danger", data: { turbo_confirm: "Are you sure you want to delete this page?" } %>
+</div>

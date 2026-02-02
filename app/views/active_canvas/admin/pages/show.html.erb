@@ -1,0 +1,35 @@
+<div class="page-header">
+  <h2><%= @page.title %></h2>
+  <div class="actions">
+    <%= link_to "Edit Content", content_admin_page_path(@page), class: "btn btn-primary" %>
+    <%= link_to "Edit", edit_admin_page_path(@page), class: "btn btn-secondary" %>
+    <%= link_to "Back", admin_pages_path, class: "btn btn-secondary" %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="detail-row">
+    <div class="detail-label">Slug</div>
+    <div class="detail-value"><code><%= @page.slug || "—" %></code></div>
+  </div>
+  <div class="detail-row">
+    <div class="detail-label">Page Type</div>
+    <div class="detail-value"><%= @page.page_type.name %></div>
+  </div>
+  <div class="detail-row">
+    <div class="detail-label">Status</div>
+    <div class="detail-value">
+      <% if @page.published? %>
+        <span class="badge badge-success">Published</span>
+      <% else %>
+        <span class="badge badge-gray">Draft</span>
+      <% end %>
+    </div>
+  </div>
+  <div class="detail-row">
+    <div class="detail-label">Content</div>
+    <div class="detail-value">
+      <div class="content-preview"><%= @page.content %></div>
+    </div>
+  </div>
+</div>

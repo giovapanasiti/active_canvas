@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Content - <%= @page.title %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      background: #2d2d2d;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #404040;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .page-title {
+      font-size: 0.875rem;
+      color: #888;
+    }
+
+    .page-title strong {
+      color: #d4d4d4;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #404040;
+      color: #d4d4d4;
+    }
+
+    .btn-secondary:hover {
+      background: #505050;
+    }
+
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .editor {
+      flex: 1;
+      width: 100%;
+      padding: 1rem;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      resize: none;
+      font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      outline: none;
+    }
+
+    .editor:focus {
+      background: #1e1e1e;
+    }
+
+    .flash {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      background: #166534;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <%= form_with model: @page, url: update_content_admin_page_path(@page), method: :patch, id: "content-form" do |form| %>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <span class="page-title">Editing: <strong><%= @page.title %></strong></span>
+      </div>
+      <div class="toolbar-actions">
+        <%= link_to "Back", admin_page_path(@page), class: "btn btn-secondary" %>
+        <%= form.submit "Save", class: "btn btn-primary" %>
+      </div>
+    </div>
+
+    <% if notice %>
+      <div class="flash"><%= notice %></div>
+    <% end %>
+
+    <div class="editor-container">
+      <%= form.text_area :content, class: "editor", autofocus: true, spellcheck: false %>
+    </div>
+  <% end %>
+
+  <script>
+    // Keyboard shortcut: Cmd/Ctrl+S to save
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        document.getElementById('content-form').submit();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ActiveCanvas Admin</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --gray-900: #111827;
+        --green-100: #dcfce7;
+        --green-800: #166534;
+        --red-100: #fee2e2;
+        --red-800: #991b1b;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-900);
+        line-height: 1.5;
+      }
+
+      .admin-header {
+        background: var(--gray-900);
+        color: white;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .admin-header h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .admin-nav {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .admin-nav a {
+        color: var(--gray-300);
+        text-decoration: none;
+        font-size: 0.875rem;
+      }
+
+      .admin-nav a:hover {
+        color: white;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .flash {
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+      }
+
+      .flash-notice {
+        background: var(--green-100);
+        color: var(--green-800);
+      }
+
+      .flash-alert {
+        background: var(--red-100);
+        color: var(--red-800);
+      }
+
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .page-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+
+      .btn-secondary {
+        background: var(--gray-200);
+        color: var(--gray-700);
+      }
+
+      .btn-secondary:hover {
+        background: var(--gray-300);
+      }
+
+      .btn-danger {
+        background: var(--red-100);
+        color: var(--red-800);
+      }
+
+      .card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--gray-200);
+      }
+
+      th {
+        background: var(--gray-50);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--gray-500);
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .badge-success {
+        background: var(--green-100);
+        color: var(--green-800);
+      }
+
+      .badge-gray {
+        background: var(--gray-100);
+        color: var(--gray-700);
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      textarea.form-control {
+        min-height: 200px;
+        font-family: monospace;
+      }
+
+      .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .form-check input {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .error-messages {
+        background: var(--red-100);
+        color: var(--red-800);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+      }
+
+      .error-messages ul {
+        margin-left: 1rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .detail-row {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-200);
+      }
+
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+
+      .detail-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        font-weight: 600;
+      }
+
+      .detail-value {
+        margin-top: 0.25rem;
+      }
+
+      .content-preview {
+        background: var(--gray-50);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow: auto;
+      }
+
+      .help-text {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="admin-header">
+      <h1>ActiveCanvas</h1>
+      <nav class="admin-nav">
+        <%= link_to "Pages", admin_pages_path %>
+        <%= link_to "Page Types", admin_page_types_path %>
+        <%= link_to "Settings", admin_settings_path %>
+      </nav>
+    </header>
+
+    <main class="container">
+      <% if notice %>
+        <div class="flash flash-notice"><%= notice %></div>
+      <% end %>
+      <% if alert %>
+        <div class="flash flash-alert"><%= alert %></div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+  </body>
+</html>

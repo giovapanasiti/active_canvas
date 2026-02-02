@@ -1,0 +1,9 @@
+<div class="page-header">
+  <h2>New Page</h2>
+</div>
+
+<div class="card" style="padding: 1.5rem;">
+  <%= form_with model: @page, url: admin_pages_path do |form| %>
+    <%= render "form", form: form, page: @page %>
+  <% end %>
+</div>

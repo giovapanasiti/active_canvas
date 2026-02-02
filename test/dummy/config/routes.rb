@@ -1,3 +1,3 @@
 Rails.application.routes.draw do
-  mount ActiveCanvas::Engine => "/active_canvas"
+  mount ActiveCanvas::Engine => "/canvas"
 end
