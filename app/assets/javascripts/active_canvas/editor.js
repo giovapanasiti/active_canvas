@@ -658,6 +658,16 @@
       const menu = document.createElement('div');
       menu.className = 'component-context-menu';
       menu.innerHTML = `
+        <div class="context-menu-item" data-action="open-styles">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+            <path d="M2 2l7.586 7.586"></path>
+            <circle cx="11" cy="11" r="2"></circle>
+          </svg>
+          <span>Edit Styles</span>
+        </div>
+        <div class="context-menu-divider"></div>
         <div class="context-menu-item" data-action="duplicate">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -764,6 +774,39 @@
     const parent = component.parent();
 
     switch (action) {
+      case 'open-styles':
+        // Ensure the component is selected
+        editor.select(component);
+
+        // Open the right panel if collapsed
+        const panelRight = document.getElementById('panel-right');
+        const btnToggleRight = document.getElementById('btn-toggle-right');
+        if (panelRight && panelRight.classList.contains('collapsed')) {
+          panelRight.classList.remove('collapsed');
+          if (btnToggleRight) btnToggleRight.classList.add('active');
+        }
+
+        // Switch to the Styles tab
+        const stylesTab = document.querySelector('.editor-panel-right .panel-tab[data-panel="styles"]');
+        if (stylesTab) {
+          stylesTab.click();
+        }
+
+        // Scroll the style manager into view if needed
+        const stylesContainer = document.getElementById('styles-container');
+        if (stylesContainer) {
+          stylesContainer.style.display = 'block';
+          // Hide traits container
+          const traitsContainer = document.getElementById('traits-container');
+          if (traitsContainer) traitsContainer.style.display = 'none';
+        }
+
+        // Refresh the editor to update the style manager
+        setTimeout(() => editor.refresh(), 100);
+
+        showToast('Style panel opened', 'success');
+        break;
+
       case 'duplicate':
         const cloned = component.clone();
         if (parent) {
