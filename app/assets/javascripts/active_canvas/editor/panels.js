@@ -339,6 +339,95 @@
     });
   }
 
+  /**
+   * Setup RTE toolbar visibility management
+   * Hides the toolbar when not actively editing text
+   * @param {Object} editor - GrapeJS editor instance
+   */
+  function setupRteToolbar(editor) {
+    let rteActive = false;
+
+    // Function to hide RTE toolbar
+    const hideRteToolbar = () => {
+      rteActive = false;
+      const rteToolbar = document.querySelector('.gjs-rte-toolbar');
+      if (rteToolbar) {
+        rteToolbar.classList.add('ac-rte-hidden');
+      }
+    };
+
+    // Function to show RTE toolbar
+    const showRteToolbar = () => {
+      const rteToolbar = document.querySelector('.gjs-rte-toolbar');
+      if (rteToolbar) {
+        rteToolbar.classList.remove('ac-rte-hidden');
+      }
+    };
+
+    // Check if component is a text element
+    const isTextComponent = (component) => {
+      if (!component) return false;
+      const type = component.get('type');
+      const tagName = (component.get('tagName') || '').toLowerCase();
+
+      // Text component types
+      const textTypes = ['text', 'textnode', 'label'];
+      if (textTypes.includes(type)) return true;
+
+      // Text-like HTML tags
+      const textTags = ['p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'label', 'li', 'td', 'th', 'blockquote', 'cite', 'em', 'strong', 'b', 'i', 'u'];
+      if (textTags.includes(tagName)) return true;
+
+      return false;
+    };
+
+    // Track RTE state
+    editor.on('rte:enable', () => {
+      rteActive = true;
+      showRteToolbar();
+    });
+
+    editor.on('rte:disable', () => {
+      hideRteToolbar();
+    });
+
+    // Hide when selecting a non-text component
+    editor.on('component:selected', (component) => {
+      if (!isTextComponent(component)) {
+        hideRteToolbar();
+        // Also disable RTE if it was active
+        if (rteActive) {
+          editor.RichTextEditor.disable();
+        }
+      }
+    });
+
+    // Hide when deselecting
+    editor.on('component:deselected', () => {
+      hideRteToolbar();
+    });
+
+    // Initial hide after editor loads
+    editor.on('load', () => {
+      setTimeout(hideRteToolbar, 100);
+
+      // Set up a MutationObserver to catch the toolbar being created
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.classList && node.classList.contains('gjs-rte-toolbar')) {
+              if (!rteActive) {
+                node.classList.add('ac-rte-hidden');
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+
   // Expose functions
   window.ActiveCanvasEditor.setupPanelControls = setupPanelControls;
   window.ActiveCanvasEditor.setupDeviceSwitching = setupDeviceSwitching;
@@ -346,5 +435,6 @@
   window.ActiveCanvasEditor.setupSave = setupSave;
   window.ActiveCanvasEditor.setupAddSection = setupAddSection;
   window.ActiveCanvasEditor.setupCanvasInjection = setupCanvasInjection;
+  window.ActiveCanvasEditor.setupRteToolbar = setupRteToolbar;
 
 })();

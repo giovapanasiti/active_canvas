@@ -282,6 +282,9 @@
     // Setup add section button
     AC.setupAddSection(editor);
 
+    // Setup RTE toolbar visibility
+    AC.setupRteToolbar(editor);
+
     // Setup assets panel
     AC.setupAssetsPanel(editor, config, csrfToken);
 

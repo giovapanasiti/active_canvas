@@ -1546,6 +1546,146 @@
   font-size: 12px !important;
 }
 
+/* ==================== GrapeJS Rich Text Editor Toolbar ==================== */
+
+/* Hide RTE toolbar via class (controlled by JS) */
+.gjs-rte-toolbar.ac-rte-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Also hide when empty (CSS fallback) */
+.gjs-rte-toolbar:empty {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Fixed position toolbar at top of canvas when editing text */
+.gjs-rte-toolbar {
+  position: fixed !important;
+  top: 62px !important; /* Below the header (52px) + spacing */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: var(--editor-surface) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius-lg) !important;
+  box-shadow: var(--editor-shadow-md) !important;
+  padding: 0.375rem 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  z-index: 100 !important;
+  white-space: nowrap !important;
+  min-width: 50px !important;
+  min-height: 30px !important;
+  animation: rteToolbarSlideIn 0.15s ease !important;
+}
+
+@keyframes rteToolbarSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* RTE toolbar action buttons */
+.gjs-rte-toolbar .gjs-rte-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: var(--editor-radius) !important;
+  color: var(--editor-text) !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.gjs-rte-toolbar .gjs-rte-action:hover {
+  background: var(--editor-surface-hover) !important;
+  color: var(--editor-primary) !important;
+}
+
+.gjs-rte-toolbar .gjs-rte-action.gjs-rte-active {
+  background: var(--editor-primary) !important;
+  color: white !important;
+}
+
+/* Divider between action groups */
+.gjs-rte-toolbar .gjs-rte-separator,
+.gjs-rte-toolbar [class*="separator"] {
+  width: 1px !important;
+  height: 20px !important;
+  background: var(--editor-border) !important;
+  margin: 0 0.375rem !important;
+}
+
+/* Font family select */
+.gjs-rte-toolbar select {
+  background: var(--editor-bg) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  color: var(--editor-text) !important;
+  padding: 0.375rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  cursor: pointer !important;
+  min-width: 100px !important;
+}
+
+.gjs-rte-toolbar select:hover {
+  border-color: var(--editor-border-light) !important;
+}
+
+.gjs-rte-toolbar select:focus {
+  outline: none !important;
+  border-color: var(--editor-primary) !important;
+  box-shadow: 0 0 0 2px var(--editor-primary-light) !important;
+}
+
+/* Color picker in RTE */
+.gjs-rte-toolbar input[type="color"] {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 2px !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  cursor: pointer !important;
+  background: var(--editor-bg) !important;
+}
+
+.gjs-rte-toolbar input[type="color"]:hover {
+  border-color: var(--editor-primary) !important;
+}
+
+/* Link input in RTE */
+.gjs-rte-toolbar input[type="text"] {
+  background: var(--editor-bg) !important;
+  border: 1px solid var(--editor-border) !important;
+  border-radius: var(--editor-radius) !important;
+  color: var(--editor-text) !important;
+  padding: 0.375rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  min-width: 150px !important;
+}
+
+.gjs-rte-toolbar input[type="text"]:focus {
+  outline: none !important;
+  border-color: var(--editor-primary) !important;
+  box-shadow: 0 0 0 2px var(--editor-primary-light) !important;
+}
+
 /* ==================== Component Context Menu ==================== */
 
 .component-context-menu {
