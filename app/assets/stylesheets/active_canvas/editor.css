@@ -18,6 +18,19 @@
   display: none !important;
 }
 
+/* Hide the annoying hover badge/circle */
+.gjs-badge,
+.gjs-badge-warning,
+.gjs-ghost,
+.gjs-placeholder,
+.gjs-com-badge,
+.gjs-com-badge-red,
+.gjs-badge__icon {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 /* ==================== Override GrapeJS Default Colors ==================== */
 
 /* These are the main GrapeJS color utility classes */
@@ -1201,6 +1214,14 @@
   box-shadow: var(--editor-shadow-md) !important;
   z-index: 10 !important;
   white-space: nowrap !important;
+}
+
+/* Hide empty toolbar (appears as a dot/circle) */
+.gjs-toolbar:empty {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .gjs-toolbar .gjs-toolbar-item {

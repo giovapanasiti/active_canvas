@@ -336,6 +336,23 @@
     let componentMenuOpen = false;
     let componentMenuCloseHandler = null;
 
+    // Helper to cleanup menu
+    const cleanupComponentMenu = () => {
+      const existingMenu = document.querySelector('.component-context-menu');
+      if (existingMenu) {
+        existingMenu.remove();
+      }
+      componentMenuOpen = false;
+      if (componentMenuCloseHandler) {
+        document.removeEventListener('mousedown', componentMenuCloseHandler);
+        componentMenuCloseHandler = null;
+      }
+    };
+
+    // Close menu when selection changes
+    editor.on('component:selected', cleanupComponentMenu);
+    editor.on('component:deselected', cleanupComponentMenu);
+
     // Add command for showing component context menu
     editor.Commands.add('show-component-menu', {
       run(editor, sender, options = {}) {
