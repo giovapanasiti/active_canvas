@@ -323,13 +323,13 @@
 
     btnToggleLeft.addEventListener('click', function() {
       panelLeft.classList.toggle('collapsed');
-      this.classList.toggle('active', panelLeft.classList.contains('collapsed'));
+      this.classList.toggle('active', !panelLeft.classList.contains('collapsed'));
       refreshEditor();
     });
 
     btnToggleRight.addEventListener('click', function() {
       panelRight.classList.toggle('collapsed');
-      this.classList.toggle('active', panelRight.classList.contains('collapsed'));
+      this.classList.toggle('active', !panelRight.classList.contains('collapsed'));
       refreshEditor();
     });
 
