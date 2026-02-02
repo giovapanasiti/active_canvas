@@ -380,8 +380,11 @@
   function setupPanelControls(editor) {
     const panelLeft = document.getElementById('panel-left');
     const panelRight = document.getElementById('panel-right');
+    const panelAi = document.getElementById('panel-ai');
     const btnToggleLeft = document.getElementById('btn-toggle-left');
     const btnToggleRight = document.getElementById('btn-toggle-right');
+    const btnToggleAi = document.getElementById('btn-toggle-ai');
+    const btnCloseAi = document.getElementById('btn-close-ai');
 
     function refreshEditor() {
       setTimeout(() => {
@@ -389,12 +392,46 @@
       }, 250);
     }
 
+    // Toggle left panel (blocks/assets/layers)
     btnToggleLeft.addEventListener('click', function() {
+      const isOpening = panelLeft.classList.contains('collapsed');
+
+      if (isOpening) {
+        // Close AI panel when opening left panel
+        panelAi.classList.add('collapsed');
+        btnToggleAi.classList.remove('active');
+      }
+
       panelLeft.classList.toggle('collapsed');
       this.classList.toggle('active', !panelLeft.classList.contains('collapsed'));
       refreshEditor();
     });
 
+    // Toggle AI panel
+    btnToggleAi.addEventListener('click', function() {
+      const isOpening = panelAi.classList.contains('collapsed');
+
+      if (isOpening) {
+        // Close left panel when opening AI panel
+        panelLeft.classList.add('collapsed');
+        btnToggleLeft.classList.remove('active');
+      }
+
+      panelAi.classList.toggle('collapsed');
+      this.classList.toggle('active', !panelAi.classList.contains('collapsed'));
+      refreshEditor();
+    });
+
+    // Close AI panel button
+    if (btnCloseAi) {
+      btnCloseAi.addEventListener('click', function() {
+        panelAi.classList.add('collapsed');
+        btnToggleAi.classList.remove('active');
+        refreshEditor();
+      });
+    }
+
+    // Toggle right panel
     btnToggleRight.addEventListener('click', function() {
       panelRight.classList.toggle('collapsed');
       this.classList.toggle('active', !panelRight.classList.contains('collapsed'));
@@ -416,7 +453,6 @@
           document.getElementById('blocks-container').style.display = panel === 'blocks' ? 'block' : 'none';
           document.getElementById('assets-container').style.display = panel === 'assets' ? 'block' : 'none';
           document.getElementById('layers-container').style.display = panel === 'layers' ? 'block' : 'none';
-          document.getElementById('ai-container').style.display = panel === 'ai' ? 'block' : 'none';
         } else {
           document.getElementById('styles-container').style.display = panel === 'styles' ? 'block' : 'none';
           document.getElementById('traits-container').style.display = panel === 'settings' ? 'block' : 'none';
