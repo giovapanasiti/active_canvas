@@ -290,7 +290,7 @@
         id: 'component-menu',
         label: '⋮',
         attributes: { class: 'toolbar-menu-btn', title: 'More Actions' },
-        command: 'show-component-menu'
+        command: 'ac-show-menu'
       }
     ];
 
@@ -309,7 +309,7 @@
 
       // Check if our buttons already exist
       const hasCodeBtn = toolbar.some(item => item.id === 'edit-code' || item.command === 'edit-component-code');
-      const hasMenuBtn = toolbar.some(item => item.id === 'component-menu' || item.command === 'show-component-menu');
+      const hasMenuBtn = toolbar.some(item => item.id === 'component-menu' || item.command === 'ac-show-menu');
 
       if (!hasCodeBtn) {
         toolbar.unshift(defaultToolbar[0]);
@@ -332,20 +332,11 @@
       }
     });
 
-    // Track menu state
-    let componentMenuOpen = false;
-    let componentMenuCloseHandler = null;
-
     // Helper to cleanup menu
     const cleanupComponentMenu = () => {
       const existingMenu = document.querySelector('.component-context-menu');
       if (existingMenu) {
         existingMenu.remove();
-      }
-      componentMenuOpen = false;
-      if (componentMenuCloseHandler) {
-        document.removeEventListener('mousedown', componentMenuCloseHandler);
-        componentMenuCloseHandler = null;
       }
     };
 
@@ -353,175 +344,133 @@
     editor.on('component:selected', cleanupComponentMenu);
     editor.on('component:deselected', cleanupComponentMenu);
 
-    // Add command for showing component context menu
-    editor.Commands.add('show-component-menu', {
-      run(editor, sender, options = {}) {
-        const selected = editor.getSelected();
-        if (!selected) return;
+    // Function to show the component menu
+    const showComponentMenu = () => {
+      const selected = editor.getSelected();
+      if (!selected) return;
 
-        // Close existing menu if open
-        const existingMenu = document.querySelector('.component-context-menu');
-        if (existingMenu) {
-          existingMenu.remove();
-          if (componentMenuCloseHandler) {
-            document.removeEventListener('mousedown', componentMenuCloseHandler);
-            componentMenuCloseHandler = null;
-          }
-          componentMenuOpen = false;
-          return; // Toggle off
-        }
+      // Always cleanup first
+      cleanupComponentMenu();
 
-        // Prevent any pending close
-        componentMenuOpen = true;
+      // Get position - use the toolbar
+      let btnRect = null;
+      const toolbarEl = document.querySelector('.gjs-toolbar');
 
-        // Get position - use the toolbar
-        let btnRect = null;
-        const toolbarEl = document.querySelector('.gjs-toolbar');
+      if (toolbarEl) {
+        const allItems = toolbarEl.querySelectorAll('.gjs-toolbar-item');
+        const menuBtn = allItems[allItems.length - 1];
+        btnRect = menuBtn ? menuBtn.getBoundingClientRect() : toolbarEl.getBoundingClientRect();
+      }
 
-        if (toolbarEl) {
-          const allItems = toolbarEl.querySelectorAll('.gjs-toolbar-item');
-          // Use the last item (our menu button) or the toolbar itself
-          const menuBtn = allItems[allItems.length - 1];
-          btnRect = menuBtn ? menuBtn.getBoundingClientRect() : toolbarEl.getBoundingClientRect();
-        }
-
-        // Fallback to toolbar position
-        if (!btnRect && toolbarEl) {
-          btnRect = toolbarEl.getBoundingClientRect();
-        }
-
-        // Final fallback: mouse position or center
-        if (!btnRect) {
-          const mouseX = window.event ? window.event.clientX : window.innerWidth / 2;
-          const mouseY = window.event ? window.event.clientY : window.innerHeight / 2;
-          btnRect = {
-            top: mouseY,
-            bottom: mouseY + 20,
-            left: mouseX - 80,
-            right: mouseX + 80
-          };
-        }
-
-        // Create dropdown menu
-        const menu = document.createElement('div');
-        menu.className = 'component-context-menu';
-        menu.innerHTML = `
-          <div class="context-menu-item" data-action="duplicate">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span>Duplicate</span>
-          </div>
-          <div class="context-menu-item" data-action="add-div-above">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-            <span>Add Div Above</span>
-          </div>
-          <div class="context-menu-item" data-action="add-div-below">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-            <span>Add Div Below</span>
-          </div>
-          <div class="context-menu-divider"></div>
-          <div class="context-menu-item" data-action="move-up">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-            <span>Move Up</span>
-          </div>
-          <div class="context-menu-item" data-action="move-down">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-            <span>Move Down</span>
-          </div>
-          <div class="context-menu-divider"></div>
-          <div class="context-menu-item context-menu-item-danger" data-action="delete">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            <span>Delete</span>
-          </div>
-        `;
-
-        // Position the menu
-        menu.style.position = 'fixed';
-        menu.style.zIndex = '10000';
-
-        document.body.appendChild(menu);
-
-        // Get menu dimensions after adding to DOM
-        const menuRect = menu.getBoundingClientRect();
-
-        // Position below the button, aligned to the right edge
-        let top = btnRect.bottom + 5;
-        let left = btnRect.right - menuRect.width;
-
-        // Keep menu on screen
-        if (left < 10) left = 10;
-        if (top + menuRect.height > window.innerHeight - 10) {
-          top = btnRect.top - menuRect.height - 5;
-        }
-
-        menu.style.top = top + 'px';
-        menu.style.left = left + 'px';
-
-        // Function to close menu
-        const closeMenu = () => {
-          menu.remove();
-          componentMenuOpen = false;
-          if (componentMenuCloseHandler) {
-            document.removeEventListener('mousedown', componentMenuCloseHandler);
-            componentMenuCloseHandler = null;
-          }
+      // Final fallback: center of screen
+      if (!btnRect) {
+        btnRect = {
+          top: 100,
+          bottom: 120,
+          left: window.innerWidth / 2 - 80,
+          right: window.innerWidth / 2 + 80
         };
+      }
 
-        // Handle menu item clicks
-        menu.querySelectorAll('.context-menu-item').forEach(item => {
-          item.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const action = item.dataset.action;
-            closeMenu();
-            handleComponentAction(editor, selected, action);
-          });
+      // Create dropdown menu
+      const menu = document.createElement('div');
+      menu.className = 'component-context-menu';
+      menu.innerHTML = `
+        <div class="context-menu-item" data-action="duplicate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Duplicate</span>
+        </div>
+        <div class="context-menu-item" data-action="add-div-above">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Add Div Above</span>
+        </div>
+        <div class="context-menu-item" data-action="add-div-below">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Add Div Below</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" data-action="move-up">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+          <span>Move Up</span>
+        </div>
+        <div class="context-menu-item" data-action="move-down">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <span>Move Down</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item context-menu-item-danger" data-action="delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>Delete</span>
+        </div>
+      `;
+
+      // Position the menu
+      menu.style.position = 'fixed';
+      menu.style.zIndex = '10000';
+
+      document.body.appendChild(menu);
+
+      // Get menu dimensions after adding to DOM
+      const menuRect = menu.getBoundingClientRect();
+
+      // Position below the button, aligned to the right edge
+      let top = btnRect.bottom + 5;
+      let left = btnRect.right - menuRect.width;
+
+      // Keep menu on screen
+      if (left < 10) left = 10;
+      if (top + menuRect.height > window.innerHeight - 10) {
+        top = btnRect.top - menuRect.height - 5;
+      }
+
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+
+      // Handle menu item clicks
+      menu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const action = item.dataset.action;
+          cleanupComponentMenu();
+          handleComponentAction(editor, selected, action);
         });
+      });
 
-        // Close menu on click outside
-        componentMenuCloseHandler = (e) => {
-          // Don't close if clicking inside menu
+      // Close menu on click outside (with delay)
+      setTimeout(() => {
+        const closeHandler = (e) => {
           if (menu.contains(e.target)) return;
-          // Don't close if clicking the menu button itself (let toggle handle it)
           if (e.target.closest('.toolbar-menu-btn') || e.target.textContent === '⋮') return;
-          closeMenu();
+          cleanupComponentMenu();
+          document.removeEventListener('mousedown', closeHandler);
         };
+        document.addEventListener('mousedown', closeHandler);
+      }, 50);
+    };
 
-        // Use mousedown with longer delay to prevent immediate close
-        setTimeout(() => {
-          if (componentMenuOpen) {
-            document.addEventListener('mousedown', componentMenuCloseHandler);
-          }
-        }, 150);
-      },
-      stop() {
-        // Remove menu when command stops
-        const existingMenu = document.querySelector('.component-context-menu');
-        if (existingMenu) {
-          existingMenu.remove();
-        }
-        componentMenuOpen = false;
-        if (componentMenuCloseHandler) {
-          document.removeEventListener('mousedown', componentMenuCloseHandler);
-          componentMenuCloseHandler = null;
-        }
+    // Add command that just calls our function
+    editor.Commands.add('ac-show-menu', {
+      run() {
+        showComponentMenu();
       }
     });
   }
