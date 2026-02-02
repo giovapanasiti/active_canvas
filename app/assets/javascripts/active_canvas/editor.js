@@ -475,8 +475,20 @@
           'tablet': 'Tablet',
           'mobile': 'Mobile'
         };
+
+        // Set the device in GrapeJS
         editor.setDevice(deviceMap[device]);
+
+        // Refresh the canvas to ensure proper rendering
+        setTimeout(() => {
+          editor.refresh();
+        }, 100);
       });
+    });
+
+    // Set initial device to Desktop on load
+    editor.on('load', () => {
+      editor.setDevice('Desktop');
     });
   }
 

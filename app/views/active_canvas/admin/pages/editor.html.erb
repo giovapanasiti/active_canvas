@@ -371,12 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (aiSelectElementBtn) {
     aiSelectElementBtn.addEventListener('click', function() {
       if (window.ActiveCanvasEditor.instance) {
-        // Close AI panel and focus on canvas
-        const panelAi = document.getElementById('panel-ai');
-        const btnToggleAi = document.getElementById('btn-toggle-ai');
-        panelAi.classList.add('collapsed');
-        btnToggleAi.classList.remove('active');
-
+        // Show toast to guide user - keep panel open so they can see the selected element update
         window.ActiveCanvasEditor.showToast('Click on an element in the canvas to select it', 'success');
       }
     });

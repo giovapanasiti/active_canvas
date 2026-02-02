@@ -1,6 +1,43 @@
 /**
  * ActiveCanvas Visual Editor Styles
+ * Uses the same color palette as the admin UI
  */
+
+:root {
+  /* Primary colors - matching admin UI */
+  --editor-primary: #6366f1;
+  --editor-primary-hover: #4f46e5;
+  --editor-primary-light: #e0e7ff;
+
+  /* Dark theme - based on admin sidebar colors */
+  --editor-bg: #0f172a;
+  --editor-surface: #1e293b;
+  --editor-surface-hover: #334155;
+  --editor-border: #334155;
+  --editor-border-light: #475569;
+
+  /* Text colors */
+  --editor-text: #f8fafc;
+  --editor-text-muted: #94a3b8;
+  --editor-text-dim: #64748b;
+
+  /* Status colors - matching admin UI */
+  --editor-success: #10b981;
+  --editor-success-light: #d1fae5;
+  --editor-danger: #ef4444;
+  --editor-danger-light: #fee2e2;
+  --editor-warning: #f59e0b;
+  --editor-warning-light: #fef3c7;
+
+  /* Shadows */
+  --editor-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --editor-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --editor-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+
+  /* Radii */
+  --editor-radius: 0.5rem;
+  --editor-radius-lg: 0.75rem;
+}
 
 /* ==================== Hide GrapeJS Default UI ==================== */
 
@@ -16,13 +53,29 @@
   display: none !important;
 }
 
-/* Remove top spacing from canvas frame */
+/* Canvas responsive device preview */
 .gjs-cv-canvas {
   top: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  overflow: auto !important;
+  background: var(--editor-bg, #0f172a) !important;
+  padding: 1rem !important;
 }
 
 .gjs-frame-wrapper {
   top: 0 !important;
+  transition: width 0.3s ease, box-shadow 0.3s ease !important;
+  background: #fff !important;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+}
+
+/* When not at full width (responsive preview) */
+.gjs-frame-wrapper:not([style*="width: 100%"]):not([style=""]) {
+  margin: 0 auto !important;
 }
 
 /* ==================== Header ==================== */
