@@ -529,24 +529,106 @@
       if (monacoInitialized) return;
 
       require(['vs/editor/editor.main'], function() {
-        // Define custom dark theme
-        monaco.editor.defineTheme('activeCanvasDark', {
+        // Define custom themes for Monaco
+        monaco.editor.defineTheme('ac-dark', {
           base: 'vs-dark',
           inherit: true,
           rules: [],
           colors: {
-            'editor.background': '#1e1e1e',
-            'editor.foreground': '#d4d4d4',
-            'editorLineNumber.foreground': '#858585',
-            'editorCursor.foreground': '#aeafad',
-            'editor.selectionBackground': '#264f78',
-            'editor.lineHighlightBackground': '#2d2d2d'
+            'editor.background': '#1e293b',
+            'editor.foreground': '#f8fafc',
+            'editorLineNumber.foreground': '#64748b',
+            'editorCursor.foreground': '#f8fafc',
+            'editor.selectionBackground': '#334155',
+            'editor.lineHighlightBackground': '#334155'
           }
         });
 
+        monaco.editor.defineTheme('ac-midnight', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [],
+          colors: {
+            'editor.background': '#1a1730',
+            'editor.foreground': '#f5f3ff',
+            'editorLineNumber.foreground': '#7c75a8',
+            'editorCursor.foreground': '#8b5cf6',
+            'editor.selectionBackground': '#2d2750',
+            'editor.lineHighlightBackground': '#2d2750'
+          }
+        });
+
+        monaco.editor.defineTheme('ac-ocean', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [],
+          colors: {
+            'editor.background': '#0f2930',
+            'editor.foreground': '#ecfeff',
+            'editorLineNumber.foreground': '#5eaab8',
+            'editorCursor.foreground': '#06b6d4',
+            'editor.selectionBackground': '#1a3d47',
+            'editor.lineHighlightBackground': '#1a3d47'
+          }
+        });
+
+        monaco.editor.defineTheme('ac-charcoal', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [],
+          colors: {
+            'editor.background': '#262626',
+            'editor.foreground': '#fafafa',
+            'editorLineNumber.foreground': '#737373',
+            'editorCursor.foreground': '#f97316',
+            'editor.selectionBackground': '#363636',
+            'editor.lineHighlightBackground': '#363636'
+          }
+        });
+
+        monaco.editor.defineTheme('ac-light', {
+          base: 'vs',
+          inherit: true,
+          rules: [],
+          colors: {
+            'editor.background': '#ffffff',
+            'editor.foreground': '#1e293b',
+            'editorLineNumber.foreground': '#94a3b8',
+            'editorCursor.foreground': '#6366f1',
+            'editor.selectionBackground': '#e0e7ff',
+            'editor.lineHighlightBackground': '#f8fafc'
+          }
+        });
+
+        // Get Monaco theme based on editor theme
+        function getMonacoTheme() {
+          const editorTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          const themeMap = {
+            'dark': 'ac-dark',
+            'midnight': 'ac-midnight',
+            'ocean': 'ac-ocean',
+            'charcoal': 'ac-charcoal',
+            'light': 'ac-light'
+          };
+          return themeMap[editorTheme] || 'ac-dark';
+        }
+
+        // Expose theme setter for external use
+        window.ActiveCanvasEditor.setMonacoTheme = function(theme) {
+          const themeMap = {
+            'dark': 'ac-dark',
+            'midnight': 'ac-midnight',
+            'ocean': 'ac-ocean',
+            'charcoal': 'ac-charcoal',
+            'light': 'ac-light'
+          };
+          const monacoTheme = themeMap[theme] || 'ac-dark';
+          monaco.editor.setTheme(monacoTheme);
+        };
+
         // Common editor options
         const editorOptions = {
-          theme: 'activeCanvasDark',
+          theme: getMonacoTheme(),
           fontSize: 13,
           lineNumbers: 'on',
           minimap: { enabled: false },

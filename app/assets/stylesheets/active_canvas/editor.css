@@ -60,7 +60,7 @@
   justify-content: center !important;
   align-items: flex-start !important;
   overflow: auto !important;
-  background: var(--editor-bg, #0f172a) !important;
+  background: var(--editor-canvas-bg, var(--editor-bg, #0f172a)) !important;
   padding: 1rem !important;
 }
 

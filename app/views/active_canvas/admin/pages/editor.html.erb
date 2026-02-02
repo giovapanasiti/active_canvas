@@ -85,6 +85,70 @@
       </svg>
       Code
     </button>
+    <div class="theme-switcher">
+      <button class="header-btn header-btn-secondary" id="btn-theme" title="Change Theme">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+      <div class="theme-dropdown" id="theme-dropdown">
+        <div class="theme-dropdown-header">Editor Theme</div>
+        <button class="theme-option" data-theme="dark">
+          <span class="theme-preview theme-preview-dark"></span>
+          <span class="theme-name">Dark</span>
+          <span class="theme-check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="midnight">
+          <span class="theme-preview theme-preview-midnight"></span>
+          <span class="theme-name">Midnight</span>
+          <span class="theme-check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="ocean">
+          <span class="theme-preview theme-preview-ocean"></span>
+          <span class="theme-name">Ocean</span>
+          <span class="theme-check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="charcoal">
+          <span class="theme-preview theme-preview-charcoal"></span>
+          <span class="theme-name">Charcoal</span>
+          <span class="theme-check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </button>
+        <button class="theme-option" data-theme="light">
+          <span class="theme-preview theme-preview-light"></span>
+          <span class="theme-name">Light</span>
+          <span class="theme-check">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+    <div class="header-separator"></div>
     <button class="header-btn header-btn-primary" id="btn-save">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -282,6 +346,14 @@
 
 <%= stylesheet_link_tag "active_canvas/editor", media: "all" %>
 
+<!-- Theme Initialization (runs immediately to prevent flash) -->
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('activecanvas-editor-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+
 <!-- Editor Configuration -->
 <script>
   window.ActiveCanvasEditor = {
@@ -376,5 +448,68 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // ==================== Theme Switcher ====================
+  const themeBtn = document.getElementById('btn-theme');
+  const themeDropdown = document.getElementById('theme-dropdown');
+  const themeOptions = document.querySelectorAll('.theme-option');
+  const THEME_STORAGE_KEY = 'activecanvas-editor-theme';
+
+  // Get current theme
+  function getCurrentTheme() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+  }
+
+  // Apply theme
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+    // Update active state in dropdown
+    themeOptions.forEach(option => {
+      option.classList.toggle('active', option.dataset.theme === theme);
+    });
+
+    // Update Monaco editors if they exist
+    if (window.ActiveCanvasEditor && window.ActiveCanvasEditor.setMonacoTheme) {
+      window.ActiveCanvasEditor.setMonacoTheme(theme);
+    }
+  }
+
+  // Initialize theme on load
+  applyTheme(getCurrentTheme());
+
+  // Toggle dropdown
+  themeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    themeDropdown.classList.toggle('open');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!themeDropdown.contains(e.target) && e.target !== themeBtn) {
+      themeDropdown.classList.remove('open');
+    }
+  });
+
+  // Handle theme selection
+  themeOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      const theme = this.dataset.theme;
+      applyTheme(theme);
+      themeDropdown.classList.remove('open');
+
+      if (window.ActiveCanvasEditor && window.ActiveCanvasEditor.showToast) {
+        window.ActiveCanvasEditor.showToast(`Theme changed to ${this.querySelector('.theme-name').textContent}`, 'success');
+      }
+    });
+  });
+
+  // Close dropdown on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && themeDropdown.classList.contains('open')) {
+      themeDropdown.classList.remove('open');
+    }
+  });
 });
 </script>
