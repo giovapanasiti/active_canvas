@@ -2,26 +2,27 @@
  * ActiveCanvas Visual Editor Styles
  */
 
-/* ==================== Hide GrapeJS Default Panels ==================== */
+/* ==================== Hide GrapeJS Default UI ==================== */
 
-.gjs-pn-panels {
+.gjs-pn-panels,
+.gjs-pn-views-container,
+.gjs-pn-views,
+.gjs-pn-options,
+.gjs-pn-commands,
+.gjs-pn-devices-c,
+.gjs-pn-buttons,
+.gjs-cv-canvas__top,
+.gjs-frame-wrapper__top {
   display: none !important;
 }
 
-.gjs-pn-views-container {
-  display: none !important;
+/* Remove top spacing from canvas frame */
+.gjs-cv-canvas {
+  top: 0 !important;
 }
 
-.gjs-pn-views {
-  display: none !important;
-}
-
-.gjs-pn-options {
-  display: none !important;
-}
-
-.gjs-pn-commands {
-  display: none !important;
+.gjs-frame-wrapper {
+  top: 0 !important;
 }
 
 /* ==================== Header ==================== */
