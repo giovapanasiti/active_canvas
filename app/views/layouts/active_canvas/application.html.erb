@@ -7,7 +7,15 @@
 
   <%= yield :head %>
 
-  <%= stylesheet_link_tag    "active_canvas/application", media: "all" %>
+  <% if ActiveCanvas::Setting.css_framework_url.present? %>
+    <% if ActiveCanvas::Setting.css_framework_type == :script %>
+      <script src="<%= ActiveCanvas::Setting.css_framework_url %>"></script>
+    <% else %>
+      <link rel="stylesheet" href="<%= ActiveCanvas::Setting.css_framework_url %>">
+    <% end %>
+  <% end %>
+
+  <%= stylesheet_link_tag "active_canvas/application", media: "all" %>
 </head>
 <body>
 

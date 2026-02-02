@@ -1,7 +1,8 @@
 <div class="page-header">
   <h2><%= @page.title %></h2>
   <div class="actions">
-    <%= link_to "Edit Content", content_admin_page_path(@page), class: "btn btn-primary" %>
+    <%= link_to "Visual Editor", editor_admin_page_path(@page), class: "btn btn-primary" %>
+    <%= link_to "Edit Content", content_admin_page_path(@page), class: "btn btn-secondary" %>
     <%= link_to "Edit", edit_admin_page_path(@page), class: "btn btn-secondary" %>
     <%= link_to "Back", admin_pages_path, class: "btn btn-secondary" %>
   </div>

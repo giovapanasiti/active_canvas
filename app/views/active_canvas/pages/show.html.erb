@@ -1,1 +1,4 @@
+<% if @page.content_css.present? %>
+  <style><%= @page.content_css.html_safe %></style>
+<% end %>
 <%= @page.rendered_content %>
