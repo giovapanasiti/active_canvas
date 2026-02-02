@@ -1,36 +1,144 @@
+<% content_for :page_title, @page.title %>
+
+<!-- Page Header -->
 <div class="page-header">
-  <h2><%= @page.title %></h2>
-  <div class="actions">
-    <%= link_to "Visual Editor", editor_admin_page_path(@page), class: "btn btn-primary" %>
-    <%= link_to "Edit Content", content_admin_page_path(@page), class: "btn btn-secondary" %>
-    <%= link_to "Edit", edit_admin_page_path(@page), class: "btn btn-secondary" %>
-    <%= link_to "Back", admin_pages_path, class: "btn btn-secondary" %>
+  <div class="page-header-left">
+    <h2><%= @page.title %></h2>
+    <p class="page-header-subtitle">
+      <% if @page.slug.present? %>
+        <code style="font-size: 0.8125rem;">/<%= @page.slug %></code>
+      <% else %>
+        No URL assigned
+      <% end %>
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to editor_admin_page_path(@page), class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      Open Designer
+    <% end %>
+    <%= link_to edit_admin_page_path(@page), class: "btn btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      Edit Settings
+    <% end %>
+    <% if @page.published? && @page.slug.present? %>
+      <%= link_to public_page_path(@page.slug), target: "_blank", class: "btn btn-secondary" do %>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        View Live
+      <% end %>
+    <% end %>
   </div>
 </div>
 
+<!-- Page Details -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Page Details</span>
+    <% if @page.published? %>
+      <span class="badge badge-success">
+        <span class="badge-dot"></span>
+        Published
+      </span>
+    <% else %>
+      <span class="badge badge-gray">
+        <span class="badge-dot"></span>
+        Draft
+      </span>
+    <% end %>
+  </div>
+  <div class="card-body">
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">Page Type</div>
+        <div class="detail-value"><%= @page.page_type.name %></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Created</div>
+        <div class="detail-value"><%= @page.created_at.strftime("%B %d, %Y") %></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Last Modified</div>
+        <div class="detail-value"><%= @page.updated_at.strftime("%B %d, %Y at %l:%M %p") %></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">URL Slug</div>
+        <div class="detail-value">
+          <% if @page.slug.present? %>
+            <code>/<%= @page.slug %></code>
+          <% else %>
+            <span style="color: var(--text-muted);">Not set</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Content Preview -->
 <div class="card">
-  <div class="detail-row">
-    <div class="detail-label">Slug</div>
-    <div class="detail-value"><code><%= @page.slug || "—" %></code></div>
+  <div class="card-header">
+    <span class="card-title">Content Preview</span>
+    <%= link_to content_admin_page_path(@page), class: "btn btn-sm btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
+      </svg>
+      View Raw
+    <% end %>
   </div>
-  <div class="detail-row">
-    <div class="detail-label">Page Type</div>
-    <div class="detail-value"><%= @page.page_type.name %></div>
+  <div style="padding: 1rem;">
+    <% if @page.content.present? %>
+      <div class="content-preview"><%= truncate(@page.content, length: 2000) %></div>
+    <% else %>
+      <div class="empty-state" style="padding: 2rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <h3>No content yet</h3>
+        <p>Open the visual designer to start building this page</p>
+        <%= link_to editor_admin_page_path(@page), class: "btn btn-primary" do %>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Open Designer
+        <% end %>
+      </div>
+    <% end %>
   </div>
-  <div class="detail-row">
-    <div class="detail-label">Status</div>
-    <div class="detail-value">
-      <% if @page.published? %>
-        <span class="badge badge-success">Published</span>
-      <% else %>
-        <span class="badge badge-gray">Draft</span>
-      <% end %>
+</div>
+
+<!-- Danger Zone -->
+<div class="card" style="margin-top: 1.5rem; border-color: #fecaca;">
+  <div class="card-header" style="background: var(--danger-light);">
+    <span class="card-title" style="color: var(--danger);">Danger Zone</span>
+  </div>
+  <div class="card-body" style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <p style="font-weight: 500; margin-bottom: 0.25rem;">Delete this page</p>
+      <p style="font-size: 0.8125rem; color: var(--text-muted);">Once deleted, this page cannot be recovered.</p>
     </div>
-  </div>
-  <div class="detail-row">
-    <div class="detail-label">Content</div>
-    <div class="detail-value">
-      <div class="content-preview"><%= @page.content %></div>
-    </div>
+    <%= button_to admin_page_path(@page), method: :delete, class: "btn btn-danger", data: { confirm: "Are you sure you want to delete this page? This action cannot be undone." } do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        <line x1="10" y1="11" x2="10" y2="17"/>
+        <line x1="14" y1="11" x2="14" y2="17"/>
+      </svg>
+      Delete Page
+    <% end %>
   </div>
 </div>

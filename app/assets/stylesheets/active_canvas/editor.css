@@ -1,0 +1,466 @@
+/**
+ * ActiveCanvas Visual Editor Styles
+ */
+
+/* ==================== Header ==================== */
+
+.header-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--editor-border);
+  margin: 0 0.25rem;
+}
+
+/* ==================== Panels ==================== */
+
+.editor-panel-left,
+.editor-panel-right {
+  transition: width 0.2s ease, min-width 0.2s ease, opacity 0.2s ease, border-width 0.2s ease;
+  overflow: hidden;
+}
+
+.editor-panel-left.collapsed,
+.editor-panel-right.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  border-width: 0 !important;
+}
+
+#btn-toggle-left.active,
+#btn-toggle-right.active {
+  background: var(--editor-primary);
+  color: white;
+}
+
+#btn-code.active {
+  background: var(--editor-primary);
+  color: white;
+}
+
+/* ==================== Editor Layout ==================== */
+
+.editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 50px);
+  margin-top: 50px;
+}
+
+.editor-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-container {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ==================== Code Panel ==================== */
+
+.editor-code-panel {
+  height: 300px;
+  min-height: 150px;
+  max-height: 70vh;
+  background: #1e1e1e;
+  border-top: 1px solid var(--editor-border);
+  display: none;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.editor-code-panel.open {
+  display: flex;
+}
+
+.code-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.75rem;
+  background: #252526;
+  border-bottom: 1px solid #3d3d3d;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.code-panel-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.code-panel-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.code-panel-tab:hover {
+  color: #e5e5e5;
+}
+
+.code-panel-tab.active {
+  color: #e5e5e5;
+  border-bottom-color: #3b82f6;
+}
+
+.code-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-status {
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.code-status.synced {
+  color: #22c55e;
+}
+
+.code-status.modified {
+  color: #f59e0b;
+}
+
+.code-panel-btn {
+  padding: 0.25rem 0.625rem;
+  background: #3d3d3d;
+  color: #e5e5e5;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.code-panel-btn:hover {
+  background: #4d4d4d;
+}
+
+.code-panel-btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.code-panel-btn.primary:hover {
+  background: #2563eb;
+}
+
+.code-panel-resize {
+  height: 4px;
+  background: #252526;
+  cursor: ns-resize;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.code-panel-resize:hover {
+  background: #3b82f6;
+}
+
+.code-panel-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.monaco-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ==================== Component Mode ==================== */
+
+.code-panel-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid #3d3d3d;
+}
+
+.mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  background: #7c3aed;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.mode-badge svg {
+  opacity: 0.8;
+}
+
+/* ==================== GrapeJS Toolbar ==================== */
+
+.gjs-toolbar .gjs-toolbar-item[data-command="edit-component-code"] {
+  order: -1;
+}
+
+.gjs-toolbar .gjs-toolbar-item .fa-code {
+  font-size: 12px;
+}
+
+.gjs-toolbar .gjs-toolbar-item:hover .fa-code {
+  color: var(--editor-primary);
+}
+
+/* ==================== Panel Placeholder ==================== */
+
+.panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--editor-text-muted);
+}
+
+.panel-placeholder-icon {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.panel-placeholder-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.panel-placeholder h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--editor-text);
+  margin-bottom: 0.25rem;
+}
+
+.panel-placeholder p {
+  font-size: 0.75rem;
+  color: var(--editor-text-muted);
+}
+
+/* ==================== AI Panel ==================== */
+
+.ai-panel {
+  padding: 1rem;
+}
+
+.ai-mode-selector h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--editor-text);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ai-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--editor-bg);
+  border: 1px solid var(--editor-border);
+  border-radius: 0.5rem;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.ai-mode-btn:hover {
+  border-color: var(--editor-text-muted);
+  color: var(--editor-text);
+}
+
+.ai-mode-btn.active {
+  border-color: var(--editor-primary);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--editor-text);
+}
+
+.ai-mode-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.ai-mode-btn.active svg {
+  opacity: 1;
+  color: var(--editor-primary);
+}
+
+.ai-mode-btn span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.ai-element-info {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--editor-border);
+}
+
+.ai-element-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--editor-bg);
+  border: 1px solid var(--editor-border);
+  border-radius: 0.375rem;
+}
+
+.ai-element-badge span {
+  font-size: 0.75rem;
+  color: var(--editor-text);
+  font-family: monospace;
+}
+
+.ai-element-select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  background: var(--editor-border);
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--editor-text);
+  cursor: pointer;
+}
+
+.ai-element-select-btn:hover {
+  background: var(--editor-primary);
+  color: white;
+}
+
+.ai-coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  margin-top: 1.5rem;
+  text-align: center;
+  color: var(--editor-text-muted);
+  border-top: 1px solid var(--editor-border);
+}
+
+.ai-coming-soon .panel-placeholder-icon {
+  margin-bottom: 0.75rem;
+}
+
+.ai-coming-soon .panel-placeholder-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.ai-coming-soon p {
+  font-size: 0.75rem;
+}
+
+/* ==================== Toast Notification ==================== */
+
+.editor-toast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  z-index: 1000;
+  display: none;
+  animation: slideIn 0.3s ease;
+}
+
+.editor-toast.show {
+  display: block;
+}
+
+.editor-toast.success {
+  background: var(--editor-success, #22c55e);
+  color: white;
+}
+
+.editor-toast.error {
+  background: var(--editor-danger, #ef4444);
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==================== Loading Overlay ==================== */
+
+.editor-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.editor-loading.hidden {
+  display: none;
+}
+
+.editor-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--editor-border);
+  border-top-color: var(--editor-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

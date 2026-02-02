@@ -1,9 +1,19 @@
+<% content_for :page_title, "New Page" %>
+
 <div class="page-header">
-  <h2>New Page</h2>
+  <div class="page-header-left">
+    <h2>New Page</h2>
+    <p class="page-header-subtitle">Create a new page for your website</p>
+  </div>
 </div>
 
-<div class="card" style="padding: 1.5rem;">
-  <%= form_with model: @page, url: admin_pages_path do |form| %>
-    <%= render "form", form: form, page: @page %>
-  <% end %>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Page Details</span>
+  </div>
+  <div class="card-body">
+    <%= form_with model: @page, url: admin_pages_path do |form| %>
+      <%= render "form", form: form, page: @page %>
+    <% end %>
+  </div>
 </div>

@@ -1,13 +1,29 @@
+<% content_for :page_title, "Edit #{@page.title}" %>
+
 <div class="page-header">
-  <h2>Edit Page</h2>
+  <div class="page-header-left">
+    <h2>Edit Page</h2>
+    <p class="page-header-subtitle">Update page settings and metadata</p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to editor_admin_page_path(@page), class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      Open Designer
+    <% end %>
+  </div>
 </div>
 
-<div class="card" style="padding: 1.5rem;">
-  <%= form_with model: @page, url: admin_page_path(@page) do |form| %>
-    <%= render "form", form: form, page: @page %>
-  <% end %>
-</div>
-
-<div style="margin-top: 1rem;">
-  <%= button_to "Delete Page", admin_page_path(@page), method: :delete, class: "btn btn-danger", data: { turbo_confirm: "Are you sure you want to delete this page?" } %>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Page Details</span>
+  </div>
+  <div class="card-body">
+    <%= form_with model: @page, url: admin_page_path(@page) do |form| %>
+      <%= render "form", form: form, page: @page %>
+    <% end %>
+  </div>
 </div>

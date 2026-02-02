@@ -1,40 +1,136 @@
-<div class="page-header">
-  <h2>Pages</h2>
-  <%= link_to "New Page", new_admin_page_path, class: "btn btn-primary" %>
+<% content_for :page_title, "Pages" %>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+    </div>
+    <div class="stat-content">
+      <h3><%= @pages.count %></h3>
+      <p>Total Pages</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div class="stat-content">
+      <h3><%= @pages.where(published: true).count %></h3>
+      <p>Published</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-warning">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+    </div>
+    <div class="stat-content">
+      <h3><%= @pages.where(published: false).count %></h3>
+      <p>Drafts</p>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>Slug</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Updated</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @pages.each do |page| %>
-        <tr>
-          <td><%= link_to page.title, admin_page_path(page) %></td>
-          <td><code><%= page.slug || "—" %></code></td>
-          <td><%= page.page_type.name %></td>
-          <td>
-            <% if page.published? %>
-              <span class="badge badge-success">Published</span>
-            <% else %>
-              <span class="badge badge-gray">Draft</span>
-            <% end %>
-          </td>
-          <td><%= page.updated_at.strftime("%b %d, %Y") %></td>
-          <td class="actions">
-            <%= link_to "Design", editor_admin_page_path(page), class: "btn btn-primary" %>
-            <%= link_to "Edit", edit_admin_page_path(page), class: "btn btn-secondary" %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>All Pages</h2>
+    <p class="page-header-subtitle">Manage your website pages and content</p>
+  </div>
 </div>
+
+<!-- Pages Table -->
+<% if @pages.any? %>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>URL</th>
+          <th>Status</th>
+          <th>Last Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @pages.each do |page| %>
+          <tr>
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 0.125rem;">
+                <%= link_to page.title, admin_page_path(page) %>
+                <span style="font-size: 0.75rem; color: var(--text-muted);"><%= page.page_type.name %></span>
+              </div>
+            </td>
+            <td>
+              <% if page.slug.present? %>
+                <code>/<%= page.slug %></code>
+              <% else %>
+                <span style="color: var(--text-light);">—</span>
+              <% end %>
+            </td>
+            <td>
+              <% if page.published? %>
+                <span class="badge badge-success">
+                  <span class="badge-dot"></span>
+                  Published
+                </span>
+              <% else %>
+                <span class="badge badge-gray">
+                  <span class="badge-dot"></span>
+                  Draft
+                </span>
+              <% end %>
+            </td>
+            <td>
+              <span style="color: var(--text-muted);"><%= page.updated_at.strftime("%b %d, %Y at %l:%M %p") %></span>
+            </td>
+            <td class="actions">
+              <%= link_to editor_admin_page_path(page), class: "btn btn-primary btn-sm" do %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                  <polyline points="2 17 12 22 22 17"/>
+                  <polyline points="2 12 12 17 22 12"/>
+                </svg>
+                Design
+              <% end %>
+              <%= link_to edit_admin_page_path(page), class: "btn btn-secondary btn-sm" do %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                Edit
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="card">
+    <div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <h3>No pages yet</h3>
+      <p>Get started by creating your first page</p>
+      <%= link_to new_admin_page_path, class: "btn btn-primary" do %>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Create Page
+      <% end %>
+    </div>
+  </div>
+<% end %>

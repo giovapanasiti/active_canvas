@@ -9,30 +9,33 @@
   </div>
 <% end %>
 
-<div class="form-group">
-  <%= form.label :title %>
-  <%= form.text_field :title, class: "form-control" %>
-</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+  <div class="form-group">
+    <%= form.label :title %>
+    <%= form.text_field :title, class: "form-control", placeholder: "Enter page title" %>
+    <p class="help-text">The title displayed in browsers and search results.</p>
+  </div>
 
-<div class="form-group">
-  <%= form.label :slug %>
-  <%= form.text_field :slug, class: "form-control", placeholder: "Leave blank for auto-generated slug" %>
+  <div class="form-group">
+    <%= form.label :slug, "URL Slug" %>
+    <%= form.text_field :slug, class: "form-control", placeholder: "Leave blank for auto-generated" %>
+    <p class="help-text">The URL path for this page (e.g., "about-us").</p>
+  </div>
 </div>
 
 <div class="form-group">
   <%= form.label :page_type_id, "Page Type" %>
   <%= form.collection_select :page_type_id, ActiveCanvas::PageType.order(:name), :id, :name, {}, class: "form-control" %>
+  <p class="help-text">Determines the layout template used for this page.</p>
 </div>
 
 <div class="form-group">
-  <%= form.label :content %>
-  <%= form.text_area :content, class: "form-control", placeholder: "Enter HTML content..." %>
-</div>
-
-<div class="form-group">
-  <div class="form-check">
-    <%= form.check_box :published %>
-    <%= form.label :published, "Published" %>
+  <div class="form-check" style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+    <%= form.check_box :published, id: "page_published" %>
+    <label for="page_published" style="font-weight: 500;">
+      Publish this page
+    </label>
+    <p class="help-text" style="margin-left: 1.5rem; margin-top: 0.25rem;">Published pages are visible to the public. Draft pages are only visible in the admin.</p>
   </div>
 </div>
 
