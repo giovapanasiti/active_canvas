@@ -1,9 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Active canvas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title><%= yield(:page_title).presence || "Active Canvas" %></title>
+
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
+
+  <!-- SEO Meta Tags -->
+  <%= yield :seo_meta %>
+
+  <!-- Open Graph / Social -->
+  <%= yield :og_meta %>
+
+  <!-- Twitter Card -->
+  <%= yield :twitter_meta %>
+
+  <!-- Canonical URL -->
+  <%= yield :canonical %>
+
+  <!-- Structured Data -->
+  <%= yield :structured_data %>
 
   <%= yield :head %>
 

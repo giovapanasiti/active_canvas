@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_02_000006) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_02_000007) do
   create_table "active_canvas_media", force: :cascade do |t|
     t.integer "byte_size"
     t.string "content_type"
@@ -31,15 +31,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_02_000006) do
   end
 
   create_table "active_canvas_pages", force: :cascade do |t|
+    t.string "canonical_url"
     t.text "content"
     t.text "content_components"
     t.text "content_css"
     t.text "content_js"
     t.datetime "created_at", null: false
+    t.text "meta_description"
+    t.string "meta_robots"
+    t.string "meta_title"
+    t.text "og_description"
+    t.string "og_image"
+    t.string "og_title"
     t.integer "page_type_id", null: false
     t.boolean "published", default: false, null: false
     t.string "slug"
+    t.text "structured_data"
     t.string "title", null: false
+    t.string "twitter_card"
+    t.text "twitter_description"
+    t.string "twitter_image"
+    t.string "twitter_title"
     t.datetime "updated_at", null: false
     t.index ["page_type_id"], name: "index_active_canvas_pages_on_page_type_id"
     t.index ["slug"], name: "index_active_canvas_pages_on_slug", unique: true

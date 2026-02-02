@@ -3,7 +3,7 @@
 <div class="page-header">
   <div class="page-header-left">
     <h2>Edit Page</h2>
-    <p class="page-header-subtitle">Update page settings and metadata</p>
+    <p class="page-header-subtitle">Update page settings, SEO, and social sharing options</p>
   </div>
   <div class="page-header-actions">
     <%= link_to editor_admin_page_path(@page), class: "btn btn-primary" do %>
@@ -17,13 +17,293 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">Page Details</span>
+<%= form_with model: @page, url: admin_page_path(@page) do |form| %>
+
+  <% if @page.errors.any? %>
+    <div class="error-messages">
+      <strong><%= pluralize(@page.errors.count, "error") %> prohibited this page from being saved:</strong>
+      <ul>
+        <% @page.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Page Details -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <span class="card-title">Page Details</span>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="form-group">
+          <%= form.label :title %>
+          <%= form.text_field :title, class: "form-control", placeholder: "Enter page title" %>
+          <p class="help-text">The title displayed in browsers and search results.</p>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :slug, "URL Slug" %>
+          <%= form.text_field :slug, class: "form-control", placeholder: "Leave blank for auto-generated" %>
+          <p class="help-text">The URL path for this page (e.g., "about-us").</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :page_type_id, "Page Type" %>
+        <%= form.collection_select :page_type_id, ActiveCanvas::PageType.order(:name), :id, :name, {}, class: "form-control" %>
+        <p class="help-text">Determines the layout template used for this page.</p>
+      </div>
+
+      <div class="form-group">
+        <div class="form-check" style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+          <%= form.check_box :published, id: "page_published" %>
+          <label for="page_published" style="font-weight: 500;">
+            Publish this page
+          </label>
+          <p class="help-text" style="margin-left: 1.5rem; margin-top: 0.25rem;">Published pages are visible to the public. Draft pages are only visible in the admin.</p>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="card-body">
-    <%= form_with model: @page, url: admin_page_path(@page) do |form| %>
-      <%= render "form", form: form, page: @page %>
-    <% end %>
+
+  <!-- Recommended SEO Fields -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <span class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem; color: var(--success, #10b981);">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+        SEO - Recommended
+      </span>
+      <span class="badge badge-success">Important</span>
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <%= form.label :meta_title, "Meta Title" %>
+        <%= form.text_field :meta_title, class: "form-control", placeholder: "Custom title for search engines (defaults to page title)", maxlength: 60 %>
+        <p class="help-text">
+          The title that appears in search engine results and browser tabs. Keep it under 60 characters for best results.
+          <strong>If left empty, the page title will be used.</strong>
+        </p>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :meta_description, "Meta Description" %>
+        <%= form.text_area :meta_description, class: "form-control", rows: 3, placeholder: "Brief description of this page for search engines...", maxlength: 160, style: "min-height: 80px;" %>
+        <p class="help-text">
+          A brief summary that appears below the title in search results. Keep it between 150-160 characters.
+          This is your chance to convince users to click on your result.
+        </p>
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- Social Sharing - Recommended -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <span class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem; color: #3b82f6;">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Social Sharing (Open Graph) - Recommended
+      </span>
+      <span class="badge badge-success">Important</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; padding: 0.75rem; background: var(--bg-main, #f8fafc); border-radius: 0.375rem;">
+        Open Graph tags control how your page appears when shared on Facebook, LinkedIn, and other social platforms.
+        If left empty, these will fall back to your SEO title and description.
+      </p>
+
+      <div class="form-group">
+        <%= form.label :og_title, "Social Title" %>
+        <%= form.text_field :og_title, class: "form-control", placeholder: "Title when shared on social media (defaults to meta title)" %>
+        <p class="help-text">The title displayed when this page is shared on Facebook, LinkedIn, etc.</p>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :og_description, "Social Description" %>
+        <%= form.text_area :og_description, class: "form-control", rows: 2, placeholder: "Description when shared on social media...", style: "min-height: 60px;" %>
+        <p class="help-text">The description displayed in social media previews. Can be longer than the meta description.</p>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :og_image, "Social Image URL" %>
+        <%= form.text_field :og_image, class: "form-control", placeholder: "https://example.com/image.jpg" %>
+        <p class="help-text">
+          The image displayed when shared on social media. Recommended size: 1200x630 pixels.
+          Use an absolute URL (starting with https://).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional SEO Fields -->
+  <details class="card" style="margin-bottom: 1.5rem;">
+    <summary class="card-header" style="cursor: pointer; list-style: none;">
+      <span class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem; color: var(--text-muted);">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Advanced SEO Options
+      </span>
+      <span class="badge badge-gray">Optional</span>
+    </summary>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="form-group">
+          <%= form.label :canonical_url, "Canonical URL" %>
+          <%= form.text_field :canonical_url, class: "form-control", placeholder: "https://example.com/preferred-url" %>
+          <p class="help-text">
+            Use this if the same content exists on multiple URLs. Points search engines to the preferred version to avoid duplicate content issues.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :meta_robots, "Robots Directive" %>
+          <%= form.select :meta_robots,
+                options_for_select([
+                  ["Default (index, follow)", ""],
+                  ["index, follow", "index, follow"],
+                  ["noindex, follow", "noindex, follow"],
+                  ["index, nofollow", "index, nofollow"],
+                  ["noindex, nofollow", "noindex, nofollow"]
+                ], @page.meta_robots),
+                {},
+                class: "form-control" %>
+          <p class="help-text">
+            Controls how search engines index this page. Use "noindex" to prevent the page from appearing in search results.
+          </p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Twitter Card Options -->
+  <details class="card" style="margin-bottom: 1.5rem;">
+    <summary class="card-header" style="cursor: pointer; list-style: none;">
+      <span class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 0.5rem; color: #1da1f2;">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        Twitter Card Options
+      </span>
+      <span class="badge badge-gray">Optional</span>
+    </summary>
+    <div class="card-body">
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; padding: 0.75rem; background: var(--bg-main, #f8fafc); border-radius: 0.375rem;">
+        Twitter (X) uses its own card format. If left empty, Twitter will use the Open Graph tags above.
+        Only fill these if you want different content specifically for Twitter.
+      </p>
+
+      <div class="form-group">
+        <%= form.label :twitter_card, "Card Type" %>
+        <%= form.select :twitter_card,
+              options_for_select([
+                ["Default (uses Open Graph)", ""],
+                ["Summary - Small image", "summary"],
+                ["Summary Large Image - Big image", "summary_large_image"]
+              ], @page.twitter_card),
+              {},
+              class: "form-control" %>
+        <p class="help-text">"Summary Large Image" displays a large, prominent image. Best for visual content.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="form-group">
+          <%= form.label :twitter_title, "Twitter Title" %>
+          <%= form.text_field :twitter_title, class: "form-control", placeholder: "Title for Twitter (defaults to OG title)" %>
+          <p class="help-text">Override the title specifically for Twitter/X.</p>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :twitter_image, "Twitter Image URL" %>
+          <%= form.text_field :twitter_image, class: "form-control", placeholder: "https://example.com/twitter-image.jpg" %>
+          <p class="help-text">Recommended: 1200x600 pixels for large image cards.</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :twitter_description, "Twitter Description" %>
+        <%= form.text_area :twitter_description, class: "form-control", rows: 2, placeholder: "Description for Twitter...", style: "min-height: 60px;" %>
+        <p class="help-text">Override the description specifically for Twitter/X.</p>
+      </div>
+    </div>
+  </details>
+
+  <!-- Structured Data -->
+  <details class="card" style="margin-bottom: 1.5rem;">
+    <summary class="card-header" style="cursor: pointer; list-style: none;">
+      <span class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem; color: var(--text-muted);">
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+        Structured Data (JSON-LD)
+      </span>
+      <span class="badge badge-gray">Advanced</span>
+    </summary>
+    <div class="card-body">
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; padding: 0.75rem; background: var(--bg-main, #f8fafc); border-radius: 0.375rem;">
+        Structured data helps search engines understand your content better and can enable rich results (like FAQ dropdowns, ratings, etc.).
+        Use <a href="https://schema.org" target="_blank" style="color: var(--primary);">Schema.org</a> format.
+      </p>
+
+      <div class="form-group">
+        <%= form.label :structured_data, "JSON-LD Structured Data" %>
+        <%= form.text_area :structured_data, class: "form-control", rows: 8, placeholder: '{"@context": "https://schema.org", "@type": "WebPage", "name": "Page Title"}', style: "font-family: monospace; min-height: 150px;" %>
+        <p class="help-text">
+          Enter valid JSON-LD. This will be injected as a script tag in the page head.
+          <a href="https://developers.google.com/search/docs/appearance/structured-data" target="_blank" style="color: var(--primary);">Learn more about structured data</a>.
+        </p>
+      </div>
+    </div>
+  </details>
+
+  <!-- Form Actions -->
+  <div class="form-actions" style="background: var(--bg-card, white); padding: 1.25rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+    <%= form.submit "Save Changes", class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_page_path(@page), class: "btn btn-secondary" %>
+  </div>
+
+<% end %>
+
+<style>
+  details.card > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  details.card > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details.card > summary::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: transform 0.2s ease;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  details.card[open] > summary::after {
+    transform: rotate(180deg);
+  }
+
+  details.card > .card-body {
+    border-top: 1px solid var(--border, #e2e8f0);
+  }
+</style>

@@ -86,7 +86,17 @@ module ActiveCanvas
       end
 
       def page_params
-        params.require(:page).permit(:title, :slug, :content, :page_type_id, :published)
+        params.require(:page).permit(
+          :title, :slug, :content, :page_type_id, :published,
+          # SEO fields
+          :meta_title, :meta_description, :canonical_url, :meta_robots,
+          # Open Graph fields
+          :og_title, :og_description, :og_image,
+          # Twitter fields
+          :twitter_card, :twitter_title, :twitter_description, :twitter_image,
+          # Structured data
+          :structured_data
+        )
       end
 
       def editor_params
