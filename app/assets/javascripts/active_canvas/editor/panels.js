@@ -217,7 +217,20 @@
       .then(response => response.json())
       .then(result => {
         if (result.success) {
-          showToast(isAutoSave ? 'Auto-saved' : 'Page saved successfully', 'success');
+          // Build save message with Tailwind compilation info
+          let message = isAutoSave ? 'Auto-saved' : 'Page saved successfully';
+
+          if (result.tailwind && result.tailwind.compiled) {
+            if (result.tailwind.success) {
+              const sizeKb = (result.tailwind.css_size / 1024).toFixed(1);
+              message += ` · Tailwind compiled (${sizeKb}KB in ${result.tailwind.elapsed_ms}ms)`;
+            } else {
+              showToast('Page saved, but Tailwind compilation failed: ' + result.tailwind.error, 'warning');
+              return;
+            }
+          }
+
+          showToast(message, 'success');
         } else {
           showToast(result.errors ? result.errors.join(', ') : 'Save failed', 'error');
         }
@@ -279,6 +292,15 @@
       setTimeout(() => {
         const frame = editor.Canvas.getFrameEl();
         if (!frame || !frame.contentDocument) return;
+
+        // Inject Tailwind config before the CDN script (if using Tailwind)
+        if (config.cssFramework === 'tailwind' && config.tailwindConfig) {
+          const tailwindConfigScript = frame.contentDocument.createElement('script');
+          tailwindConfigScript.id = 'active-canvas-tailwind-config';
+          tailwindConfigScript.textContent = 'tailwind.config = ' + JSON.stringify(config.tailwindConfig) + ';';
+          // Insert at the beginning of head so it's available before Tailwind CDN loads
+          frame.contentDocument.head.insertBefore(tailwindConfigScript, frame.contentDocument.head.firstChild);
+        }
 
         // Inject editor-specific CSS (for empty sections, etc.)
         const editorStyle = frame.contentDocument.createElement('style');

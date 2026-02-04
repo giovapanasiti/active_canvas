@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_04_191157) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_200000) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -53,6 +53,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_04_191157) do
 
   create_table "active_canvas_pages", force: :cascade do |t|
     t.string "canonical_url"
+    t.text "compiled_tailwind_css"
     t.text "content"
     t.text "content_components"
     t.text "content_css"
@@ -68,6 +69,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_04_191157) do
     t.boolean "published", default: false, null: false
     t.string "slug"
     t.text "structured_data"
+    t.datetime "tailwind_compiled_at"
     t.string "title", null: false
     t.string "twitter_card"
     t.text "twitter_description"

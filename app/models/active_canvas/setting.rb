@@ -156,6 +156,45 @@ module ActiveCanvas
       def ai_screenshot_enabled=(enabled)
         set("ai_screenshot_enabled", enabled.to_s)
       end
+
+      # Tailwind Configuration
+      DEFAULT_TAILWIND_CONFIG = {
+        theme: {
+          extend: {
+            colors: {},
+            fontFamily: {}
+          }
+        }
+      }.freeze
+
+      def tailwind_compiled_mode?
+        css_framework == "tailwind" && TailwindCompiler.available?
+      end
+
+      def tailwind_config
+        raw = get("tailwind_config")
+        return DEFAULT_TAILWIND_CONFIG.deep_dup if raw.blank?
+
+        JSON.parse(raw).deep_symbolize_keys
+      rescue JSON::ParserError
+        DEFAULT_TAILWIND_CONFIG.deep_dup
+      end
+
+      def tailwind_config=(config)
+        value = case config
+                when String
+                  config
+                when Hash
+                  config.to_json
+                else
+                  config.to_s
+                end
+        set("tailwind_config", value)
+      end
+
+      def tailwind_config_js
+        tailwind_config.to_json
+      end
     end
   end
 end

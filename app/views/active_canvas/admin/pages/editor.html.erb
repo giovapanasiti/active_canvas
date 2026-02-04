@@ -598,6 +598,7 @@
       cssFramework: '<%= ActiveCanvas::Setting.css_framework %>',
       cssFrameworkUrl: <%= raw (ActiveCanvas::Setting.css_framework_url || '').to_json %>,
       cssFrameworkType: '<%= ActiveCanvas::Setting.css_framework_type %>',
+      tailwindConfig: <%= raw ActiveCanvas::Setting.tailwind_config_js %>,
       globalCss: <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>,
       globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>,
       aiEndpoints: {

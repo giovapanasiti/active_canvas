@@ -56,6 +56,11 @@
 <% end %>
 
 <%# Page Content %>
+<%# Include compiled Tailwind CSS if available %>
+<% if @page.compiled_tailwind_css.present? %>
+  <style><%= @page.compiled_tailwind_css.html_safe %></style>
+<% end %>
+
 <% if @page.content_css.present? %>
   <style><%= @page.content_css.html_safe %></style>
 <% end %>

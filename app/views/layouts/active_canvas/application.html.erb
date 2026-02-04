@@ -26,7 +26,11 @@
 
   <%= yield :head %>
 
-  <% if ActiveCanvas::Setting.css_framework_url.present? %>
+  <!-- ActiveCanvas: framework=<%= ActiveCanvas::Setting.css_framework %> compiled_mode=<%= ActiveCanvas::Setting.tailwind_compiled_mode? %> available=<%= ActiveCanvas::TailwindCompiler.available? %> env=<%= Rails.env %> -->
+  <% if ActiveCanvas::Setting.tailwind_compiled_mode? %>
+    <!-- ActiveCanvas: Using compiled Tailwind CSS (no CDN) -->
+  <% elsif ActiveCanvas::Setting.css_framework_url.present? %>
+    <!-- ActiveCanvas: Loading CSS framework from CDN -->
     <% if ActiveCanvas::Setting.css_framework_type == :script %>
       <script src="<%= ActiveCanvas::Setting.css_framework_url %>"></script>
     <% else %>

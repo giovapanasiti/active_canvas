@@ -89,6 +89,142 @@
     </div>
   </div>
 <% elsif @active_tab == "styles" %>
+  <% if @css_framework == "tailwind" %>
+    <!-- Tailwind Configuration -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">Tailwind CSS Configuration</span>
+        <% if @tailwind_compiled_mode %>
+          <span class="status-badge status-badge-success">Compiled Mode</span>
+        <% elsif @tailwind_available %>
+          <span class="status-badge status-badge-warning">CDN Mode</span>
+        <% else %>
+          <span class="status-badge status-badge-warning">CDN Only</span>
+        <% end %>
+      </div>
+      <div class="card-body">
+        <% if @tailwind_available %>
+          <div class="tailwind-info-banner tailwind-info-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <div>
+              <strong>Compiled Mode Active</strong>
+              <p>Public pages use pre-compiled CSS for optimal performance. The editor uses CDN for live preview.</p>
+            </div>
+          </div>
+        <% else %>
+          <div class="tailwind-info-banner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div>
+              <strong>CDN Mode (Install tailwindcss-ruby for better performance)</strong>
+              <p>Add <code>gem "tailwindcss-ruby", ">= 4.0"</code> to your Gemfile to enable compiled CSS for public pages.</p>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="settings-code-header" style="margin-top: 1.5rem;">
+          <h4 style="margin: 0; font-size: 0.9375rem;">Custom Configuration (JSON)</h4>
+          <p class="help-text" style="margin-top: 0.25rem;">Customize Tailwind's theme, colors, fonts, and more. Applied to both editor preview and compiled output.</p>
+        </div>
+        <div id="tailwind-config-editor" class="settings-monaco-editor" style="height: 200px;"></div>
+        <div class="settings-code-actions">
+          <button type="button" id="format-tailwind-btn" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="21" y1="10" x2="3" y2="10"/>
+              <line x1="21" y1="6" x2="3" y2="6"/>
+              <line x1="21" y1="14" x2="3" y2="14"/>
+              <line x1="21" y1="18" x2="3" y2="18"/>
+            </svg>
+            Format
+          </button>
+          <button type="button" id="save-tailwind-btn" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Config
+          </button>
+          <% if @tailwind_available %>
+            <%= button_to recompile_tailwind_admin_settings_path,
+                  method: :post,
+                  class: "btn btn-secondary",
+                  id: "recompile-tailwind-btn",
+                  data: { turbo: false, confirm: "Recompile Tailwind CSS for all pages?" } do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+              Recompile All Pages
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .tailwind-info-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+        border-radius: 8px;
+        color: var(--text-primary);
+      }
+      .tailwind-info-banner svg {
+        color: #eab308;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .tailwind-info-banner strong {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      .tailwind-info-banner p {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+      }
+      .tailwind-info-banner code {
+        background: var(--bg-secondary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+      }
+      .tailwind-info-banner.tailwind-info-success {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .tailwind-info-banner.tailwind-info-success svg {
+        color: #22c55e;
+      }
+      .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+      }
+      .status-badge-success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+      }
+      .status-badge-warning {
+        background: rgba(234, 179, 8, 0.1);
+        color: #eab308;
+      }
+    </style>
+  <% end %>
+
   <div class="card settings-code-card">
     <div class="settings-code-header">
       <h3>Global CSS</h3>
@@ -132,7 +268,9 @@
 
     require(['vs/editor/editor.main'], function() {
       const existingCss = <%= raw @global_css.to_json %>;
+      const existingTailwindConfig = <%= raw @tailwind_config %>;
       const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const isTailwind = '<%= @css_framework %>' === 'tailwind';
 
       monaco.editor.defineTheme('activeCanvasDark', {
         base: 'vs-dark',
@@ -148,6 +286,77 @@
         }
       });
 
+      // Tailwind Config Editor (if Tailwind is selected)
+      if (isTailwind && document.getElementById('tailwind-config-editor')) {
+        const tailwindEditor = monaco.editor.create(document.getElementById('tailwind-config-editor'), {
+          value: JSON.stringify(existingTailwindConfig, null, 2),
+          language: 'json',
+          theme: 'activeCanvasDark',
+          fontSize: 13,
+          lineNumbers: 'on',
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 2,
+          wordWrap: 'on',
+          folding: true,
+          padding: { top: 16 }
+        });
+
+        document.getElementById('format-tailwind-btn').addEventListener('click', () => {
+          try {
+            const parsed = JSON.parse(tailwindEditor.getValue());
+            tailwindEditor.setValue(JSON.stringify(parsed, null, 2));
+          } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+          }
+        });
+
+        document.getElementById('save-tailwind-btn').addEventListener('click', () => {
+          const btn = document.getElementById('save-tailwind-btn');
+          let configValue;
+          try {
+            configValue = JSON.parse(tailwindEditor.getValue());
+          } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+            return;
+          }
+
+          btn.disabled = true;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Saving...';
+
+          fetch('<%= update_tailwind_config_admin_settings_path %>', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ tailwind_config: JSON.stringify(configValue) })
+          })
+          .then(response => response.json())
+          .then(result => {
+            btn.innerHTML = result.success
+              ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Saved!'
+              : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error';
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Config';
+            }, 2000);
+          })
+          .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Config';
+            console.error('Save error:', error);
+          });
+        });
+
+        tailwindEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          document.getElementById('save-tailwind-btn').click();
+        });
+      }
+
+      // Global CSS Editor
       const cssEditor = monaco.editor.create(document.getElementById('global-css-editor'), {
         value: existingCss || '',
         language: 'css',

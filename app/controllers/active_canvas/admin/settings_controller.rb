@@ -9,6 +9,11 @@ module ActiveCanvas
         @global_js = Setting.global_js
         @pages = Page.published.order(:title)
 
+        # Tailwind settings
+        @tailwind_config = Setting.tailwind_config_js
+        @tailwind_available = TailwindCompiler.available?
+        @tailwind_compiled_mode = Setting.tailwind_compiled_mode?
+
         # AI settings
         @ai_openai_key = Setting.ai_openai_api_key
         @ai_anthropic_key = Setting.ai_anthropic_api_key
@@ -148,6 +153,43 @@ module ActiveCanvas
         respond_to do |format|
           format.html { redirect_to admin_settings_path(tab: "models"), notice: message }
           format.json { render json: { success: true, count: count, message: message } }
+        end
+      end
+
+      def update_tailwind_config
+        Setting.tailwind_config = params[:tailwind_config]
+
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "styles"), notice: "Tailwind configuration saved." }
+          format.json { render json: { success: true, message: "Tailwind configuration saved." } }
+        end
+      end
+
+      def recompile_tailwind
+        unless TailwindCompiler.available?
+          respond_to do |format|
+            format.html { redirect_to admin_settings_path(tab: "styles"), alert: "tailwindcss-ruby gem is not installed." }
+            format.json { render json: { success: false, error: "tailwindcss-ruby gem is not installed." }, status: :unprocessable_entity }
+          end
+          return
+        end
+
+        unless Setting.css_framework == "tailwind"
+          respond_to do |format|
+            format.html { redirect_to admin_settings_path(tab: "styles"), alert: "Tailwind is not the selected CSS framework." }
+            format.json { render json: { success: false, error: "Tailwind is not the selected CSS framework." }, status: :unprocessable_entity }
+          end
+          return
+        end
+
+        pages = Page.where.not(content: [nil, ""])
+        pages.find_each do |page|
+          CompileTailwindJob.perform_later(page.id)
+        end
+
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "styles"), notice: "Queued #{pages.count} pages for Tailwind compilation." }
+          format.json { render json: { success: true, count: pages.count, message: "Queued #{pages.count} pages for compilation." } }
         end
       end
     end
