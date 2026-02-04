@@ -204,69 +204,298 @@
 
       <!-- AI Panel (separate from left panel) -->
       <div class="editor-panel-ai collapsed" id="panel-ai">
-        <div class="panel-header">
-          <span class="panel-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 8V4H8"/>
-              <rect width="16" height="12" x="4" y="8" rx="2"/>
-              <path d="M2 14h2"/>
-              <path d="M20 14h2"/>
-              <path d="M15 13v2"/>
-              <path d="M9 13v2"/>
-            </svg>
-            AI Assistant
-          </span>
-          <button class="panel-close-btn" id="btn-close-ai" title="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="ai-panel-header">
+          <div class="ai-panel-title">
+            <div class="ai-panel-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8V4H8"/>
+                <rect width="16" height="12" x="4" y="8" rx="2"/>
+                <path d="M2 14h2"/>
+                <path d="M20 14h2"/>
+                <path d="M15 13v2"/>
+                <path d="M9 13v2"/>
+              </svg>
+            </div>
+            <div class="ai-panel-title-text">
+              <span>AI Assistant</span>
+              <span class="ai-status-indicator" id="ai-status-badge"></span>
+            </div>
+          </div>
+          <button class="ai-panel-close" id="btn-close-ai" title="Close panel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
-        <div class="panel-content">
-          <div class="ai-panel">
-            <div class="ai-mode-selector">
-              <h4>Mode</h4>
-              <div class="ai-mode-options">
-                <button class="ai-mode-btn active" data-mode="page">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="3" y1="9" x2="21" y2="9"/>
-                    <line x1="9" y1="21" x2="9" y2="9"/>
-                  </svg>
-                  <span>Whole Page</span>
-                </button>
-                <button class="ai-mode-btn" data-mode="element">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  </svg>
-                  <span>Selected Element</span>
-                </button>
-              </div>
+
+        <div class="ai-panel-body">
+          <!-- Not configured state -->
+          <div class="ai-empty-state" id="ai-not-configured" style="display: none;">
+            <div class="ai-empty-state-glow"></div>
+            <div class="ai-empty-state-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8V4H8"/>
+                <rect width="16" height="12" x="4" y="8" rx="2"/>
+                <path d="M2 14h2"/>
+                <path d="M20 14h2"/>
+                <path d="M15 13v2"/>
+                <path d="M9 13v2"/>
+              </svg>
             </div>
-            <div class="ai-element-info" id="ai-element-info" style="display: none;">
-              <div class="ai-element-badge">
-                <span id="ai-selected-element">No element selected</span>
-                <button class="ai-element-select-btn" id="ai-select-element" title="Click to select an element">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
-                    <path d="M13 13l6 6"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="ai-prompt-area">
-              <textarea id="ai-prompt" placeholder="Describe what you want to create or change..." rows="4"></textarea>
-              <button class="ai-generate-btn" id="btn-ai-generate" disabled>
+            <h3>AI Not Configured</h3>
+            <p>Connect your API keys to unlock AI-powered content generation.</p>
+            <%= link_to admin_settings_path(tab: "ai"), class: "ai-empty-state-btn" do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v10"/>
+                <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"/>
+                <path d="M1 12h6m6 0h10"/>
+                <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"/>
+              </svg>
+              Configure AI
+            <% end %>
+          </div>
+
+          <!-- Feature Tabs -->
+          <div class="ai-tabs" id="ai-panel-tabs">
+            <button class="ai-tab active" data-tab="text">
+              <span class="ai-tab-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  <path d="M17 6.1H3"/>
+                  <path d="M21 12.1H3"/>
+                  <path d="M15.1 18H3"/>
                 </svg>
-                Generate
+              </span>
+              <span class="ai-tab-label">Generate</span>
+            </button>
+            <button class="ai-tab" data-tab="image">
+              <span class="ai-tab-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                  <circle cx="9" cy="9" r="2"/>
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                </svg>
+              </span>
+              <span class="ai-tab-label">Image</span>
+            </button>
+            <button class="ai-tab" data-tab="screenshot">
+              <span class="ai-tab-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                  <circle cx="12" cy="13" r="3"/>
+                </svg>
+              </span>
+              <span class="ai-tab-label">Screenshot</span>
+            </button>
+          </div>
+
+          <!-- Text Generation Tab -->
+          <div class="ai-tab-panel active" data-tab="text">
+            <!-- Mode Toggle -->
+            <div class="ai-mode-toggle" id="ai-mode-selector">
+              <button class="ai-mode-btn active" data-mode="page">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                </svg>
+                Page
+              </button>
+              <button class="ai-mode-btn" data-mode="element">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                  <path d="M13 13l6 6"/>
+                </svg>
+                Element
+              </button>
+              <div class="ai-mode-slider"></div>
+            </div>
+
+            <div class="ai-element-indicator" id="ai-element-info" style="display: none;">
+              <span class="ai-element-label">Editing:</span>
+              <code id="ai-selected-element">No element selected</code>
+            </div>
+
+            <!-- Model Selector -->
+            <div class="ai-model-row">
+              <label class="ai-model-label">Model</label>
+              <div class="ai-model-select-wrapper">
+                <select id="ai-text-model" class="ai-model-select">
+                  <option value="">Loading...</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Conversation Area -->
+            <div class="ai-conversation" id="ai-text-conversation">
+              <div class="ai-conversation-empty">
+                <div class="ai-conversation-empty-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
+                <p>Describe what you want to create</p>
+              </div>
+            </div>
+
+            <!-- Response Output -->
+            <div class="ai-response-area" id="ai-text-output-wrapper" style="display: none;">
+              <div class="ai-response-header">
+                <div class="ai-response-avatar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
+                <span>AI Response</span>
+                <button class="ai-copy-btn" id="btn-ai-copy" title="Copy to clipboard">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="ai-response-content" id="ai-text-output"></div>
+              <div class="ai-response-actions">
+                <button class="ai-action-btn ai-action-primary" id="btn-ai-text-insert">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                  Insert to Page
+                </button>
+                <button class="ai-action-btn" id="btn-ai-regenerate">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                  </svg>
+                  Regenerate
+                </button>
+              </div>
+            </div>
+
+            <!-- Prompt Input -->
+            <div class="ai-prompt-container">
+              <textarea id="ai-text-prompt" class="ai-prompt-input" placeholder="Create a hero section with..." rows="1"></textarea>
+              <button class="ai-send-btn" id="btn-ai-text-generate" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 12 7-7 7 7"/>
+                  <path d="M12 19V5"/>
+                </svg>
               </button>
             </div>
-            <div class="ai-coming-soon">
-              <div class="ai-coming-soon-badge">Coming Soon</div>
-              <p>AI-powered design generation will be available in a future update.</p>
+            <div class="ai-prompt-hint">
+              <kbd>Enter</kbd> to send <span class="ai-hint-separator">|</span> <kbd>Shift+Enter</kbd> for new line
+            </div>
+          </div>
+
+          <!-- Image Generation Tab -->
+          <div class="ai-tab-panel" data-tab="image">
+            <div class="ai-model-row">
+              <label class="ai-model-label">Model</label>
+              <div class="ai-model-select-wrapper">
+                <select id="ai-image-model" class="ai-model-select">
+                  <option value="">Loading...</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Image Output -->
+            <div class="ai-image-output" id="ai-image-output-wrapper" style="display: none;">
+              <div class="ai-image-preview" id="ai-image-output"></div>
+              <div class="ai-response-actions">
+                <button class="ai-action-btn ai-action-primary" id="btn-ai-image-insert">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                  Insert Image
+                </button>
+              </div>
+            </div>
+
+            <div class="ai-image-empty" id="ai-image-empty">
+              <div class="ai-image-empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                  <circle cx="9" cy="9" r="2"/>
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                </svg>
+              </div>
+              <p>Generate images with AI</p>
+            </div>
+
+            <div class="ai-prompt-container">
+              <textarea id="ai-image-prompt" class="ai-prompt-input" placeholder="A minimalist illustration of..." rows="1"></textarea>
+              <button class="ai-send-btn" id="btn-ai-image-generate" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 12 7-7 7 7"/>
+                  <path d="M12 19V5"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Screenshot to Code Tab -->
+          <div class="ai-tab-panel" data-tab="screenshot">
+            <div class="ai-upload-zone" id="ai-screenshot-drop">
+              <input type="file" id="ai-screenshot-input" accept="image/*" class="ai-upload-input" />
+              <div class="ai-upload-content" id="ai-upload-placeholder">
+                <div class="ai-upload-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <span class="ai-upload-text">Drop screenshot here</span>
+                <span class="ai-upload-subtext">or click to browse</span>
+              </div>
+              <div class="ai-upload-preview" id="ai-screenshot-preview"></div>
+            </div>
+
+            <div class="ai-screenshot-output" id="ai-screenshot-output-wrapper" style="display: none;">
+              <div class="ai-response-header">
+                <div class="ai-response-avatar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                  </svg>
+                </div>
+                <span>Generated Code</span>
+              </div>
+              <div class="ai-response-content" id="ai-screenshot-output"></div>
+              <div class="ai-response-actions">
+                <button class="ai-action-btn ai-action-primary" id="btn-ai-screenshot-insert">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                  Insert to Page
+                </button>
+              </div>
+            </div>
+
+            <div class="ai-model-selector">
+              <label for="ai-screenshot-model">Vision Model</label>
+              <select id="ai-screenshot-model" class="ai-model-select">
+                <option value="gpt-4o">GPT-4o</option>
+              </select>
+            </div>
+
+            <div class="ai-prompt-container">
+              <textarea id="ai-screenshot-prompt" class="ai-prompt-input" placeholder="Additional instructions (optional)..." rows="1"></textarea>
+              <button class="ai-send-btn" id="btn-ai-screenshot-convert" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -370,7 +599,14 @@
       cssFrameworkUrl: <%= raw (ActiveCanvas::Setting.css_framework_url || '').to_json %>,
       cssFrameworkType: '<%= ActiveCanvas::Setting.css_framework_type %>',
       globalCss: <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>,
-      globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>
+      globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>,
+      aiEndpoints: {
+        status: '<%= admin_ai_status_path %>',
+        models: '<%= admin_ai_models_path %>',
+        chat: '<%= admin_ai_chat_path %>',
+        image: '<%= admin_ai_image_path %>',
+        screenshot: '<%= admin_ai_screenshot_to_code_path %>'
+      }
     }
   };
 </script>
@@ -382,79 +618,12 @@
 <%= javascript_include_tag "active_canvas/editor/code_panel" %>
 <%= javascript_include_tag "active_canvas/editor/component_toolbar" %>
 <%= javascript_include_tag "active_canvas/editor/panels" %>
+<%= javascript_include_tag "active_canvas/editor/ai_panel" %>
 <%= javascript_include_tag "active_canvas/editor" %>
 
-<!-- AI Panel JavaScript -->
+<!-- Theme Switcher JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // AI Mode selector
-  const aiModeButtons = document.querySelectorAll('.ai-mode-btn');
-  const aiElementInfo = document.getElementById('ai-element-info');
-  const aiSelectedElement = document.getElementById('ai-selected-element');
-  const aiSelectElementBtn = document.getElementById('ai-select-element');
-  const aiPrompt = document.getElementById('ai-prompt');
-  const aiGenerateBtn = document.getElementById('btn-ai-generate');
-  let aiMode = 'page';
-
-  // Mode switching
-  aiModeButtons.forEach(btn => {
-    btn.addEventListener('click', function() {
-      aiModeButtons.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      aiMode = this.dataset.mode;
-
-      if (aiMode === 'element') {
-        aiElementInfo.style.display = 'block';
-        updateSelectedElementDisplay();
-      } else {
-        aiElementInfo.style.display = 'none';
-      }
-    });
-  });
-
-  // Enable/disable generate button based on prompt
-  if (aiPrompt) {
-    aiPrompt.addEventListener('input', function() {
-      aiGenerateBtn.disabled = this.value.trim().length === 0;
-    });
-  }
-
-  // Update display when element is selected in editor
-  function updateSelectedElementDisplay() {
-    if (!window.ActiveCanvasEditor.instance) return;
-    const selected = window.ActiveCanvasEditor.instance.getSelected();
-    if (selected) {
-      const tagName = selected.get('tagName') || 'div';
-      const classes = selected.getClasses().slice(0, 2).join('.');
-      const id = selected.getId();
-      let name = tagName;
-      if (id) name = `#${id}`;
-      else if (classes) name = `${tagName}.${classes}`;
-      aiSelectedElement.textContent = name;
-    } else {
-      aiSelectedElement.textContent = 'No element selected';
-    }
-  }
-
-  // Listen for selection changes
-  const checkEditor = setInterval(() => {
-    if (window.ActiveCanvasEditor.instance) {
-      clearInterval(checkEditor);
-      window.ActiveCanvasEditor.instance.on('component:selected', updateSelectedElementDisplay);
-      window.ActiveCanvasEditor.instance.on('component:deselected', updateSelectedElementDisplay);
-    }
-  }, 100);
-
-  // Select element button - trigger selection mode
-  if (aiSelectElementBtn) {
-    aiSelectElementBtn.addEventListener('click', function() {
-      if (window.ActiveCanvasEditor.instance) {
-        // Show toast to guide user - keep panel open so they can see the selected element update
-        window.ActiveCanvasEditor.showToast('Click on an element in the canvas to select it', 'success');
-      }
-    });
-  }
-
   // ==================== Theme Switcher ====================
   const themeBtn = document.getElementById('btn-theme');
   const themeDropdown = document.getElementById('theme-dropdown');

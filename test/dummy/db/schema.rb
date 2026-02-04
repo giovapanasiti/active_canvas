@@ -10,7 +10,28 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_02_000007) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_191157) do
+  create_table "active_canvas_ai_models", force: :cascade do |t|
+    t.boolean "active", default: true
+    t.integer "context_window"
+    t.datetime "created_at", null: false
+    t.string "family"
+    t.decimal "input_price_per_million", precision: 10, scale: 4
+    t.integer "max_tokens"
+    t.string "model_id", null: false
+    t.string "model_type"
+    t.string "name"
+    t.decimal "output_price_per_million", precision: 10, scale: 4
+    t.string "provider", null: false
+    t.boolean "supports_functions", default: false
+    t.boolean "supports_vision", default: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_active_canvas_ai_models_on_active"
+    t.index ["model_id"], name: "index_active_canvas_ai_models_on_model_id", unique: true
+    t.index ["model_type"], name: "index_active_canvas_ai_models_on_model_type"
+    t.index ["provider"], name: "index_active_canvas_ai_models_on_provider"
+  end
+
   create_table "active_canvas_media", force: :cascade do |t|
     t.integer "byte_size"
     t.string "content_type"

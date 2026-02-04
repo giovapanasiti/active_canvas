@@ -81,6 +81,81 @@ module ActiveCanvas
       def global_js=(js)
         set("global_js", js)
       end
+
+      # AI API Keys
+      def ai_openai_api_key
+        get("ai_openai_api_key")
+      end
+
+      def ai_openai_api_key=(key)
+        set("ai_openai_api_key", key.presence)
+      end
+
+      def ai_anthropic_api_key
+        get("ai_anthropic_api_key")
+      end
+
+      def ai_anthropic_api_key=(key)
+        set("ai_anthropic_api_key", key.presence)
+      end
+
+      def ai_openrouter_api_key
+        get("ai_openrouter_api_key")
+      end
+
+      def ai_openrouter_api_key=(key)
+        set("ai_openrouter_api_key", key.presence)
+      end
+
+      # AI Default Models
+      def ai_default_text_model
+        get("ai_default_text_model") || "gpt-4o-mini"
+      end
+
+      def ai_default_text_model=(model)
+        set("ai_default_text_model", model.presence)
+      end
+
+      def ai_default_image_model
+        get("ai_default_image_model") || "dall-e-3"
+      end
+
+      def ai_default_image_model=(model)
+        set("ai_default_image_model", model.presence)
+      end
+
+      def ai_default_vision_model
+        get("ai_default_vision_model") || "gpt-4o"
+      end
+
+      def ai_default_vision_model=(model)
+        set("ai_default_vision_model", model.presence)
+      end
+
+      # AI Feature Toggles
+      def ai_text_enabled?
+        get("ai_text_enabled") != "false"
+      end
+
+      def ai_text_enabled=(enabled)
+        set("ai_text_enabled", enabled.to_s)
+      end
+
+      def ai_image_enabled?
+        get("ai_image_enabled") != "false"
+      end
+
+      def ai_image_enabled=(enabled)
+        set("ai_image_enabled", enabled.to_s)
+      end
+
+      def ai_screenshot_enabled?
+        get("ai_screenshot_enabled") != "false"
+      end
+
+      def ai_screenshot_enabled=(enabled)
+        set("ai_screenshot_enabled", enabled.to_s)
+      end
     end
   end
 end

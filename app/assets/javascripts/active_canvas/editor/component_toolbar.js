@@ -18,8 +18,15 @@
     const defaultToolbar = [
       {
         id: 'edit-code',
-        attributes: { class: 'fa fa-code', title: 'Edit Code' },
+        label: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        attributes: { class: 'toolbar-icon-btn', title: 'Edit Code' },
         command: 'edit-component-code'
+      },
+      {
+        id: 'edit-ai',
+        label: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+        attributes: { class: 'toolbar-icon-btn toolbar-ai-btn', title: 'Edit with AI' },
+        command: 'edit-component-ai'
       },
       {
         id: 'component-menu',
@@ -44,14 +51,19 @@
 
       // Check if our buttons already exist
       const hasCodeBtn = toolbar.some(item => item.id === 'edit-code' || item.command === 'edit-component-code');
+      const hasAiBtn = toolbar.some(item => item.id === 'edit-ai' || item.command === 'edit-component-ai');
       const hasMenuBtn = toolbar.some(item => item.id === 'component-menu' || item.command === 'ac-show-menu');
 
       if (!hasCodeBtn) {
         toolbar.unshift(defaultToolbar[0]);
       }
 
+      if (!hasAiBtn) {
+        toolbar.splice(1, 0, defaultToolbar[1]);
+      }
+
       if (!hasMenuBtn) {
-        toolbar.push(defaultToolbar[1]);
+        toolbar.push(defaultToolbar[2]);
       }
 
       component.set('toolbar', toolbar);
@@ -64,6 +76,34 @@
         if (!selected) return;
 
         window.ActiveCanvasEditor.openComponentCodeEditor(selected);
+      }
+    });
+
+    // Add command for editing with AI
+    editor.Commands.add('edit-component-ai', {
+      run(editor) {
+        const selected = editor.getSelected();
+        if (!selected) return;
+
+        // Open AI panel
+        const panelAi = document.getElementById('panel-ai');
+        const btnToggleAi = document.getElementById('btn-toggle-ai');
+        if (panelAi && panelAi.classList.contains('collapsed')) {
+          panelAi.classList.remove('collapsed');
+          if (btnToggleAi) btnToggleAi.classList.add('active');
+        }
+
+        // Switch to Element mode
+        const elementModeBtn = document.querySelector('.ai-mode-btn[data-mode="element"]');
+        if (elementModeBtn && !elementModeBtn.classList.contains('active')) {
+          elementModeBtn.click();
+        }
+
+        // Focus the prompt input
+        setTimeout(() => {
+          const promptInput = document.getElementById('ai-text-prompt');
+          if (promptInput) promptInput.focus();
+        }, 100);
       }
     });
 
@@ -111,6 +151,17 @@
       const menu = document.createElement('div');
       menu.className = 'component-context-menu';
       menu.innerHTML = `
+        <div class="context-menu-item" data-action="edit-ai">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M15 13v2"/>
+            <path d="M9 13v2"/>
+          </svg>
+          <span>Edit with AI</span>
+        </div>
         <div class="context-menu-item" data-action="open-styles">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
@@ -231,6 +282,11 @@
     const parent = component.parent();
 
     switch (action) {
+      case 'edit-ai':
+        // Open AI panel in element mode
+        editor.runCommand('edit-component-ai');
+        break;
+
       case 'open-styles':
         // Ensure the component is selected
         editor.select(component);

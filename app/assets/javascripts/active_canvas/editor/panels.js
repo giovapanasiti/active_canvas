@@ -193,10 +193,6 @@
       const saveBtn = document.getElementById('btn-save');
       if (saveBtn) saveBtn.disabled = true;
 
-      if (!isAutoSave) {
-        showLoading(true);
-      }
-
       const html = editor.getHtml();
       const css = editor.getCss();
       const js = window.ActiveCanvasEditor.getJs ? window.ActiveCanvasEditor.getJs() : '';
@@ -232,7 +228,6 @@
       })
       .finally(() => {
         if (saveBtn) saveBtn.disabled = false;
-        showLoading(false);
       });
     }
   }

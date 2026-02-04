@@ -41,18 +41,23 @@
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
+      html, body {
+        height: 100%;
+      }
+
       body {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         background: var(--bg-main);
         color: var(--text);
         line-height: 1.6;
         min-height: 100vh;
+        overflow-y: auto;
       }
 
       /* Layout */
       .admin-layout {
         display: flex;
-        min-height: 100vh;
+        min-height: 100%;
       }
 
       /* Sidebar */
@@ -177,6 +182,7 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        overflow-y: auto;
       }
 
       .admin-header {
@@ -228,7 +234,7 @@
       .container {
         flex: 1;
         padding: 2rem;
-        max-width: 1400px;
+        # max-width: 1400px;
       }
 
       /* Flash Messages */

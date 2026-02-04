@@ -13,6 +13,18 @@ ActiveCanvas::Engine.routes.draw do
     resource :settings, only: [:show, :update] do
       patch :update_global_css
       patch :update_global_js
+      patch :update_ai
+      post :sync_ai_models
+      patch :toggle_ai_model
+      patch :bulk_toggle_ai_models
+    end
+
+    namespace :ai do
+      post :chat
+      post :image
+      post :screenshot_to_code
+      get :models
+      get :status
     end
 
     root to: "pages#index"
