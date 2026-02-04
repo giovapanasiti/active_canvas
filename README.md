@@ -9,6 +9,9 @@ A mountable Rails engine that provides a simple CMS for creating and managing st
 - **Slug Support**: Custom slugs or auto-generated ones (`active_canvas_id_#{id}`)
 - **Draft/Published Status**: Control page visibility
 - **Admin Interface**: Clean, built-in admin UI (no external dependencies)
+- **Visual Editor**: Drag-and-drop page builder powered by GrapeJS
+- **CSS Framework Support**: Tailwind CSS, Bootstrap 5, or custom CSS
+- **Tailwind Compilation**: Compile Tailwind CSS per-page for production (no CDN)
 - **Isolated Namespace**: No conflicts with your host application
 
 ## Requirements
@@ -136,6 +139,43 @@ ActiveCanvas::Setting.homepage             # Get the homepage Page object
 ActiveCanvas::Setting.homepage_page_id     # Get/set the homepage page ID
 ```
 
+## Tailwind CSS Compilation
+
+ActiveCanvas can compile Tailwind CSS at runtime, generating optimized per-page stylesheets instead of loading the full Tailwind CDN.
+
+### Setup
+
+1. Add the `tailwindcss-ruby` gem to your Gemfile:
+
+```ruby
+gem "tailwindcss-ruby", ">= 4.0"
+```
+
+Any 4.x version works - the engine only uses the stable `Tailwindcss::Ruby.executable` API.
+
+2. Run the migration to add compilation columns:
+
+```bash
+bin/rails active_canvas:install:migrations
+bin/rails db:migrate
+```
+
+3. Select "Tailwind CSS" in admin settings (`/canvas/admin/settings`)
+
+### How It Works
+
+- **Editor**: Uses Tailwind CDN for instant live preview while editing
+- **On Save**: Compiles only the CSS classes used on that page
+- **Public Pages**: Serves compiled CSS inline (no CDN dependency)
+
+When you save a page, the compiled CSS is stored in the database. Public pages load this compiled CSS instead of the 300KB+ Tailwind CDN script, resulting in faster page loads.
+
+### Graceful Degradation
+
+If `tailwindcss-ruby` is not installed, ActiveCanvas falls back to CDN loading automatically.
+
+See [docs/tailwind_compilation.md](docs/tailwind_compilation.md) for detailed documentation.
+
 ## Authentication
 
 ActiveCanvas does not include authentication. You should add authentication in your host application. Example with Devise:
@@ -228,6 +268,14 @@ PATCH  /canvas/admin/settings           # Update settings
 GET    /canvas/                         # Homepage (configured page)
 GET    /canvas/:slug                    # View published page
 ```
+
+## Documentation
+
+Additional documentation is available in the `docs/` directory:
+
+- [CSS Framework Support](docs/css_framework_support.md) - Tailwind, Bootstrap, and custom CSS setup
+- [Tailwind Compilation](docs/tailwind_compilation.md) - Runtime Tailwind CSS compilation
+- [Editor Panels Guide](docs/editor_panels_guide.md) - GrapeJS editor customization
 
 ## Development
 

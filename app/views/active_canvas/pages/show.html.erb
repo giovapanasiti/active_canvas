@@ -1,1 +1,72 @@
+<%# Page Title %>
+<% content_for :page_title, @page.meta_title.presence || @page.title %>
+
+<%# SEO Meta Tags %>
+<% content_for :seo_meta do %>
+  <% if @page.meta_description.present? %>
+    <meta name="description" content="<%= @page.meta_description %>">
+  <% end %>
+  <% if @page.meta_robots.present? %>
+    <meta name="robots" content="<%= @page.meta_robots %>">
+  <% end %>
+<% end %>
+
+<%# Open Graph Meta Tags %>
+<% content_for :og_meta do %>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="<%= @page.og_title.presence || @page.meta_title.presence || @page.title %>">
+  <% if @page.og_description.present? || @page.meta_description.present? %>
+    <meta property="og:description" content="<%= @page.og_description.presence || @page.meta_description %>">
+  <% end %>
+  <% if @page.og_image.present? %>
+    <meta property="og:image" content="<%= @page.og_image %>">
+  <% end %>
+  <meta property="og:url" content="<%= request.original_url %>">
+<% end %>
+
+<%# Twitter Card Meta Tags %>
+<% content_for :twitter_meta do %>
+  <% twitter_card_type = @page.twitter_card.presence || (@page.og_image.present? ? "summary_large_image" : "summary") %>
+  <meta name="twitter:card" content="<%= twitter_card_type %>">
+  <meta name="twitter:title" content="<%= @page.twitter_title.presence || @page.og_title.presence || @page.meta_title.presence || @page.title %>">
+  <% twitter_desc = @page.twitter_description.presence || @page.og_description.presence || @page.meta_description %>
+  <% if twitter_desc.present? %>
+    <meta name="twitter:description" content="<%= twitter_desc %>">
+  <% end %>
+  <% twitter_image = @page.twitter_image.presence || @page.og_image %>
+  <% if twitter_image.present? %>
+    <meta name="twitter:image" content="<%= twitter_image %>">
+  <% end %>
+<% end %>
+
+<%# Canonical URL %>
+<% content_for :canonical do %>
+  <% if @page.canonical_url.present? %>
+    <link rel="canonical" href="<%= @page.canonical_url %>">
+  <% end %>
+<% end %>
+
+<%# Structured Data (JSON-LD) %>
+<% content_for :structured_data do %>
+  <% if @page.structured_data.present? %>
+    <script type="application/ld+json">
+      <%= @page.structured_data.html_safe %>
+    </script>
+  <% end %>
+<% end %>
+
+<%# Page Content %>
+<%# Include compiled Tailwind CSS if available %>
+<% if @page.compiled_tailwind_css.present? %>
+  <style><%= @page.compiled_tailwind_css.html_safe %></style>
+<% end %>
+
+<% if @page.content_css.present? %>
+  <style><%= @page.content_css.html_safe %></style>
+<% end %>
+
 <%= @page.rendered_content %>
+
+<% if @page.content_js.present? %>
+  <script><%= @page.content_js.html_safe %></script>
+<% end %>

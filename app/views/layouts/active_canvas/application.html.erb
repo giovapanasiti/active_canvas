@@ -1,17 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Active canvas</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title><%= yield(:page_title).presence || "Active Canvas" %></title>
+
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
 
+  <!-- SEO Meta Tags -->
+  <%= yield :seo_meta %>
+
+  <!-- Open Graph / Social -->
+  <%= yield :og_meta %>
+
+  <!-- Twitter Card -->
+  <%= yield :twitter_meta %>
+
+  <!-- Canonical URL -->
+  <%= yield :canonical %>
+
+  <!-- Structured Data -->
+  <%= yield :structured_data %>
+
   <%= yield :head %>
 
-  <%= stylesheet_link_tag    "active_canvas/application", media: "all" %>
+  <!-- ActiveCanvas: framework=<%= ActiveCanvas::Setting.css_framework %> compiled_mode=<%= ActiveCanvas::Setting.tailwind_compiled_mode? %> available=<%= ActiveCanvas::TailwindCompiler.available? %> env=<%= Rails.env %> -->
+  <% if ActiveCanvas::Setting.tailwind_compiled_mode? %>
+    <!-- ActiveCanvas: Using compiled Tailwind CSS (no CDN) -->
+  <% elsif ActiveCanvas::Setting.css_framework_url.present? %>
+    <!-- ActiveCanvas: Loading CSS framework from CDN -->
+    <% if ActiveCanvas::Setting.css_framework_type == :script %>
+      <script src="<%= ActiveCanvas::Setting.css_framework_url %>"></script>
+    <% else %>
+      <link rel="stylesheet" href="<%= ActiveCanvas::Setting.css_framework_url %>">
+    <% end %>
+  <% end %>
+
+  <%= stylesheet_link_tag "active_canvas/application", media: "all" %>
+
+  <% if ActiveCanvas::Setting.global_css.present? %>
+    <style><%= ActiveCanvas::Setting.global_css.html_safe %></style>
+  <% end %>
 </head>
 <body>
 
 <%= yield %>
 
+<% if ActiveCanvas::Setting.global_js.present? %>
+  <script><%= ActiveCanvas::Setting.global_js.html_safe %></script>
+<% end %>
 </body>
 </html>

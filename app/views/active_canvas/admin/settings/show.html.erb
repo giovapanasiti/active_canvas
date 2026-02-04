@@ -1,23 +1,1537 @@
+<% content_for :page_title, "Settings" %>
+
+<!-- Page Header -->
 <div class="page-header">
-  <h2>Settings</h2>
+  <div class="page-header-left">
+    <h2>Settings</h2>
+    <p class="page-header-subtitle">Configure your ActiveCanvas installation</p>
+  </div>
 </div>
 
-<div class="card" style="padding: 1.5rem;">
-  <%= form_with url: admin_settings_path, method: :patch do |form| %>
-    <div class="form-group">
-      <%= form.label :homepage_page_id, "Homepage" %>
-      <%= form.select :homepage_page_id,
-            options_for_select(
-              [["— No homepage —", ""]] + @pages.map { |p| [p.title, p.id] },
-              @homepage_page_id
-            ),
-            {},
-            class: "form-control" %>
-      <p class="help-text">Select which published page to display when visiting the root URL.</p>
-    </div>
-
-    <div class="form-actions">
-      <%= form.submit "Save Settings", class: "btn btn-primary" %>
-    </div>
+<!-- Settings Tabs -->
+<div class="settings-tabs">
+  <%= link_to admin_settings_path(tab: "general"), class: "settings-tab #{'active' if @active_tab == 'general'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    General
+  <% end %>
+  <%= link_to admin_settings_path(tab: "styles"), class: "settings-tab #{'active' if @active_tab == 'styles'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+    Global Styles
+  <% end %>
+  <%= link_to admin_settings_path(tab: "scripts"), class: "settings-tab #{'active' if @active_tab == 'scripts'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <polyline points="16 18 22 12 16 6"/>
+      <polyline points="8 6 2 12 8 18"/>
+    </svg>
+    Global Scripts
+  <% end %>
+  <%= link_to admin_settings_path(tab: "ai"), class: "settings-tab #{'active' if @active_tab == 'ai'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <path d="M12 8V4H8"/>
+      <rect width="16" height="12" x="4" y="8" rx="2"/>
+      <path d="M2 14h2"/>
+      <path d="M20 14h2"/>
+      <path d="M15 13v2"/>
+      <path d="M9 13v2"/>
+    </svg>
+    AI Assistant
+  <% end %>
+  <%= link_to admin_settings_path(tab: "models"), class: "settings-tab #{'active' if @active_tab == 'models'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+    AI Models
   <% end %>
 </div>
+
+<% if @active_tab == "general" %>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">General Settings</span>
+    </div>
+    <div class="card-body">
+      <%= form_with url: admin_settings_path, method: :patch do |form| %>
+        <div class="form-group">
+          <%= form.label :homepage_page_id, "Homepage" %>
+          <%= form.select :homepage_page_id,
+                options_for_select(
+                  [["— No homepage —", ""]] + @pages.map { |p| [p.title, p.id] },
+                  @homepage_page_id
+                ),
+                {},
+                class: "form-control" %>
+          <p class="help-text">Select which published page to display when visiting the root URL.</p>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :css_framework, "CSS Framework" %>
+          <%= form.select :css_framework,
+                options_for_select(
+                  ActiveCanvas::Setting::CSS_FRAMEWORKS.map { |key, config| [config[:name], key] },
+                  @css_framework
+                ),
+                {},
+                class: "form-control" %>
+          <p class="help-text">Choose the CSS framework for the visual editor and published pages.</p>
+        </div>
+
+        <div class="form-actions">
+          <%= form.submit "Save Settings", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% elsif @active_tab == "styles" %>
+  <% if @css_framework == "tailwind" %>
+    <!-- Tailwind Configuration -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">Tailwind CSS Configuration</span>
+        <% if @tailwind_compiled_mode %>
+          <span class="status-badge status-badge-success">Compiled Mode</span>
+        <% elsif @tailwind_available %>
+          <span class="status-badge status-badge-warning">CDN Mode</span>
+        <% else %>
+          <span class="status-badge status-badge-warning">CDN Only</span>
+        <% end %>
+      </div>
+      <div class="card-body">
+        <% if @tailwind_available %>
+          <div class="tailwind-info-banner tailwind-info-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <div>
+              <strong>Compiled Mode Active</strong>
+              <p>Public pages use pre-compiled CSS for optimal performance. The editor uses CDN for live preview.</p>
+            </div>
+          </div>
+        <% else %>
+          <div class="tailwind-info-banner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div>
+              <strong>CDN Mode (Install tailwindcss-ruby for better performance)</strong>
+              <p>Add <code>gem "tailwindcss-ruby", ">= 4.0"</code> to your Gemfile to enable compiled CSS for public pages.</p>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="settings-code-header" style="margin-top: 1.5rem;">
+          <h4 style="margin: 0; font-size: 0.9375rem;">Custom Configuration (JSON)</h4>
+          <p class="help-text" style="margin-top: 0.25rem;">Customize Tailwind's theme, colors, fonts, and more. Applied to both editor preview and compiled output.</p>
+        </div>
+        <div id="tailwind-config-editor" class="settings-monaco-editor" style="height: 200px;"></div>
+        <div class="settings-code-actions">
+          <button type="button" id="format-tailwind-btn" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="21" y1="10" x2="3" y2="10"/>
+              <line x1="21" y1="6" x2="3" y2="6"/>
+              <line x1="21" y1="14" x2="3" y2="14"/>
+              <line x1="21" y1="18" x2="3" y2="18"/>
+            </svg>
+            Format
+          </button>
+          <button type="button" id="save-tailwind-btn" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Config
+          </button>
+          <% if @tailwind_available %>
+            <%= button_to recompile_tailwind_admin_settings_path,
+                  method: :post,
+                  class: "btn btn-secondary",
+                  id: "recompile-tailwind-btn",
+                  data: { turbo: false, confirm: "Recompile Tailwind CSS for all pages?" } do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+              Recompile All Pages
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .tailwind-info-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+        border-radius: 8px;
+        color: var(--text-primary);
+      }
+      .tailwind-info-banner svg {
+        color: #eab308;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .tailwind-info-banner strong {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      .tailwind-info-banner p {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+      }
+      .tailwind-info-banner code {
+        background: var(--bg-secondary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+      }
+      .tailwind-info-banner.tailwind-info-success {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .tailwind-info-banner.tailwind-info-success svg {
+        color: #22c55e;
+      }
+      .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+      }
+      .status-badge-success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+      }
+      .status-badge-warning {
+        background: rgba(234, 179, 8, 0.1);
+        color: #eab308;
+      }
+    </style>
+  <% end %>
+
+  <div class="card settings-code-card">
+    <div class="settings-code-header">
+      <h3>Global CSS</h3>
+      <p class="help-text" style="margin-top: 0;">Custom CSS that will be included on all published pages.</p>
+    </div>
+    <div id="global-css-editor" class="settings-monaco-editor"></div>
+    <div class="settings-code-actions">
+      <button type="button" id="format-css-btn" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="21" y1="10" x2="3" y2="10"/>
+          <line x1="21" y1="6" x2="3" y2="6"/>
+          <line x1="21" y1="14" x2="3" y2="14"/>
+          <line x1="21" y1="18" x2="3" y2="18"/>
+        </svg>
+        Format
+      </button>
+      <button type="button" id="save-css-btn" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save Global CSS
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script>
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    window.MonacoEnvironment = {
+      getWorkerUrl: function() {
+        return URL.createObjectURL(new Blob([`
+          self.MonacoEnvironment = {
+            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min'
+          };
+          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+      }
+    };
+
+    require(['vs/editor/editor.main'], function() {
+      const existingCss = <%= raw @global_css.to_json %>;
+      const existingTailwindConfig = <%= raw @tailwind_config %>;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const isTailwind = '<%= @css_framework %>' === 'tailwind';
+
+      monaco.editor.defineTheme('activeCanvasDark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#0f172a',
+          'editor.foreground': '#e2e8f0',
+          'editorLineNumber.foreground': '#64748b',
+          'editorCursor.foreground': '#6366f1',
+          'editor.selectionBackground': '#334155',
+          'editor.lineHighlightBackground': '#1e293b'
+        }
+      });
+
+      // Tailwind Config Editor (if Tailwind is selected)
+      if (isTailwind && document.getElementById('tailwind-config-editor')) {
+        const tailwindEditor = monaco.editor.create(document.getElementById('tailwind-config-editor'), {
+          value: JSON.stringify(existingTailwindConfig, null, 2),
+          language: 'json',
+          theme: 'activeCanvasDark',
+          fontSize: 13,
+          lineNumbers: 'on',
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 2,
+          wordWrap: 'on',
+          folding: true,
+          padding: { top: 16 }
+        });
+
+        document.getElementById('format-tailwind-btn').addEventListener('click', () => {
+          try {
+            const parsed = JSON.parse(tailwindEditor.getValue());
+            tailwindEditor.setValue(JSON.stringify(parsed, null, 2));
+          } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+          }
+        });
+
+        document.getElementById('save-tailwind-btn').addEventListener('click', () => {
+          const btn = document.getElementById('save-tailwind-btn');
+          let configValue;
+          try {
+            configValue = JSON.parse(tailwindEditor.getValue());
+          } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+            return;
+          }
+
+          btn.disabled = true;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Saving...';
+
+          fetch('<%= update_tailwind_config_admin_settings_path %>', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ tailwind_config: JSON.stringify(configValue) })
+          })
+          .then(response => response.json())
+          .then(result => {
+            btn.innerHTML = result.success
+              ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Saved!'
+              : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error';
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Config';
+            }, 2000);
+          })
+          .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Config';
+            console.error('Save error:', error);
+          });
+        });
+
+        tailwindEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          document.getElementById('save-tailwind-btn').click();
+        });
+      }
+
+      // Global CSS Editor
+      const cssEditor = monaco.editor.create(document.getElementById('global-css-editor'), {
+        value: existingCss || '',
+        language: 'css',
+        theme: 'activeCanvasDark',
+        fontSize: 13,
+        lineNumbers: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        wordWrap: 'on',
+        folding: true,
+        padding: { top: 16 }
+      });
+
+      document.getElementById('format-css-btn').addEventListener('click', () => {
+        cssEditor.getAction('editor.action.formatDocument').run();
+      });
+
+      document.getElementById('save-css-btn').addEventListener('click', () => {
+        const btn = document.getElementById('save-css-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Saving...';
+
+        fetch('<%= update_global_css_admin_settings_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ global_css: cssEditor.getValue() })
+        })
+        .then(response => response.json())
+        .then(result => {
+          btn.innerHTML = result.success
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Saved!'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error';
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Global CSS';
+          }, 2000);
+        })
+        .catch(error => {
+          btn.disabled = false;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Global CSS';
+          console.error('Save error:', error);
+        });
+      });
+
+      cssEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        document.getElementById('save-css-btn').click();
+      });
+    });
+  </script>
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+<% elsif @active_tab == "scripts" %>
+  <div class="card settings-code-card">
+    <div class="settings-code-header">
+      <h3>Global JavaScript</h3>
+      <p class="help-text" style="margin-top: 0;">Custom JavaScript that will be included on all published pages.</p>
+    </div>
+    <div id="global-js-editor" class="settings-monaco-editor"></div>
+    <div class="settings-code-actions">
+      <button type="button" id="format-js-btn" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="21" y1="10" x2="3" y2="10"/>
+          <line x1="21" y1="6" x2="3" y2="6"/>
+          <line x1="21" y1="14" x2="3" y2="14"/>
+          <line x1="21" y1="18" x2="3" y2="18"/>
+        </svg>
+        Format
+      </button>
+      <button type="button" id="save-js-btn" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save Global JavaScript
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script>
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    window.MonacoEnvironment = {
+      getWorkerUrl: function() {
+        return URL.createObjectURL(new Blob([`
+          self.MonacoEnvironment = {
+            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min'
+          };
+          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+      }
+    };
+
+    require(['vs/editor/editor.main'], function() {
+      const existingJs = <%= raw @global_js.to_json %>;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      monaco.editor.defineTheme('activeCanvasDark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#0f172a',
+          'editor.foreground': '#e2e8f0',
+          'editorLineNumber.foreground': '#64748b',
+          'editorCursor.foreground': '#6366f1',
+          'editor.selectionBackground': '#334155',
+          'editor.lineHighlightBackground': '#1e293b'
+        }
+      });
+
+      const jsEditor = monaco.editor.create(document.getElementById('global-js-editor'), {
+        value: existingJs || '',
+        language: 'javascript',
+        theme: 'activeCanvasDark',
+        fontSize: 13,
+        lineNumbers: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        wordWrap: 'on',
+        folding: true,
+        padding: { top: 16 }
+      });
+
+      document.getElementById('format-js-btn').addEventListener('click', () => {
+        jsEditor.getAction('editor.action.formatDocument').run();
+      });
+
+      document.getElementById('save-js-btn').addEventListener('click', () => {
+        const btn = document.getElementById('save-js-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Saving...';
+
+        fetch('<%= update_global_js_admin_settings_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ global_js: jsEditor.getValue() })
+        })
+        .then(response => response.json())
+        .then(result => {
+          btn.innerHTML = result.success
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Saved!'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error';
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Global JavaScript';
+          }, 2000);
+        })
+        .catch(error => {
+          btn.disabled = false;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Global JavaScript';
+          console.error('Save error:', error);
+        });
+      });
+
+      jsEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        document.getElementById('save-js-btn').click();
+      });
+    });
+  </script>
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+<% elsif @active_tab == "ai" %>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">AI Assistant Configuration</span>
+      <% if ActiveCanvas::AiConfiguration.configured? %>
+        <span class="status-badge status-badge-success">Configured</span>
+      <% else %>
+        <span class="status-badge status-badge-warning">Not Configured</span>
+      <% end %>
+    </div>
+    <div class="card-body">
+      <%= form_with url: update_ai_admin_settings_path, method: :patch, local: true do |form| %>
+        <div class="settings-section">
+          <h4>API Keys</h4>
+          <p class="help-text">Add at least one API key to enable AI features. Keys are stored securely in the database.</p>
+
+          <div class="form-group">
+            <%= form.label :ai_openai_api_key, "OpenAI API Key" %>
+            <div class="api-key-input">
+              <%= form.password_field :ai_openai_api_key,
+                    value: @ai_openai_key,
+                    placeholder: "sk-...",
+                    class: "form-control",
+                    autocomplete: "off" %>
+              <% if @ai_openai_key.present? %>
+                <span class="api-key-status configured">Configured</span>
+              <% end %>
+            </div>
+            <p class="help-text">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a></p>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :ai_anthropic_api_key, "Anthropic API Key" %>
+            <div class="api-key-input">
+              <%= form.password_field :ai_anthropic_api_key,
+                    value: @ai_anthropic_key,
+                    placeholder: "sk-ant-...",
+                    class: "form-control",
+                    autocomplete: "off" %>
+              <% if @ai_anthropic_key.present? %>
+                <span class="api-key-status configured">Configured</span>
+              <% end %>
+            </div>
+            <p class="help-text">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a></p>
+          </div>
+
+          <div class="form-group">
+            <%= form.label :ai_openrouter_api_key, "OpenRouter API Key" %>
+            <div class="api-key-input">
+              <%= form.password_field :ai_openrouter_api_key,
+                    value: @ai_openrouter_key,
+                    placeholder: "sk-or-...",
+                    class: "form-control",
+                    autocomplete: "off" %>
+              <% if @ai_openrouter_key.present? %>
+                <span class="api-key-status configured">Configured</span>
+              <% end %>
+            </div>
+            <p class="help-text">Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai</a>. Provides access to many models including Gemini.</p>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>Default Models</h4>
+          <p class="help-text">Select default models for each feature. Users can override in the editor.</p>
+
+          <div class="form-group">
+            <%= form.label :ai_default_text_model, "Default Text Model" %>
+            <%= form.select :ai_default_text_model,
+                  options_for_select(
+                    @ai_text_models.map { |m| ["#{m[:name]} (#{m[:provider]})", m[:id]] },
+                    @ai_default_text_model
+                  ),
+                  {},
+                  class: "form-control" %>
+            <p class="help-text">Used for text and HTML generation in the editor.</p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group form-group-half">
+              <%= form.label :ai_default_image_model, "Default Image Model" %>
+              <%= form.select :ai_default_image_model,
+                    options_for_select(
+                      @ai_image_models.map { |m| ["#{m[:name]} (#{m[:provider]})", m[:id]] },
+                      @ai_default_image_model
+                    ),
+                    {},
+                    class: "form-control" %>
+              <p class="help-text">Used for image generation.</p>
+            </div>
+
+            <div class="form-group form-group-half">
+              <%= form.label :ai_default_vision_model, "Default Vision Model" %>
+              <%= form.select :ai_default_vision_model,
+                    options_for_select(
+                      @ai_vision_models.map { |m| ["#{m[:name]} (#{m[:provider]})", m[:id]] },
+                      @ai_default_vision_model
+                    ),
+                    {},
+                    class: "form-control" %>
+              <p class="help-text">Used for screenshot-to-code conversion.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>Feature Toggles</h4>
+          <p class="help-text">Enable or disable specific AI features in the editor.</p>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <%= form.check_box :ai_text_enabled, { checked: @ai_text_enabled }, "1", "0" %>
+              <span class="checkbox-text">
+                <strong>Text/HTML Generation</strong>
+                <span class="checkbox-description">Generate page sections, components, and content using AI</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <%= form.check_box :ai_image_enabled, { checked: @ai_image_enabled }, "1", "0" %>
+              <span class="checkbox-text">
+                <strong>Image Generation</strong>
+                <span class="checkbox-description">Generate images using DALL-E or other models</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <%= form.check_box :ai_screenshot_enabled, { checked: @ai_screenshot_enabled }, "1", "0" %>
+              <span class="checkbox-text">
+                <strong>Screenshot to Code</strong>
+                <span class="checkbox-description">Convert uploaded screenshots into HTML using vision AI</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <%= form.submit "Save AI Settings", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Model Sync Card -->
+  <div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">
+      <span class="card-title">AI Models Database</span>
+      <% if @ai_models_synced %>
+        <span class="status-badge status-badge-success"><%= @ai_models_count %> models</span>
+      <% else %>
+        <span class="status-badge status-badge-warning">Not synced</span>
+      <% end %>
+    </div>
+    <div class="card-body">
+      <div class="model-sync-section">
+        <div class="model-sync-info">
+          <p class="help-text" style="margin: 0;">
+            Sync available AI models from configured providers. This fetches the latest models from OpenAI, Anthropic, and OpenRouter based on your API keys.
+          </p>
+          <% if @ai_models_synced && @ai_models_last_synced %>
+            <p class="model-sync-status">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Last synced: <%= time_ago_in_words(@ai_models_last_synced) %> ago
+            </p>
+          <% end %>
+        </div>
+        <div class="model-sync-actions">
+          <% if ActiveCanvas::AiConfiguration.configured? %>
+            <%= button_to sync_ai_models_admin_settings_path,
+                  method: :post,
+                  class: "btn btn-secondary",
+                  id: "sync-models-btn",
+                  data: { disable_with: "Syncing..." } do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sync-icon">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+              <span>Sync Models</span>
+            <% end %>
+          <% else %>
+            <button type="button" class="btn btn-secondary" disabled title="Configure at least one API key first">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+              <span>Sync Models</span>
+            </button>
+            <p class="help-text" style="margin: 0.5rem 0 0 0; font-size: 0.75rem;">Add an API key above to enable sync</p>
+          <% end %>
+        </div>
+      </div>
+
+      <% if @ai_models_synced %>
+        <div class="model-stats">
+          <div class="model-stat">
+            <span class="model-stat-value"><%= @ai_text_models.count %></span>
+            <span class="model-stat-label">Text Models</span>
+          </div>
+          <div class="model-stat">
+            <span class="model-stat-value"><%= @ai_image_models.count %></span>
+            <span class="model-stat-label">Image Models</span>
+          </div>
+          <div class="model-stat">
+            <span class="model-stat-value"><%= @ai_models_count %></span>
+            <span class="model-stat-label">Total Models</span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <style>
+    .settings-section {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .settings-section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .settings-section h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .settings-section > .help-text {
+      margin-bottom: 1.5rem;
+    }
+    .api-key-input {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .api-key-input .form-control {
+      flex: 1;
+      font-family: monospace;
+    }
+    .api-key-status {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .api-key-status.configured {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+    .form-row {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .form-group-half {
+      flex: 1;
+    }
+    .checkbox-group {
+      margin-bottom: 1rem;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--primary-color);
+    }
+    .checkbox-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+    .checkbox-text strong {
+      color: var(--text-primary);
+    }
+    .checkbox-description {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+    }
+    .status-badge-success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+    .status-badge-warning {
+      background: rgba(234, 179, 8, 0.1);
+      color: #eab308;
+    }
+    @media (max-width: 640px) {
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+    }
+
+    /* Model Sync Styles */
+    .model-sync-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+    .model-sync-info {
+      flex: 1;
+    }
+    .model-sync-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .model-sync-status svg {
+      color: var(--text-tertiary);
+    }
+    .model-sync-actions {
+      flex-shrink: 0;
+    }
+    .model-sync-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .model-sync-actions .btn .sync-icon {
+      transition: transform 0.3s ease;
+    }
+    .model-sync-actions .btn:hover .sync-icon {
+      transform: rotate(180deg);
+    }
+    .model-sync-actions .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .model-stats {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .model-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      min-width: 100px;
+    }
+    .model-stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .model-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    @media (max-width: 640px) {
+      .model-sync-section {
+        flex-direction: column;
+      }
+      .model-stats {
+        flex-wrap: wrap;
+      }
+      .model-stat {
+        flex: 1;
+        min-width: 80px;
+      }
+    }
+  </style>
+<% elsif @active_tab == "models" %>
+  <% if @ai_models_synced && @all_models_by_provider.present? %>
+    <!-- Search and Bulk Actions -->
+    <div class="card" style="margin-bottom: 1rem;">
+      <div class="card-body" style="padding: 1rem 1.5rem;">
+        <div class="models-toolbar">
+          <div class="models-search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input type="text" id="models-search-input" placeholder="Search models..." oninput="filterModels(this.value)">
+            <span class="models-search-count" id="models-search-count"></span>
+          </div>
+        </div>
+        <div class="bulk-actions">
+          <div class="bulk-actions-left">
+            <span class="bulk-actions-label">Bulk Actions:</span>
+            <div class="bulk-actions-buttons">
+              <%= button_to bulk_toggle_ai_models_admin_settings_path(action_type: "activate", scope: "all"),
+                    method: :patch,
+                    class: "btn btn-sm btn-secondary",
+                    data: { turbo: false, confirm: "Activate all models?" } do %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Activate All
+              <% end %>
+              <%= button_to bulk_toggle_ai_models_admin_settings_path(action_type: "deactivate", scope: "all"),
+                    method: :patch,
+                    class: "btn btn-sm btn-secondary",
+                    data: { turbo: false, confirm: "Deactivate all models?" } do %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Deactivate All
+              <% end %>
+            </div>
+          </div>
+          <div class="bulk-actions-right">
+            <button type="button" class="btn btn-sm btn-primary" id="btn-refresh-models" onclick="refreshModels(this)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="refresh-icon">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+              <span>Refresh Models</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Models by Provider -->
+    <% @all_models_by_provider.each do |provider, models| %>
+      <% active_count = models.count(&:active?) %>
+      <div class="card models-provider-card" style="margin-bottom: 1rem;">
+        <div class="models-provider-header" onclick="toggleProviderSection(this)" role="button">
+          <div class="models-provider-left">
+            <svg class="models-collapse-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+            <span class="models-provider-name"><%= provider.titleize %></span>
+            <span class="models-provider-count"><%= active_count %>/<%= models.count %> active</span>
+          </div>
+          <div class="models-provider-actions" onclick="event.stopPropagation();">
+            <%= button_to bulk_toggle_ai_models_admin_settings_path(action_type: "activate", provider: provider),
+                  method: :patch,
+                  class: "btn btn-xs btn-ghost",
+                  title: "Activate all #{provider} models",
+                  data: { turbo: false } do %>
+              All On
+            <% end %>
+            <%= button_to bulk_toggle_ai_models_admin_settings_path(action_type: "deactivate", provider: provider),
+                  method: :patch,
+                  class: "btn btn-xs btn-ghost",
+                  title: "Deactivate all #{provider} models",
+                  data: { turbo: false } do %>
+              All Off
+            <% end %>
+          </div>
+        </div>
+        <div class="models-provider-content">
+          <% models.group_by(&:model_type).each do |type, type_models| %>
+            <div class="models-type-group">
+              <div class="models-type-label"><%= type&.titleize || 'Other' %></div>
+              <% type_models.each do |model| %>
+                <div class="model-item <%= model.active? ? 'active' : 'inactive' %>">
+                  <div class="model-info">
+                    <div class="model-name">
+                      <%= model.display_name %>
+                      <% if model.supports_vision? %>
+                        <span class="model-badge model-badge-vision" title="Supports vision/images">Vision</span>
+                      <% end %>
+                      <% if model.supports_functions? %>
+                        <span class="model-badge model-badge-functions" title="Supports function calling">Functions</span>
+                      <% end %>
+                    </div>
+                    <div class="model-meta">
+                      <span class="model-id"><%= model.model_id %></span>
+                      <% if model.context_window.present? %>
+                        <span class="model-context"><%= number_to_human(model.context_window) %> ctx</span>
+                      <% end %>
+                      <% if model.price_info.present? %>
+                        <span class="model-price"><%= model.price_info %></span>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="model-actions">
+                    <button type="button"
+                          class="model-toggle-btn <%= model.active? ? 'active' : '' %>"
+                          title="<%= model.active? ? 'Click to deactivate' : 'Click to activate' %>"
+                          data-model-id="<%= model.id %>"
+                          data-provider="<%= model.provider %>"
+                          onclick="toggleModel(this)">
+                      <span class="toggle-track">
+                        <span class="toggle-thumb"></span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <script>
+      function toggleProviderSection(header) {
+        const card = header.closest('.models-provider-card');
+        card.classList.toggle('collapsed');
+      }
+
+      async function toggleModel(btn) {
+        const modelId = btn.dataset.modelId;
+        const provider = btn.dataset.provider;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        try {
+          const response = await fetch('<%= toggle_ai_model_admin_settings_path %>', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ model_id: modelId })
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Toggle button state
+            btn.classList.toggle('active', data.active);
+            btn.title = data.active ? 'Click to deactivate' : 'Click to activate';
+
+            // Toggle row state
+            const row = btn.closest('.model-item');
+            row.classList.toggle('active', data.active);
+            row.classList.toggle('inactive', !data.active);
+
+            // Update provider count
+            updateProviderCount(provider);
+          }
+        } catch (error) {
+          console.error('Toggle failed:', error);
+        } finally {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }
+      }
+
+      function updateProviderCount(provider) {
+        const cards = document.querySelectorAll('.models-provider-card');
+        cards.forEach(card => {
+          const header = card.querySelector('.models-provider-header');
+          const providerName = header.querySelector('.models-provider-name').textContent.toLowerCase();
+
+          if (providerName === provider) {
+            const items = card.querySelectorAll('.model-item');
+            const activeItems = card.querySelectorAll('.model-item.active');
+            const countEl = header.querySelector('.models-provider-count');
+            countEl.textContent = `${activeItems.length}/${items.length} active`;
+          }
+        });
+      }
+
+      function filterModels(query) {
+        const searchTerm = query.toLowerCase().trim();
+        const items = document.querySelectorAll('.model-item');
+        const typeGroups = document.querySelectorAll('.models-type-group');
+        const providerCards = document.querySelectorAll('.models-provider-card');
+        let visibleCount = 0;
+        let totalCount = items.length;
+
+        // Filter individual model items
+        items.forEach(item => {
+          const name = item.querySelector('.model-name')?.textContent.toLowerCase() || '';
+          const id = item.querySelector('.model-id')?.textContent.toLowerCase() || '';
+          const matches = !searchTerm || name.includes(searchTerm) || id.includes(searchTerm);
+
+          item.style.display = matches ? '' : 'none';
+          if (matches) visibleCount++;
+        });
+
+        // Hide empty type groups
+        typeGroups.forEach(group => {
+          const visibleItems = group.querySelectorAll('.model-item[style=""], .model-item:not([style*="display: none"])');
+          const hasVisible = Array.from(group.querySelectorAll('.model-item')).some(item => item.style.display !== 'none');
+          group.style.display = hasVisible ? '' : 'none';
+        });
+
+        // Hide empty provider cards and update counts
+        providerCards.forEach(card => {
+          const cardItems = card.querySelectorAll('.model-item');
+          const visibleCardItems = Array.from(cardItems).filter(item => item.style.display !== 'none');
+          const hasVisible = visibleCardItems.length > 0;
+
+          card.style.display = hasVisible ? '' : 'none';
+
+          // Expand cards when searching
+          if (searchTerm && hasVisible) {
+            card.classList.remove('collapsed');
+          }
+        });
+
+        // Update search count
+        const countEl = document.getElementById('models-search-count');
+        if (searchTerm) {
+          countEl.textContent = `${visibleCount} of ${totalCount}`;
+          countEl.style.display = '';
+        } else {
+          countEl.style.display = 'none';
+        }
+      }
+
+      async function refreshModels(btn) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const icon = btn.querySelector('.refresh-icon');
+        const text = btn.querySelector('span');
+
+        btn.disabled = true;
+        icon.style.animation = 'spin 1s linear infinite';
+        text.textContent = 'Syncing...';
+
+        try {
+          const response = await fetch('<%= sync_ai_models_admin_settings_path %>', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json'
+            }
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            text.textContent = `Synced ${data.count} models!`;
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            text.textContent = 'Failed';
+            btn.disabled = false;
+            icon.style.animation = '';
+            setTimeout(() => {
+              text.textContent = 'Refresh Models';
+            }, 2000);
+          }
+        } catch (error) {
+          console.error('Refresh failed:', error);
+          text.textContent = 'Error';
+          btn.disabled = false;
+          icon.style.animation = '';
+          setTimeout(() => {
+            text.textContent = 'Refresh Models';
+          }, 2000);
+        }
+      }
+
+      // Start with sections expanded
+      document.addEventListener('DOMContentLoaded', function() {
+        // Optionally collapse by default if many providers
+        const cards = document.querySelectorAll('.models-provider-card');
+        if (cards.length > 2) {
+          cards.forEach((card, i) => {
+            if (i > 0) card.classList.add('collapsed');
+          });
+        }
+      });
+    </script>
+  <% else %>
+    <div class="card">
+      <div class="card-body" style="text-align: center; padding: 3rem;">
+        <div style="margin-bottom: 1rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary);">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        </div>
+        <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">No Models Synced</h3>
+        <p class="help-text" style="margin-bottom: 1.5rem;">Sync models from your AI providers to manage them here.</p>
+        <% if ActiveCanvas::AiConfiguration.configured? %>
+          <%= button_to sync_ai_models_admin_settings_path,
+                method: :post,
+                class: "btn btn-primary",
+                data: { turbo: false } do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 16h5v5"/>
+            </svg>
+            Sync Models Now
+          <% end %>
+        <% else %>
+          <p class="help-text">Configure API keys in the <a href="<%= admin_settings_path(tab: 'ai') %>">AI Assistant</a> tab first.</p>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <style>
+    /* Search */
+    .models-toolbar {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .models-search {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-secondary, #f1f5f9);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      max-width: 400px;
+    }
+    .models-search svg {
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+    .models-search input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .models-search input::placeholder {
+      color: var(--text-tertiary);
+    }
+    .models-search-count {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      display: none;
+    }
+
+    /* Bulk Actions */
+    .bulk-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .bulk-actions-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .bulk-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .bulk-actions-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .bulk-actions-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .refresh-icon {
+      transition: transform 0.3s ease;
+    }
+    #btn-refresh-models:hover .refresh-icon {
+      transform: rotate(180deg);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+    }
+    .btn-sm svg {
+      margin-right: 0.375rem;
+    }
+    .btn-xs {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.6875rem;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    .btn-ghost:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    /* Provider Cards */
+    .models-provider-card.card {
+      overflow: visible;
+    }
+    .models-provider-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .models-provider-header:hover {
+      background: var(--bg-tertiary, rgba(255,255,255,0.05));
+    }
+    .models-provider-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .models-collapse-icon {
+      color: var(--text-secondary);
+      transition: transform 0.2s ease;
+    }
+    .models-provider-card.collapsed .models-collapse-icon {
+      transform: rotate(-90deg);
+    }
+    .models-provider-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+    }
+    .models-provider-count {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary, rgba(255,255,255,0.05));
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+    }
+    .models-provider-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .models-provider-content {
+      padding: 0.5rem 0;
+      border-top: 1px solid var(--border-color);
+    }
+    .models-provider-card.collapsed .models-provider-content {
+      display: none;
+    }
+    .models-type-group {
+      padding: 0.5rem 1.5rem;
+    }
+    .models-type-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      margin-bottom: 0.5rem;
+      padding-left: 0.25rem;
+    }
+    .model-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.25rem;
+      transition: background 0.15s ease;
+    }
+    .model-item:hover {
+      background: var(--bg-secondary);
+    }
+    .model-item.inactive {
+      opacity: 0.5;
+    }
+    .model-item.inactive:hover {
+      opacity: 0.75;
+    }
+    .model-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .model-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+    .model-badge {
+      font-size: 0.625rem;
+      font-weight: 600;
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .model-badge-vision {
+      background: rgba(147, 51, 234, 0.15);
+      color: #a855f7;
+    }
+    .model-badge-functions {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+    .model-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .model-id {
+      font-family: monospace;
+      color: var(--text-tertiary);
+    }
+    .model-actions {
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+    .model-toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .toggle-track {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--bg-tertiary, #374151);
+      border-radius: 11px;
+      transition: background 0.2s ease;
+    }
+    .model-toggle-btn.active .toggle-track {
+      background: var(--primary-color, #6366f1);
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .model-toggle-btn.active .toggle-thumb {
+      transform: translateX(18px);
+    }
+    @media (max-width: 640px) {
+      .model-meta {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .model-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      .model-actions {
+        margin-left: 0;
+        align-self: flex-end;
+      }
+    }
+  </style>
+<% end %>
