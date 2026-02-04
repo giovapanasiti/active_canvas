@@ -252,8 +252,8 @@
   function setupModules(editor, config, csrfToken) {
     const AC = window.ActiveCanvasEditor;
 
-    // Add custom blocks
-    AC.addCustomBlocks(editor);
+    // Add custom blocks (framework-specific based on config.cssFramework)
+    AC.addCustomBlocks(editor, config);
 
     // Load existing assets
     AC.loadAssets(editor, config.mediaUrl);
