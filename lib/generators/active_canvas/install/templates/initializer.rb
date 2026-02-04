@@ -1,0 +1,34 @@
+# ActiveCanvas Configuration
+# See https://github.com/your-username/active_canvas for full documentation
+
+ActiveCanvas.configure do |config|
+  # ==> Authentication for Admin Pages
+  # Configure how users authenticate to access the admin interface.
+  # This is REQUIRED for production use - the admin is open by default!
+  #
+  # Option 1: Use a method from your ApplicationController (e.g., Devise)
+  # config.authenticate_admin = :authenticate_user!
+  #
+  # Option 2: Use a lambda for custom logic
+  # config.authenticate_admin = -> {
+  #   redirect_to main_app.login_path, alert: "Please log in" unless current_user&.admin?
+  # }
+  #
+  # Option 3: HTTP Basic Auth (simple but not recommended for production)
+  # config.authenticate_admin = -> {
+  #   authenticate_or_request_with_http_basic do |username, password|
+  #     username == "admin" && password == "secret"
+  #   end
+  # }
+
+  # ==> Authentication for Public Pages (optional)
+  # Configure authentication for viewing published pages.
+  # Leave nil to allow public access (default).
+  #
+  # config.authenticate_public = :authenticate_user!
+  # config.authenticate_public = -> { redirect_to main_app.login_path unless current_user }
+
+  # ==> Current User Method
+  # The method name to call to get the current user (used by AI features, etc.)
+  # config.current_user_method = :current_user
+end

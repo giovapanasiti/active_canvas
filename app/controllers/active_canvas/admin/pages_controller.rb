@@ -99,7 +99,7 @@ module ActiveCanvas
         Rails.logger.info "[ActiveCanvas::PagesController] compile_tailwind_if_needed called"
         Rails.logger.info "[ActiveCanvas::PagesController]   content_changed: #{content_changed}"
         Rails.logger.info "[ActiveCanvas::PagesController]   css_framework: #{Setting.css_framework}"
-        Rails.logger.info "[ActiveCanvas::PagesController]   TailwindCompiler.available?: #{TailwindCompiler.available?}"
+        Rails.logger.info "[ActiveCanvas::PagesController]   ActiveCanvas::TailwindCompiler.available?: #{ActiveCanvas::TailwindCompiler.available?}"
 
         unless content_changed
           Rails.logger.info "[ActiveCanvas::PagesController]   Skipping: content unchanged"
@@ -111,7 +111,7 @@ module ActiveCanvas
           return { compiled: false, reason: "not_tailwind" }
         end
 
-        unless TailwindCompiler.available?
+        unless ActiveCanvas::TailwindCompiler.available?
           Rails.logger.info "[ActiveCanvas::PagesController]   Skipping: gem not available"
           return { compiled: false, reason: "gem_not_available" }
         end
@@ -119,7 +119,7 @@ module ActiveCanvas
         begin
           Rails.logger.info "[ActiveCanvas::PagesController]   Starting Tailwind compilation..."
           start_time = Time.current
-          compiled_css = TailwindCompiler.compile_for_page(@page)
+          compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(@page)
           elapsed_ms = ((Time.current - start_time) * 1000).round
 
           @page.update_columns(
@@ -135,7 +135,7 @@ module ActiveCanvas
             css_size: compiled_css.bytesize,
             elapsed_ms: elapsed_ms
           }
-        rescue TailwindCompiler::CompilationError => e
+        rescue ActiveCanvas::TailwindCompiler::CompilationError => e
           Rails.logger.error "[ActiveCanvas::PagesController] Tailwind compilation failed: #{e.message}"
           {
             compiled: true,

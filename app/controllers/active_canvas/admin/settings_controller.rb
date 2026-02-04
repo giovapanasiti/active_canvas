@@ -11,7 +11,7 @@ module ActiveCanvas
 
         # Tailwind settings
         @tailwind_config = Setting.tailwind_config_js
-        @tailwind_available = TailwindCompiler.available?
+        @tailwind_available = ActiveCanvas::TailwindCompiler.available?
         @tailwind_compiled_mode = Setting.tailwind_compiled_mode?
 
         # AI settings
@@ -166,7 +166,7 @@ module ActiveCanvas
       end
 
       def recompile_tailwind
-        unless TailwindCompiler.available?
+        unless ActiveCanvas::TailwindCompiler.available?
           respond_to do |format|
             format.html { redirect_to admin_settings_path(tab: "styles"), alert: "tailwindcss-ruby gem is not installed." }
             format.json { render json: { success: false, error: "tailwindcss-ruby gem is not installed." }, status: :unprocessable_entity }

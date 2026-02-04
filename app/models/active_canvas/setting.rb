@@ -168,7 +168,7 @@ module ActiveCanvas
       }.freeze
 
       def tailwind_compiled_mode?
-        css_framework == "tailwind" && TailwindCompiler.available?
+        css_framework == "tailwind" && ActiveCanvas::TailwindCompiler.available?
       end
 
       def tailwind_config
