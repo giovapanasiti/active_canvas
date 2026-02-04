@@ -1488,13 +1488,16 @@
   border: 1px solid var(--editor-border) !important;
   border-radius: var(--editor-radius) !important;
   padding: 4px !important;
-  display: flex !important;
+  display: inline-flex !important;
   flex-direction: row !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
   gap: 2px !important;
   box-shadow: var(--editor-shadow-md) !important;
   z-index: 10 !important;
   white-space: nowrap !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
 /* Hide empty toolbar (appears as a dot/circle) */
@@ -1515,6 +1518,8 @@
   justify-content: center !important;
   transition: background 0.15s ease, color 0.15s ease !important;
   flex-shrink: 0 !important;
+  float: none !important;
+  clear: none !important;
 }
 
 .gjs-toolbar .gjs-toolbar-item:hover {
@@ -1560,6 +1565,13 @@
 /* Style for the icon span inside toolbar items */
 .gjs-toolbar .gjs-toolbar-item span.fa {
   font-size: 12px !important;
+}
+
+/* Force all toolbar children to stay inline */
+.gjs-toolbar > * {
+  display: inline-flex !important;
+  float: none !important;
+  clear: none !important;
 }
 
 /* ==================== GrapeJS Rich Text Editor Toolbar ==================== */

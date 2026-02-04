@@ -30,10 +30,18 @@ module ActiveCanvas
 
         prompt = build_screenshot_prompt(framework, additional_prompt)
 
-        chat = RubyLLM.chat(model: model)
-        response = chat.ask(prompt, with: { image: image_data })
+        # RubyLLM expects a file path, not a data URL
+        # Save base64 image to a temp file
+        tempfile = save_base64_to_tempfile(image_data)
 
-        extract_html(response.content)
+        begin
+          chat = RubyLLM.chat(model: model)
+          response = chat.ask(prompt, with: { image: tempfile.path })
+          extract_html(response.content)
+        ensure
+          tempfile.close
+          tempfile.unlink
+        end
       end
 
       private
@@ -100,6 +108,33 @@ module ActiveCanvas
         html = html.gsub(/```html\n?/i, "")
         html = html.gsub(/```\n?/, "")
         html.strip
+      end
+
+      def save_base64_to_tempfile(data_url)
+        # Extract base64 data from data URL (data:image/png;base64,...)
+        if data_url.start_with?("data:")
+          # Parse the data URL
+          matches = data_url.match(%r{^data:image/(\w+);base64,(.+)$})
+          raise ArgumentError, "Invalid image data URL format" unless matches
+
+          extension = matches[1]
+          base64_data = matches[2]
+        else
+          # Assume raw base64 data
+          extension = "png"
+          base64_data = data_url
+        end
+
+        # Decode base64
+        image_binary = Base64.decode64(base64_data)
+
+        # Create temp file with proper extension
+        tempfile = Tempfile.new([ "screenshot", ".#{extension}" ])
+        tempfile.binmode
+        tempfile.write(image_binary)
+        tempfile.rewind
+
+        tempfile
       end
     end
   end
