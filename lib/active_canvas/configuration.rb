@@ -1,56 +1,38 @@
 module ActiveCanvas
   class Configuration
-    # CSS Framework: :vanilla, :bootstrap, :tailwind
-    attr_accessor :css_framework
+    # Authentication callback for public pages
+    # Set to a proc/lambda that will be called as a before_action
+    # Example: config.authenticate_public = -> { redirect_to login_path unless current_user }
+    attr_accessor :authenticate_public
 
-    # Include host app's stylesheets in editor canvas
-    attr_accessor :include_host_assets
+    # Authentication callback for admin pages
+    # Set to a proc/lambda or method name symbol
+    # Example: config.authenticate_admin = :authenticate_admin_user!
+    # Example: config.authenticate_admin = -> { redirect_to login_path unless current_user&.admin? }
+    attr_accessor :authenticate_admin
 
-    # Host app stylesheets to include (if include_host_assets = true)
-    attr_accessor :host_stylesheets
-
-    # Enable image uploads
-    attr_accessor :enable_uploads
-
-    # Maximum upload size in bytes (default: 10MB)
-    attr_accessor :max_upload_size
-
-    # Allowed upload content types
-    attr_accessor :allowed_content_types
-
-    # Storage service name for media uploads (should match a service in storage.yml)
-    # Set to :public for a public S3 bucket, or nil to use the default service
-    attr_accessor :storage_service
-
-    # Whether to make uploaded files publicly accessible (sets ACL to public-read on S3)
-    attr_accessor :public_uploads
+    # Current user method name (used by AI features, etc.)
+    # Example: config.current_user_method = :current_user
+    attr_accessor :current_user_method
 
     def initialize
-      @css_framework = :tailwind
-      @include_host_assets = true
-      @host_stylesheets = ["application"]
-      @enable_uploads = true
-      @max_upload_size = 10.megabytes
-      @allowed_content_types = %w[
-        image/jpeg
-        image/png
-        image/gif
-        image/webp
-        image/svg+xml
-      ]
-      @storage_service = nil  # Use default Active Storage service
-      @public_uploads = true  # Make uploads public by default
+      @authenticate_public = nil
+      @authenticate_admin = nil
+      @current_user_method = :current_user
+    end
+  end
+
+  class << self
+    def configuration
+      @configuration ||= Configuration.new
     end
 
-    def css_framework_url
-      case css_framework
-      when :tailwind
-        "https://cdn.tailwindcss.com"
-      when :bootstrap
-        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      else
-        nil
-      end
+    def configure
+      yield(configuration)
+    end
+
+    def config
+      configuration
     end
   end
 end

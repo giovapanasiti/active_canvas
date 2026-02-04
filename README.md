@@ -27,28 +27,19 @@ Add ActiveCanvas to your Gemfile:
 gem "active_canvas"
 ```
 
-Run bundle install:
+Run the install generator:
 
 ```bash
 bundle install
-```
-
-Install and run migrations:
-
-```bash
+bin/rails generate active_canvas:install
 bin/rails active_canvas:install:migrations
 bin/rails db:migrate
 ```
 
-Mount the engine in your `config/routes.rb`:
-
-```ruby
-Rails.application.routes.draw do
-  mount ActiveCanvas::Engine => "/canvas"
-
-  # Your other routes...
-end
-```
+This will:
+- Create `config/initializers/active_canvas.rb` with configuration options
+- Mount the engine at `/canvas` in your routes
+- Copy the database migrations
 
 ## Usage
 
@@ -178,33 +169,42 @@ See [docs/tailwind_compilation.md](docs/tailwind_compilation.md) for detailed do
 
 ## Authentication
 
-ActiveCanvas does not include authentication. You should add authentication in your host application. Example with Devise:
+**Important:** The admin interface is open by default. Configure authentication in your initializer.
+
+### With Devise
 
 ```ruby
 # config/initializers/active_canvas.rb
-ActiveCanvas::Admin::ApplicationController.class_eval do
-  before_action :authenticate_admin_user!
-
-  private
-
-  def authenticate_admin_user!
-    redirect_to main_app.root_path unless current_user&.admin?
-  end
+ActiveCanvas.configure do |config|
+  config.authenticate_admin = :authenticate_user!
 end
 ```
 
-Or create a custom controller:
+### With Custom Logic
 
 ```ruby
-# app/controllers/my_app/active_canvas_admin_controller.rb
-class MyApp::ActiveCanvasAdminController < ActiveCanvas::Admin::ApplicationController
-  before_action :require_admin
+# config/initializers/active_canvas.rb
+ActiveCanvas.configure do |config|
+  config.authenticate_admin = -> {
+    unless current_user&.admin?
+      redirect_to main_app.root_path, alert: "Access denied"
+    end
+  }
+end
+```
 
-  private
+### Configuration Options
 
-  def require_admin
-    redirect_to root_path unless current_user&.admin?
-  end
+```ruby
+ActiveCanvas.configure do |config|
+  # Authentication for admin pages (required for production!)
+  config.authenticate_admin = :authenticate_user!
+
+  # Authentication for public pages (optional, nil = public access)
+  config.authenticate_public = nil
+
+  # Current user method name (for AI features, etc.)
+  config.current_user_method = :current_user
 end
 ```
 

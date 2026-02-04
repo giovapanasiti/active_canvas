@@ -2,7 +2,7 @@ module ActiveCanvas
   class CompileTailwindJob < ApplicationJob
     queue_as :default
 
-    retry_on TailwindCompiler::CompilationError, wait: :polynomially_longer, attempts: 3
+    retry_on ActiveCanvas::TailwindCompiler::CompilationError, wait: :polynomially_longer, attempts: 3
 
     LOG_PREFIX = "[ActiveCanvas::CompileTailwindJob]".freeze
 
@@ -15,7 +15,7 @@ module ActiveCanvas
         return
       end
 
-      unless TailwindCompiler.available?
+      unless ActiveCanvas::TailwindCompiler.available?
         log_info "Skipping: tailwindcss-ruby gem not available"
         return
       end
@@ -28,7 +28,7 @@ module ActiveCanvas
       log_info "Compiling Tailwind CSS for page ##{page.id} (#{page.title})"
       start_time = Time.current
 
-      compiled_css = TailwindCompiler.compile_for_page(page)
+      compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(page)
 
       page.update_columns(
         compiled_tailwind_css: compiled_css,
@@ -38,7 +38,7 @@ module ActiveCanvas
       elapsed = ((Time.current - start_time) * 1000).round(2)
       log_info "Job completed for page ##{page.id} in #{elapsed}ms (CSS size: #{compiled_css.bytesize} bytes)"
 
-    rescue TailwindCompiler::CompilationError => e
+    rescue ActiveCanvas::TailwindCompiler::CompilationError => e
       log_error "Compilation failed for page ##{page_id}: #{e.message}"
       raise
     rescue => e
