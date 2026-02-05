@@ -163,7 +163,7 @@ module ActiveCanvas
           say ""
         end
 
-        say "Documentation: https://github.com/your-username/active_canvas"
+        say "Documentation: https://github.com/giovapanasiti/active_canvas"
         say ""
       end
 
