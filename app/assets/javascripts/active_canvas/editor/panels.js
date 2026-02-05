@@ -198,6 +198,16 @@
       const js = window.ActiveCanvasEditor.getJs ? window.ActiveCanvasEditor.getJs() : '';
       const components = JSON.stringify(editor.getComponents());
 
+      // Use entityType from config (defaults to 'page' for backwards compatibility)
+      const entityType = config.entityType || 'page';
+      const payload = {};
+      payload[entityType] = {
+        content: html,
+        content_css: css,
+        content_js: js,
+        content_components: components
+      };
+
       fetch(config.saveUrl, {
         method: 'PATCH',
         headers: {
@@ -205,14 +215,7 @@
           'X-CSRF-Token': csrfToken,
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          page: {
-            content: html,
-            content_css: css,
-            content_js: js,
-            content_components: components
-          }
-        })
+        body: JSON.stringify(payload)
       })
       .then(response => response.json())
       .then(result => {

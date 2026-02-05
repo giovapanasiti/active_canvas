@@ -56,16 +56,57 @@
 <% end %>
 
 <%# Page Content %>
-<%# Include compiled Tailwind CSS if available %>
+
+<%# Get active header and footer partials (only if table exists) %>
+<% partials_available = ActiveRecord::Base.connection.table_exists?('active_canvas_partials') rescue false %>
+<% header_partial = partials_available && @page.show_header? ? ActiveCanvas::Partial.active_header : nil %>
+<% footer_partial = partials_available && @page.show_footer? ? ActiveCanvas::Partial.active_footer : nil %>
+
+<%# Include compiled Tailwind CSS for partials %>
+<% if header_partial&.compiled_css.present? %>
+  <style><%= header_partial.compiled_css.html_safe %></style>
+<% end %>
+<% if footer_partial&.compiled_css.present? && footer_partial != header_partial %>
+  <style><%= footer_partial.compiled_css.html_safe %></style>
+<% end %>
+
+<%# Include compiled Tailwind CSS for page %>
 <% if @page.compiled_tailwind_css.present? %>
   <style><%= @page.compiled_tailwind_css.html_safe %></style>
+<% end %>
+
+<%# Include custom CSS for partials %>
+<% if header_partial&.content_css.present? %>
+  <style><%= header_partial.content_css.html_safe %></style>
+<% end %>
+<% if footer_partial&.content_css.present? && footer_partial != header_partial %>
+  <style><%= footer_partial.content_css.html_safe %></style>
 <% end %>
 
 <% if @page.content_css.present? %>
   <style><%= @page.content_css.html_safe %></style>
 <% end %>
 
+<%# Header %>
+<% if header_partial&.content.present? %>
+  <%= header_partial.rendered_content %>
+<% end %>
+
+<%# Main Page Content %>
 <%= @page.rendered_content %>
+
+<%# Footer %>
+<% if footer_partial&.content.present? %>
+  <%= footer_partial.rendered_content %>
+<% end %>
+
+<%# JavaScript for partials %>
+<% if header_partial&.content_js.present? %>
+  <script><%= header_partial.content_js.html_safe %></script>
+<% end %>
+<% if footer_partial&.content_js.present? && footer_partial != header_partial %>
+  <script><%= footer_partial.content_js.html_safe %></script>
+<% end %>
 
 <% if @page.content_js.present? %>
   <script><%= @page.content_js.html_safe %></script>

@@ -1,7 +1,7 @@
 module ActiveCanvas
   module Admin
     class PagesController < ApplicationController
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -93,6 +93,10 @@ module ActiveCanvas
         end
       end
 
+      def versions
+        @versions = @page.versions.recent.limit(50)
+      end
+
       private
 
       def compile_tailwind_if_needed(content_changed)
@@ -152,6 +156,8 @@ module ActiveCanvas
       def page_params
         params.require(:page).permit(
           :title, :slug, :content, :page_type_id, :published,
+          # Header/Footer
+          :show_header, :show_footer,
           # SEO fields
           :meta_title, :meta_description, :canonical_url, :meta_robots,
           # Open Graph fields
