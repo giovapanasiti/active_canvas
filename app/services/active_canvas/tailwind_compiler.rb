@@ -7,8 +7,9 @@ module ActiveCanvas
     LOG_PREFIX = "[ActiveCanvas::TailwindCompiler]".freeze
 
     class << self
-      def compile_for_page(page)
-        log_info "Starting compilation for page ##{page.id} (#{page.title})"
+      # Compile Tailwind CSS for raw HTML content
+      def compile(html_content, identifier: "content")
+        log_info "Starting compilation for #{identifier}"
         start_time = Time.current
 
         unless available?
@@ -16,9 +17,8 @@ module ActiveCanvas
           raise CompilationError, "tailwindcss-ruby gem is not installed"
         end
 
-        html_content = page.content.to_s
         if html_content.blank?
-          log_info "Page ##{page.id} has no content, skipping compilation"
+          log_info "#{identifier} has no content, skipping compilation"
           return ""
         end
 
@@ -33,13 +33,17 @@ module ActiveCanvas
           File.write(html_file, html_content)
           log_debug "Wrote HTML content to #{html_file}"
 
-          compiled_css = compile_css(html_file, css_file, page.id)
+          compiled_css = compile_css(html_file, css_file, identifier)
 
           elapsed = ((Time.current - start_time) * 1000).round(2)
-          log_info "Compilation completed for page ##{page.id} in #{elapsed}ms (output: #{compiled_css.bytesize} bytes)"
+          log_info "Compilation completed for #{identifier} in #{elapsed}ms (output: #{compiled_css.bytesize} bytes)"
 
           compiled_css
         end
+      end
+
+      def compile_for_page(page)
+        compile(page.content.to_s, identifier: "page ##{page.id} (#{page.title})")
       end
 
       def available?
@@ -53,7 +57,7 @@ module ActiveCanvas
 
       private
 
-      def compile_css(html_file, css_file, page_id)
+      def compile_css(html_file, css_file, identifier)
         executable = Tailwindcss::Ruby.executable
         log_debug "Using Tailwind executable: #{executable}"
 
@@ -91,17 +95,17 @@ module ActiveCanvas
         end
 
         unless status.success?
-          log_error "Compilation failed for page ##{page_id} (exit code: #{status.exitstatus})"
+          log_error "Compilation failed for #{identifier} (exit code: #{status.exitstatus})"
           log_error "Tailwind stderr: #{stderr}"
           raise CompilationError, "Tailwind compilation failed: #{stderr}"
         end
 
         if stderr.present? && !stderr.strip.empty?
-          log_warn "Tailwind warnings for page ##{page_id}: #{stderr.truncate(500)}"
+          log_warn "Tailwind warnings for #{identifier}: #{stderr.truncate(500)}"
         end
 
         unless File.exist?(css_file)
-          log_error "Output file not created for page ##{page_id}"
+          log_error "Output file not created for #{identifier}"
           raise CompilationError, "Tailwind output file was not created"
         end
 

@@ -156,6 +156,8 @@ module ActiveCanvas
       def page_params
         params.require(:page).permit(
           :title, :slug, :content, :page_type_id, :published,
+          # Header/Footer
+          :show_header, :show_footer,
           # SEO fields
           :meta_title, :meta_description, :canonical_url, :meta_robots,
           # Open Graph fields

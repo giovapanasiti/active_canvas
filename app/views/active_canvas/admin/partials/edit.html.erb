@@ -1,0 +1,41 @@
+<% content_for :page_title, "Edit #{@partial.name}" %>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Edit <%= @partial.name %></h2>
+    <p class="page-header-subtitle">Configure <%= @partial.partial_type %> settings</p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to editor_admin_partial_path(@partial), class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      Open Designer
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <%= form_with model: @partial, url: admin_partial_path(@partial), method: :patch do |f| %>
+    <div class="form-group">
+      <%= f.label :name, class: "form-label" %>
+      <%= f.text_field :name, class: "form-input", placeholder: "e.g., Main Header" %>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <div class="checkbox-group">
+        <%= f.check_box :active, class: "form-checkbox" %>
+        <%= f.label :active, "Active - Show this #{@partial.partial_type} on pages", class: "checkbox-label" %>
+      </div>
+      <p class="form-hint">When inactive, this <%= @partial.partial_type %> won't appear on any pages even if enabled.</p>
+    </div>
+
+    <div class="form-actions">
+      <%= f.submit "Save Settings", class: "btn btn-primary" %>
+      <%= link_to "Cancel", admin_partials_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>

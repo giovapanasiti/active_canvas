@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Edit: <%= @page.title %> - ActiveCanvas</title>
+    <title>Edit: <%= @page&.title || @partial&.name %> - ActiveCanvas</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="<%= form_authenticity_token %>">
 

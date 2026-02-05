@@ -28,6 +28,17 @@ module ActiveCanvas
       versions.maximum(:version_number) || 0
     end
 
+    # Header/footer display (with fallback for when columns don't exist yet)
+    def show_header?
+      return true unless self.class.column_names.include?("show_header")
+      show_header != false
+    end
+
+    def show_footer?
+      return true unless self.class.column_names.include?("show_footer")
+      show_footer != false
+    end
+
     private
 
     def set_default_slug

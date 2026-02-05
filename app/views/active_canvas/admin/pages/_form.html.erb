@@ -29,6 +29,23 @@
   <p class="help-text">Determines the layout template used for this page.</p>
 </div>
 
+<% if ActiveCanvas::Partial.table_exists? %>
+<div class="form-group">
+  <label style="font-weight: 500; margin-bottom: 0.75rem; display: block;">Header & Footer</label>
+  <div style="display: flex; gap: 2rem; background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+    <div class="form-check">
+      <%= form.check_box :show_header, id: "page_show_header", checked: page.show_header? %>
+      <label for="page_show_header">Show Header</label>
+    </div>
+    <div class="form-check">
+      <%= form.check_box :show_footer, id: "page_show_footer", checked: page.show_footer? %>
+      <label for="page_show_footer">Show Footer</label>
+    </div>
+  </div>
+  <p class="help-text">Include the global header and/or footer on this page.</p>
+</div>
+<% end %>
+
 <div class="form-group">
   <div class="form-check" style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
     <%= form.check_box :published, id: "page_published" %>
