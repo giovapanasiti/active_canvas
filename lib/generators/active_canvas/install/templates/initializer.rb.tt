@@ -3,39 +3,75 @@
 # Documentation: https://github.com/giovapanasiti/active_canvas
 
 ActiveCanvas.configure do |config|
-  # ==> Authentication for Admin Pages
-  # Configure how users authenticate to access the admin interface.
-  # This is REQUIRED for production use - the admin is open by default!
+  # ==========================================================================
+  # Authentication (IMPORTANT: Configure for production!)
+  # ==========================================================================
+
+  # Admin pages authentication - REQUIRED for production!
+  # The admin interface is open by default. Uncomment one of these options:
   #
-  # Option 1: Use a method from your ApplicationController (e.g., Devise)
+  # With Devise:
   # config.authenticate_admin = :authenticate_user!
   #
-  # Option 2: Use a lambda for custom logic
+  # With custom logic:
   # config.authenticate_admin = -> {
   #   redirect_to main_app.login_path, alert: "Please log in" unless current_user&.admin?
   # }
-  #
-  # Option 3: HTTP Basic Auth (simple but not recommended for production)
-  # config.authenticate_admin = -> {
-  #   authenticate_or_request_with_http_basic do |username, password|
-  #     username == "admin" && password == "secret"
-  #   end
-  # }
 
-  # ==> Authentication for Public Pages (optional)
-  # Configure authentication for viewing published pages.
-  # Leave nil to allow public access (default).
-  #
-  # config.authenticate_public = :authenticate_user!
-  # config.authenticate_public = -> { redirect_to main_app.login_path unless current_user }
+  # Public pages authentication (optional, nil = public access)
+  # config.authenticate_public = nil
 
-  # ==> Current User Method
-  # The method name to call to get the current user (used by AI features, etc.)
-  # config.current_user_method = :current_user
+  # Method to get current user (for version tracking, AI features, etc.)
+  config.current_user_method = :current_user
+
+  # ==========================================================================
+  # CSS Framework
+  # ==========================================================================
 <% if @css_framework && @css_framework != :none %>
 
-  # ==> CSS Framework
-  # Selected during installation. Can also be changed in Admin > Settings.
+  # Options: :tailwind, :bootstrap5, :none
   config.css_framework = :<%= @css_framework %>
+<% else %>
+
+  # Options: :tailwind, :bootstrap5, :none
+  # config.css_framework = :tailwind
 <% end %>
+
+  # ==========================================================================
+  # Media Uploads
+  # ==========================================================================
+
+  config.enable_uploads = true
+  config.max_upload_size = 10.megabytes
+  config.allowed_content_types = %w[
+    image/jpeg
+    image/png
+    image/gif
+    image/webp
+    image/svg+xml
+    image/avif
+    application/pdf
+  ]
+
+  # Active Storage service (nil = default service from storage.yml)
+  # config.storage_service = :amazon
+  # config.public_uploads = true
+
+  # ==========================================================================
+  # Editor Features
+  # ==========================================================================
+
+  config.enable_ai_features = true      # AI text/image generation
+  config.enable_code_editor = true      # Code/HTML editing
+  config.enable_asset_manager = true    # Media library
+
+  # Auto-save interval in seconds (0 = disabled)
+  config.autosave_interval = 60
+
+  # ==========================================================================
+  # Version History
+  # ==========================================================================
+
+  # Maximum versions to keep per page (0 = unlimited)
+  config.max_versions_per_page = 50
 end

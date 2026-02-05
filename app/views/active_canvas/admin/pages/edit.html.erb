@@ -56,13 +56,39 @@
         <p class="help-text">Determines the layout template used for this page.</p>
       </div>
 
-      <div class="form-group">
-        <div class="form-check" style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
-          <%= form.check_box :published, id: "page_published" %>
-          <label for="page_published" style="font-weight: 500;">
-            Publish this page
-          </label>
-          <p class="help-text" style="margin-left: 1.5rem; margin-top: 0.25rem;">Published pages are visible to the public. Draft pages are only visible in the admin.</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <% if ActiveCanvas::Partial.table_exists? %>
+        <!-- Header & Footer -->
+        <div class="form-group">
+          <label style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Header & Footer</label>
+          <div style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div class="form-check" style="display: flex; align-items: center; gap: 0.5rem;">
+                <%= form.check_box :show_header, id: "page_show_header", checked: @page.show_header? %>
+                <label for="page_show_header" style="margin: 0;">Show Header</label>
+              </div>
+              <div class="form-check" style="display: flex; align-items: center; gap: 0.5rem;">
+                <%= form.check_box :show_footer, id: "page_show_footer", checked: @page.show_footer? %>
+                <label for="page_show_footer" style="margin: 0;">Show Footer</label>
+              </div>
+            </div>
+          </div>
+          <p class="help-text"><%= link_to "Manage header & footer", admin_partials_path, style: "color: var(--primary);" %></p>
+        </div>
+        <% end %>
+
+        <!-- Publish Status -->
+        <div class="form-group">
+          <label style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Status</label>
+          <div style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+            <div class="form-check" style="display: flex; align-items: center; gap: 0.5rem;">
+              <%= form.check_box :published, id: "page_published" %>
+              <label for="page_published" style="font-weight: 500; margin: 0;">
+                Publish this page
+              </label>
+            </div>
+            <p class="help-text" style="margin-top: 0.5rem; margin-bottom: 0;">Published pages are visible to the public.</p>
+          </div>
         </div>
       </div>
     </div>

@@ -1,55 +1,40 @@
-<% content_for :page_title, "Partials" %>
+<% content_for :page_title, "Header & Footer" %>
 
 <!-- Page Header -->
 <div class="page-header">
   <div class="page-header-left">
     <h2>Header & Footer</h2>
-    <p class="page-header-subtitle">Design reusable header and footer for your pages</p>
+    <p class="page-header-subtitle">Design reusable components that appear on all your pages</p>
   </div>
 </div>
 
 <!-- Partials Grid -->
-<div class="partials-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
   <% @partials.each do |partial| %>
-    <div class="card" style="padding: 0; overflow: hidden;">
-      <!-- Partial Preview -->
-      <div style="background: var(--bg-muted); padding: 2rem; min-height: 120px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-color);">
-        <% if partial.content.present? %>
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5; margin-bottom: 0.5rem;">
-              <% if partial.header? %>
-                <rect x="3" y="3" width="18" height="6" rx="1"/>
-                <rect x="3" y="12" width="18" height="9" rx="1" opacity="0.3"/>
-              <% else %>
-                <rect x="3" y="3" width="18" height="9" rx="1" opacity="0.3"/>
-                <rect x="3" y="15" width="18" height="6" rx="1"/>
-              <% end %>
-            </svg>
-            <div>Content saved</div>
+    <div class="card">
+      <div style="padding: 1.5rem;">
+        <!-- Header Row -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Icon -->
+            <div style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: <%= partial.header? ? '#eef2ff' : '#ecfdf5' %>;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="<%= partial.header? ? '#6366f1' : '#10b981' %>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <% if partial.header? %>
+                  <rect x="3" y="3" width="18" height="6" rx="2"/>
+                  <rect x="3" y="13" width="18" height="8" rx="2" opacity="0.3"/>
+                <% else %>
+                  <rect x="3" y="3" width="18" height="8" rx="2" opacity="0.3"/>
+                  <rect x="3" y="15" width="18" height="6" rx="2"/>
+                <% end %>
+              </svg>
+            </div>
+            <!-- Title -->
+            <div>
+              <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem; font-weight: 600;"><%= partial.name %></h3>
+              <span style="font-size: 0.8125rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.025em;"><%= partial.partial_type %></span>
+            </div>
           </div>
-        <% else %>
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3; margin-bottom: 0.5rem;">
-              <% if partial.header? %>
-                <rect x="3" y="3" width="18" height="6" rx="1"/>
-                <rect x="3" y="12" width="18" height="9" rx="1" opacity="0.3"/>
-              <% else %>
-                <rect x="3" y="3" width="18" height="9" rx="1" opacity="0.3"/>
-                <rect x="3" y="15" width="18" height="6" rx="1"/>
-              <% end %>
-            </svg>
-            <div>No content yet</div>
-          </div>
-        <% end %>
-      </div>
-
-      <!-- Partial Info -->
-      <div style="padding: 1.25rem;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-          <div>
-            <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;"><%= partial.name %></h3>
-            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: capitalize;"><%= partial.partial_type %></span>
-          </div>
+          <!-- Status Badge -->
           <% if partial.active? %>
             <span class="badge badge-success">
               <span class="badge-dot"></span>
@@ -63,19 +48,47 @@
           <% end %>
         </div>
 
-        <div style="display: flex; gap: 0.5rem;">
-          <%= link_to editor_admin_partial_path(partial), class: "btn btn-primary btn-sm", style: "flex: 1;" do %>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Status Info -->
+        <div style="background: var(--bg-main); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem;">Content</div>
+              <div style="font-size: 0.875rem; font-weight: 500;">
+                <% if partial.content.present? %>
+                  <span style="color: var(--success);">Configured</span>
+                <% else %>
+                  <span style="color: var(--text-muted);">Empty</span>
+                <% end %>
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem;">Tailwind CSS</div>
+              <div style="font-size: 0.875rem; font-weight: 500;">
+                <% if partial.compiled_css.present? %>
+                  <span style="color: var(--success);"><%= number_to_human_size(partial.compiled_css.bytesize) %></span>
+                <% else %>
+                  <span style="color: var(--text-muted);">Not compiled</span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; gap: 0.75rem;">
+          <%= link_to editor_admin_partial_path(partial), class: "btn btn-primary", style: "flex: 1; justify-content: center;" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 2 7 12 12 22 7 12 2"/>
               <polyline points="2 17 12 22 22 17"/>
               <polyline points="2 12 12 17 22 12"/>
             </svg>
-            Design
+            Open Designer
           <% end %>
-          <%= link_to edit_admin_partial_path(partial), class: "btn btn-secondary btn-sm" do %>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <%= link_to edit_admin_partial_path(partial), class: "btn btn-secondary", title: "Settings" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m15.36-5.64l-4.24 4.24m0 0L7.88 7.88m4.24 4.24l4.24 4.24m-8.48 0l4.24-4.24"/>
+              <path d="M12 1v6m0 6v10"/>
+              <path d="M21 12h-6m-6 0H3"/>
             </svg>
           <% end %>
         </div>
@@ -84,21 +97,35 @@
   <% end %>
 </div>
 
-<!-- Info Box -->
-<div class="card" style="margin-top: 1.5rem; background: var(--bg-muted);">
-  <div style="display: flex; gap: 1rem; align-items: flex-start;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="16" x2="12" y2="12"/>
-      <line x1="12" y1="8" x2="12.01" y2="8"/>
-    </svg>
-    <div>
-      <p style="margin: 0 0 0.5rem 0; font-weight: 500;">How partials work</p>
-      <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
-        Header and footer partials are automatically included on pages where they're enabled.
-        Each page has checkboxes to show or hide the header and footer independently.
-        The partials are compiled with Tailwind CSS when saved.
-      </p>
+<!-- How It Works -->
+<div class="card" style="margin-top: 2rem;">
+  <div class="card-header">
+    <span class="card-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem;">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      How it works
+    </span>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+      <div style="text-align: center;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem; font-weight: 600;">1</div>
+        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem;">Design your partials</h4>
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin: 0;">Use the visual designer to create your header and footer</p>
+      </div>
+      <div style="text-align: center;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem; font-weight: 600;">2</div>
+        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem;">Enable per page</h4>
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin: 0;">Toggle header/footer visibility in each page's settings</p>
+      </div>
+      <div style="text-align: center;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem; font-weight: 600;">3</div>
+        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem;">Auto-compiled CSS</h4>
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin: 0;">Tailwind CSS is compiled automatically when you save</p>
+      </div>
     </div>
   </div>
 </div>

@@ -1,9 +1,36 @@
 <% content_for :page_title, "Edit #{@partial.name}" %>
 
+<!-- Page Header -->
 <div class="page-header">
   <div class="page-header-left">
-    <h2>Edit <%= @partial.name %></h2>
-    <p class="page-header-subtitle">Configure <%= @partial.partial_type %> settings</p>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <h2>Edit <%= @partial.name %></h2>
+      <% if @partial.active? %>
+        <span class="badge badge-success">
+          <span class="badge-dot"></span>
+          Active
+        </span>
+      <% else %>
+        <span class="badge badge-gray">
+          <span class="badge-dot"></span>
+          Inactive
+        </span>
+      <% end %>
+    </div>
+    <p class="page-header-subtitle">
+      <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="<%= @partial.header? ? '#6366f1' : '#10b981' %>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <% if @partial.header? %>
+            <rect x="3" y="3" width="18" height="6" rx="2"/>
+            <rect x="3" y="13" width="18" height="8" rx="2" opacity="0.3"/>
+          <% else %>
+            <rect x="3" y="3" width="18" height="8" rx="2" opacity="0.3"/>
+            <rect x="3" y="15" width="18" height="6" rx="2"/>
+          <% end %>
+        </svg>
+        <%= @partial.partial_type.capitalize %> partial
+      </span>
+    </p>
   </div>
   <div class="page-header-actions">
     <%= link_to editor_admin_partial_path(@partial), class: "btn btn-primary" do %>
@@ -17,25 +44,139 @@
   </div>
 </div>
 
-<div class="card">
-  <%= form_with model: @partial, url: admin_partial_path(@partial), method: :patch do |f| %>
-    <div class="form-group">
-      <%= f.label :name, class: "form-label" %>
-      <%= f.text_field :name, class: "form-input", placeholder: "e.g., Main Header" %>
-    </div>
+<!-- Two Column Layout -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
+  <!-- Main Column -->
+  <div>
+    <%= form_with model: @partial, url: admin_partial_path(@partial), method: :patch do |f| %>
+      <% if @partial.errors.any? %>
+        <div class="error-messages" style="margin-bottom: 1.5rem;">
+          <strong><%= pluralize(@partial.errors.count, "error") %> prohibited this partial from being saved:</strong>
+          <ul>
+            <% @partial.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
 
-    <div class="form-group">
-      <label class="form-label">Status</label>
-      <div class="checkbox-group">
-        <%= f.check_box :active, class: "form-checkbox" %>
-        <%= f.label :active, "Active - Show this #{@partial.partial_type} on pages", class: "checkbox-label" %>
+      <!-- Settings Card -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <span class="card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 0.5rem;">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Settings
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <%= f.label :name %>
+            <%= f.text_field :name, class: "form-control", placeholder: "e.g., Main Header" %>
+            <p class="help-text">A friendly name to identify this partial in the admin.</p>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Visibility</label>
+            <div style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <%= f.check_box :active, id: "partial_active" %>
+                <label for="partial_active" style="font-weight: 500; margin: 0;">
+                  Active
+                </label>
+              </div>
+              <p class="help-text" style="margin-top: 0.5rem; margin-bottom: 0;">
+                When active, this <%= @partial.partial_type %> will appear on pages that have it enabled.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="form-hint">When inactive, this <%= @partial.partial_type %> won't appear on any pages even if enabled.</p>
+
+      <!-- Form Actions -->
+      <div class="form-actions" style="background: var(--bg-card, white); padding: 1.25rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+        <%= f.submit "Save Settings", class: "btn btn-primary" %>
+        <%= link_to "Cancel", admin_partials_path, class: "btn btn-secondary" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Sidebar Column -->
+  <div>
+    <!-- Quick Actions -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">Actions</span>
+      </div>
+      <div style="padding: 1rem;">
+        <%= link_to editor_admin_partial_path(@partial), class: "btn btn-primary", style: "width: 100%; justify-content: center; margin-bottom: 0.75rem;" do %>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Open Designer
+        <% end %>
+        <%= link_to admin_partials_path, class: "btn btn-secondary", style: "width: 100%; justify-content: center;" do %>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to Partials
+        <% end %>
+      </div>
     </div>
 
-    <div class="form-actions">
-      <%= f.submit "Save Settings", class: "btn btn-primary" %>
-      <%= link_to "Cancel", admin_partials_path, class: "btn btn-secondary" %>
+    <!-- Status Info -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <span class="card-title">Status</span>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div style="padding: 0.875rem 1rem; border-bottom: 1px solid var(--border);">
+          <div style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem;">Content</div>
+          <div style="font-size: 0.9375rem;">
+            <% if @partial.content.present? %>
+              <span style="color: var(--success);">Configured</span>
+              <span style="color: var(--text-muted); font-size: 0.8125rem; margin-left: 0.5rem;">(<%= number_to_human_size(@partial.content.bytesize) %>)</span>
+            <% else %>
+              <span style="color: var(--text-muted);">Empty</span>
+            <% end %>
+          </div>
+        </div>
+        <div style="padding: 0.875rem 1rem; border-bottom: 1px solid var(--border);">
+          <div style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem;">Tailwind CSS</div>
+          <div style="font-size: 0.9375rem;">
+            <% if @partial.compiled_css.present? %>
+              <span style="color: var(--success);"><%= number_to_human_size(@partial.compiled_css.bytesize) %></span>
+            <% else %>
+              <span style="color: var(--text-muted);">Not compiled</span>
+            <% end %>
+          </div>
+        </div>
+        <div style="padding: 0.875rem 1rem;">
+          <div style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem;">Last Updated</div>
+          <div style="font-size: 0.9375rem;"><%= @partial.updated_at.strftime("%b %d, %Y at %l:%M %p") %></div>
+        </div>
+      </div>
     </div>
-  <% end %>
+
+    <!-- Info Box -->
+    <div class="card">
+      <div style="padding: 1rem;">
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <div style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5;">
+            This <%= @partial.partial_type %> appears at the <%= @partial.header? ? 'top' : 'bottom' %> of pages that have it enabled.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

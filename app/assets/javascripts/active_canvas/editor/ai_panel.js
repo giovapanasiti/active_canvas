@@ -747,7 +747,7 @@
   function insertTextContent() {
     const html = elements.textOutput?.textContent;
     if (html) {
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.textInsertBtn);
     }
   }
 
@@ -758,7 +758,7 @@
     const imageUrl = elements.imageOutput?.dataset.imageUrl;
     if (imageUrl) {
       const html = `<img src="${imageUrl}" alt="AI Generated Image" style="max-width: 100%; height: auto;" />`;
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.imageInsertBtn);
     }
   }
 
@@ -768,7 +768,7 @@
   function insertScreenshotContent() {
     const html = elements.screenshotOutput?.textContent;
     if (html) {
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.screenshotInsertBtn);
     }
   }
 
@@ -790,7 +790,7 @@
   /**
    * Insert HTML into GrapeJS editor
    */
-  function insertHtmlToEditor(html) {
+  function insertHtmlToEditor(html, insertButton) {
     const editor = window.ActiveCanvasEditor?.instance;
     if (!editor) {
       showToast('Editor not ready', 'error');
@@ -813,10 +813,42 @@
         wrapper.append(html);
         showToast('Content added to page', 'success');
       }
+
+      // Apply cooldown to prevent double-insertion
+      if (insertButton) {
+        startInsertCooldown(insertButton);
+      }
     } catch (error) {
       console.error('Insert error:', error);
       showToast('Failed to insert content', 'error');
     }
+  }
+
+  /**
+   * Start cooldown on insert button to prevent accidental double-insertion
+   */
+  function startInsertCooldown(button) {
+    if (!button) return;
+
+    const originalText = button.innerHTML;
+    const cooldownSeconds = 20;
+    let remaining = cooldownSeconds;
+
+    button.disabled = true;
+    button.classList.add('cooldown');
+    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Inserted (${remaining}s)`;
+
+    const interval = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Inserted (${remaining}s)`;
+      } else {
+        clearInterval(interval);
+        button.disabled = false;
+        button.classList.remove('cooldown');
+        button.innerHTML = originalText;
+      }
+    }, 1000);
   }
 
   /**

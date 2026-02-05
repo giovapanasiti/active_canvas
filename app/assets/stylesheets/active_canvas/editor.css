@@ -2547,6 +2547,23 @@
   border-color: var(--editor-primary-hover);
 }
 
+.ai-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-action-btn.cooldown {
+  background: var(--editor-success) !important;
+  border-color: var(--editor-success) !important;
+  color: white !important;
+  opacity: 1;
+}
+
+.ai-action-btn.cooldown:hover {
+  background: var(--editor-success) !important;
+  border-color: var(--editor-success) !important;
+}
+
 /* Prompt Container */
 .ai-prompt-container {
   display: flex;
