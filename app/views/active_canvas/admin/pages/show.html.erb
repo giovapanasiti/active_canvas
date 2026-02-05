@@ -28,6 +28,16 @@
       </svg>
       Edit Settings
     <% end %>
+    <%= link_to versions_admin_page_path(@page), class: "btn btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      History
+      <% if @page.versions.any? %>
+        <span class="badge badge-gray" style="margin-left: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.6875rem;"><%= @page.versions.count %></span>
+      <% end %>
+    <% end %>
     <% if @page.published? && @page.slug.present? %>
       <%= link_to public_page_path(@page.slug), target: "_blank", class: "btn btn-secondary" do %>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

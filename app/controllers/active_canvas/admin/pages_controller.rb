@@ -1,7 +1,7 @@
 module ActiveCanvas
   module Admin
     class PagesController < ApplicationController
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -91,6 +91,10 @@ module ActiveCanvas
             format.json { render json: { success: false, errors: @page.errors.full_messages }, status: :unprocessable_entity }
           end
         end
+      end
+
+      def versions
+        @versions = @page.versions.recent.limit(50)
       end
 
       private

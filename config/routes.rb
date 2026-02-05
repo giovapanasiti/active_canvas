@@ -6,7 +6,9 @@ ActiveCanvas::Engine.routes.draw do
         patch :update_content
         get :editor
         patch :save_editor
+        get :versions
       end
+      resources :versions, only: [:show], controller: "page_versions"
     end
     resources :page_types
     resources :media, only: [:index, :show, :create, :destroy]

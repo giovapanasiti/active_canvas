@@ -15,10 +15,16 @@ module ActiveCanvas
     # Example: config.current_user_method = :current_user
     attr_accessor :current_user_method
 
+    # CSS Framework for the editor and public pages
+    # Options: :tailwind, :bootstrap5, :none
+    # This sets the default; can be overridden in admin settings
+    attr_accessor :css_framework
+
     def initialize
       @authenticate_public = nil
       @authenticate_admin = nil
       @current_user_method = :current_user
+      @css_framework = :tailwind
     end
   end
 

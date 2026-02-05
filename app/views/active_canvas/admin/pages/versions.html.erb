@@ -1,0 +1,333 @@
+<% content_for :page_title, "#{@page.title} - Version History" %>
+
+<style>
+  .version-timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .version-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .version-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+  }
+  .version-item:last-child {
+    padding-bottom: 0;
+  }
+  .version-dot {
+    position: absolute;
+    left: -1.75rem;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    background: var(--primary);
+    border-radius: 50%;
+    border: 3px solid var(--bg-card);
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .version-dot.first {
+    background: var(--success);
+    box-shadow: 0 0 0 2px var(--success);
+  }
+  .version-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    transition: box-shadow 0.15s ease;
+  }
+  .version-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+  .version-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .version-number {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.15s ease;
+  }
+  .version-number:hover {
+    color: var(--primary);
+  }
+  .version-number:hover svg {
+    opacity: 1;
+  }
+  .version-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .version-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+  .version-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .version-meta-item svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.7;
+  }
+  .version-changes {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .version-diff {
+    margin-top: 0.75rem;
+  }
+  .version-diff-toggle {
+    font-size: 0.75rem;
+    color: var(--primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .version-diff-toggle:hover {
+    text-decoration: underline;
+  }
+  .version-diff-content {
+    display: none;
+    margin-top: 0.5rem;
+    background: #1e293b;
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    max-height: 300px;
+    overflow: auto;
+  }
+  .version-diff-content.show {
+    display: block;
+  }
+  .diff-line {
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .diff-line.added {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+  }
+  .diff-line.removed {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+  }
+  .diff-line.unchanged {
+    color: #94a3b8;
+  }
+  .size-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+  .size-change.positive {
+    background: var(--success-light);
+    color: var(--success);
+  }
+  .size-change.negative {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+  .size-change.neutral {
+    background: var(--bg-main);
+    color: var(--text-muted);
+  }
+  .empty-versions {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+  }
+  .empty-versions svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+</style>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Version History</h2>
+    <p class="page-header-subtitle">
+      <%= @page.title %> &middot; <%= @page.versions.count %> versions
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to admin_page_path(@page), class: "btn btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to Page
+    <% end %>
+    <%= link_to editor_admin_page_path(@page), class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      Open Editor
+    <% end %>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="card">
+  <div class="card-body">
+    <% if @versions.any? %>
+      <div class="version-timeline">
+        <% @versions.each_with_index do |version, index| %>
+          <div class="version-item">
+            <div class="version-dot <%= 'first' if index == 0 %>"></div>
+            <div class="version-card">
+              <div class="version-header">
+                <%= link_to admin_page_version_path(@page, version), class: "version-number", style: "text-decoration: none; color: inherit;" do %>
+                  Version <%= version.version_number %>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.25rem; opacity: 0.5;">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                <% end %>
+                <span class="version-time">
+                  <%= time_ago_in_words(version.created_at) %> ago
+                  <span style="color: var(--text-light);">&middot; <%= version.created_at.strftime("%b %d, %Y at %l:%M %p") %></span>
+                </span>
+              </div>
+
+              <div class="version-meta">
+                <% if version.changed_by.present? %>
+                  <div class="version-meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <%= version.changed_by %>
+                  </div>
+                <% end %>
+
+                <div class="version-meta-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <%= number_to_human_size(version.content_size_after || 0) %>
+                </div>
+
+                <div class="version-meta-item">
+                  <% diff = version.size_difference %>
+                  <% if diff > 0 %>
+                    <span class="size-change positive">+<%= number_to_human_size(diff) %></span>
+                  <% elsif diff < 0 %>
+                    <span class="size-change negative"><%= number_to_human_size(diff) %></span>
+                  <% else %>
+                    <span class="size-change neutral">No size change</span>
+                  <% end %>
+                </div>
+              </div>
+
+              <% if version.change_summary.present? %>
+                <div class="version-changes">
+                  <span style="font-size: 0.8125rem; color: var(--text-muted);">
+                    <%= version.change_summary.capitalize %>
+                  </span>
+                </div>
+              <% end %>
+
+              <div class="version-actions" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem; align-items: center;">
+                <% if version.content_diff.present? %>
+                  <button type="button" class="version-diff-toggle" onclick="toggleDiff(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                    Quick diff
+                  </button>
+                <% end %>
+                <%= link_to admin_page_version_path(@page, version), class: "btn btn-secondary btn-sm", style: "margin-left: auto;" do %>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  View Details
+                <% end %>
+              </div>
+
+              <% if version.content_diff.present? %>
+                <div class="version-diff-content">
+                  <% version.content_diff.to_s.lines.first(100).each do |line| %>
+                    <% css_class = if line.start_with?('+')
+                                     'added'
+                                   elsif line.start_with?('-')
+                                     'removed'
+                                   else
+                                     'unchanged'
+                                   end %>
+                    <div class="diff-line <%= css_class %>"><%= line %></div>
+                  <% end %>
+                  <% if version.content_diff.to_s.lines.size > 100 %>
+                    <div class="diff-line unchanged" style="color: var(--text-muted); font-style: italic;">
+                      ... <%= version.content_diff.to_s.lines.size - 100 %> more lines
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-versions">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">No version history yet</h3>
+        <p style="font-size: 0.875rem;">Changes will be tracked when you edit and save the page.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  function toggleDiff(button) {
+    const card = button.closest('.version-card');
+    const content = card.querySelector('.version-diff-content');
+
+    if (content.classList.contains('show')) {
+      content.classList.remove('show');
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg> Quick diff';
+    } else {
+      content.classList.add('show');
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Hide diff';
+    }
+  }
+</script>

@@ -1,0 +1,469 @@
+<% content_for :page_title, "Version #{@version.version_number} - #{@page.title}" %>
+
+<style>
+  .version-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .version-nav-arrows {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .version-nav-arrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    transition: all 0.15s ease;
+  }
+  .version-nav-arrow:hover {
+    background: var(--bg-main);
+    color: var(--text);
+    border-color: var(--primary);
+  }
+  .version-nav-arrow.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .version-info-bar {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: var(--bg-main);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+  }
+  .version-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .version-info-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .version-info-value {
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+  .diff-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .diff-tab {
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .diff-tab:hover {
+    color: var(--text);
+    background: var(--bg-main);
+  }
+  .diff-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  .diff-panel {
+    display: none;
+    padding: 1rem;
+  }
+  .diff-panel.active {
+    display: block;
+  }
+  .diff-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .diff-side {
+    background: #0f172a;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .diff-side-header {
+    padding: 0.75rem 1rem;
+    background: #1e293b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .diff-side-header.before {
+    color: #f87171;
+  }
+  .diff-side-header.after {
+    color: #4ade80;
+  }
+  .diff-side-content {
+    padding: 1rem;
+    font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+    max-height: 500px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .unified-diff {
+    background: #0f172a;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .unified-diff-header {
+    padding: 0.75rem 1rem;
+    background: #1e293b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .unified-diff-content {
+    padding: 0;
+    font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-height: 600px;
+    overflow: auto;
+  }
+  .diff-line {
+    display: flex;
+    padding: 0 1rem;
+    min-height: 1.6em;
+  }
+  .diff-line-num {
+    width: 3rem;
+    text-align: right;
+    padding-right: 1rem;
+    color: #475569;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .diff-line-content {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .diff-line.added {
+    background: rgba(74, 222, 128, 0.15);
+  }
+  .diff-line.added .diff-line-content {
+    color: #4ade80;
+  }
+  .diff-line.removed {
+    background: rgba(248, 113, 113, 0.15);
+  }
+  .diff-line.removed .diff-line-content {
+    color: #f87171;
+  }
+  .diff-line.unchanged .diff-line-content {
+    color: #94a3b8;
+  }
+  .diff-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+  }
+  .diff-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .diff-stat.additions {
+    color: #4ade80;
+  }
+  .diff-stat.deletions {
+    color: #f87171;
+  }
+  .preview-frame {
+    width: 100%;
+    height: 500px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: white;
+  }
+  .no-content {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted);
+  }
+</style>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Version <%= @version.version_number %></h2>
+    <p class="page-header-subtitle">
+      <%= @page.title %> &middot; <%= @version.created_at.strftime("%B %d, %Y at %l:%M %p") %>
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to versions_admin_page_path(@page), class: "btn btn-secondary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to History
+    <% end %>
+  </div>
+</div>
+
+<!-- Version Navigation -->
+<div class="version-nav">
+  <div class="version-nav-arrows">
+    <% if @previous_version %>
+      <%= link_to admin_page_version_path(@page, @previous_version), class: "version-nav-arrow" do %>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Version <%= @previous_version.version_number %>
+      <% end %>
+    <% else %>
+      <span class="version-nav-arrow disabled">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        No older version
+      </span>
+    <% end %>
+  </div>
+
+  <span style="color: var(--text-muted); font-size: 0.875rem;">
+    Version <%= @version.version_number %> of <%= @page.versions.count %>
+  </span>
+
+  <div class="version-nav-arrows">
+    <% if @next_version %>
+      <%= link_to admin_page_version_path(@page, @next_version), class: "version-nav-arrow" do %>
+        Version <%= @next_version.version_number %>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      <% end %>
+    <% else %>
+      <span class="version-nav-arrow disabled">
+        Latest version
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </span>
+    <% end %>
+  </div>
+</div>
+
+<!-- Version Info -->
+<div class="version-info-bar">
+  <div class="version-info-item">
+    <span class="version-info-label">Created</span>
+    <span class="version-info-value"><%= time_ago_in_words(@version.created_at) %> ago</span>
+  </div>
+  <% if @version.changed_by.present? %>
+    <div class="version-info-item">
+      <span class="version-info-label">Changed by</span>
+      <span class="version-info-value"><%= @version.changed_by %></span>
+    </div>
+  <% end %>
+  <div class="version-info-item">
+    <span class="version-info-label">Size before</span>
+    <span class="version-info-value"><%= number_to_human_size(@version.content_size_before || 0) %></span>
+  </div>
+  <div class="version-info-item">
+    <span class="version-info-label">Size after</span>
+    <span class="version-info-value"><%= number_to_human_size(@version.content_size_after || 0) %></span>
+  </div>
+  <div class="version-info-item">
+    <span class="version-info-label">Difference</span>
+    <span class="version-info-value">
+      <% diff = @version.size_difference %>
+      <% if diff > 0 %>
+        <span style="color: var(--success);">+<%= number_to_human_size(diff) %></span>
+      <% elsif diff < 0 %>
+        <span style="color: var(--danger);"><%= number_to_human_size(diff) %></span>
+      <% else %>
+        <span style="color: var(--text-muted);">No change</span>
+      <% end %>
+    </span>
+  </div>
+  <% if @version.change_summary.present? %>
+    <div class="version-info-item">
+      <span class="version-info-label">Summary</span>
+      <span class="version-info-value"><%= @version.change_summary %></span>
+    </div>
+  <% end %>
+</div>
+
+<!-- Diff Tabs -->
+<div class="card">
+  <div class="diff-tabs">
+    <button type="button" class="diff-tab active" onclick="showDiffPanel('unified')">Unified Diff</button>
+    <button type="button" class="diff-tab" onclick="showDiffPanel('side-by-side')">Side by Side</button>
+    <button type="button" class="diff-tab" onclick="showDiffPanel('before')">Before</button>
+    <button type="button" class="diff-tab" onclick="showDiffPanel('after')">After</button>
+    <button type="button" class="diff-tab" onclick="showDiffPanel('preview')">Preview After</button>
+  </div>
+
+  <!-- Unified Diff -->
+  <div id="panel-unified" class="diff-panel active">
+    <% if @version.content_diff.present? %>
+      <%
+        lines = @version.content_diff.to_s.lines
+        additions = lines.count { |l| l.start_with?('+') }
+        deletions = lines.count { |l| l.start_with?('-') }
+      %>
+      <div class="unified-diff">
+        <div class="unified-diff-header">
+          <span>Content changes</span>
+          <div class="diff-stats">
+            <span class="diff-stat additions">+<%= additions %> additions</span>
+            <span class="diff-stat deletions">-<%= deletions %> deletions</span>
+          </div>
+        </div>
+        <div class="unified-diff-content">
+          <% lines.each_with_index do |line, index| %>
+            <%
+              css_class = if line.start_with?('+')
+                            'added'
+                          elsif line.start_with?('-')
+                            'removed'
+                          else
+                            'unchanged'
+                          end
+            %>
+            <div class="diff-line <%= css_class %>">
+              <span class="diff-line-num"><%= index + 1 %></span>
+              <span class="diff-line-content"><%= line.chomp %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="no-content">
+        <p>No diff available for this version.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Side by Side -->
+  <div id="panel-side-by-side" class="diff-panel">
+    <div class="diff-container">
+      <div class="diff-side">
+        <div class="diff-side-header before">
+          <span>Before</span>
+          <span style="font-weight: 400; text-transform: none;"><%= number_to_human_size(@version.content_size_before || 0) %></span>
+        </div>
+        <div class="diff-side-content"><%= @version.content_before %></div>
+      </div>
+      <div class="diff-side">
+        <div class="diff-side-header after">
+          <span>After</span>
+          <span style="font-weight: 400; text-transform: none;"><%= number_to_human_size(@version.content_size_after || 0) %></span>
+        </div>
+        <div class="diff-side-content"><%= @version.content_after %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Before Only -->
+  <div id="panel-before" class="diff-panel">
+    <% if @version.content_before.present? %>
+      <div class="unified-diff">
+        <div class="unified-diff-header">
+          <span>Content before this change</span>
+          <span style="font-weight: 400;"><%= number_to_human_size(@version.content_size_before || 0) %></span>
+        </div>
+        <div class="unified-diff-content">
+          <% @version.content_before.to_s.lines.each_with_index do |line, index| %>
+            <div class="diff-line unchanged">
+              <span class="diff-line-num"><%= index + 1 %></span>
+              <span class="diff-line-content"><%= line.chomp %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="no-content">
+        <p>No previous content (this may be the first version).</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- After Only -->
+  <div id="panel-after" class="diff-panel">
+    <% if @version.content_after.present? %>
+      <div class="unified-diff">
+        <div class="unified-diff-header">
+          <span>Content after this change</span>
+          <span style="font-weight: 400;"><%= number_to_human_size(@version.content_size_after || 0) %></span>
+        </div>
+        <div class="unified-diff-content">
+          <% @version.content_after.to_s.lines.each_with_index do |line, index| %>
+            <div class="diff-line unchanged">
+              <span class="diff-line-num"><%= index + 1 %></span>
+              <span class="diff-line-content"><%= line.chomp %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="no-content">
+        <p>No content recorded for this version.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Preview -->
+  <div id="panel-preview" class="diff-panel">
+    <% if @version.content_after.present? %>
+      <iframe id="preview-frame" class="preview-frame" srcdoc="<%= @version.content_after.gsub('"', '&quot;') %>"></iframe>
+    <% else %>
+      <div class="no-content">
+        <p>No content to preview.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  function showDiffPanel(panelId) {
+    // Hide all panels
+    document.querySelectorAll('.diff-panel').forEach(panel => {
+      panel.classList.remove('active');
+    });
+
+    // Deactivate all tabs
+    document.querySelectorAll('.diff-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+
+    // Show selected panel
+    document.getElementById('panel-' + panelId).classList.add('active');
+
+    // Activate selected tab
+    event.target.classList.add('active');
+  }
+</script>

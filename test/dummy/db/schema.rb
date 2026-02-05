@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_04_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_05_000001) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -51,6 +51,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_04_200000) do
     t.index ["key"], name: "index_active_canvas_page_types_on_key", unique: true
   end
 
+  create_table "active_canvas_page_versions", force: :cascade do |t|
+    t.string "change_summary"
+    t.string "changed_by"
+    t.text "content_after"
+    t.text "content_before"
+    t.text "content_diff"
+    t.integer "content_size_after"
+    t.integer "content_size_before"
+    t.datetime "created_at", null: false
+    t.text "css_after"
+    t.text "css_before"
+    t.integer "page_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "version_number", null: false
+    t.index ["created_at"], name: "index_active_canvas_page_versions_on_created_at"
+    t.index ["page_id", "version_number"], name: "idx_on_page_id_version_number_e0425bcf98", unique: true
+    t.index ["page_id"], name: "index_active_canvas_page_versions_on_page_id"
+  end
+
   create_table "active_canvas_pages", force: :cascade do |t|
     t.string "canonical_url"
     t.text "compiled_tailwind_css"
@@ -88,5 +107,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_04_200000) do
     t.index ["key"], name: "index_active_canvas_settings_on_key", unique: true
   end
 
+  add_foreign_key "active_canvas_page_versions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_pages", "active_canvas_page_types", column: "page_type_id"
 end

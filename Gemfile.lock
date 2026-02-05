@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    active_canvas (0.1.0)
+    active_canvas (0.0.1)
       rails (>= 8.0.0)
       ruby_llm (>= 1.0)
 
