@@ -56,20 +56,16 @@ module ActiveCanvas
     private
 
     def should_compile_css?
-      saved_change_to_content? && content.present? && tailwind_available?
-    end
-
-    def tailwind_available?
-      defined?(Tailwindcss)
+      saved_change_to_content? && content.present? && TailwindCompiler.available?
     end
 
     def compile_tailwind_css
-      return unless tailwind_available?
+      return unless TailwindCompiler.available?
 
       begin
-        compiled = Tailwindcss::Compiler.new(content: content.to_s).compile
+        compiled = TailwindCompiler.compile(content.to_s, identifier: "partial ##{id} (#{name})")
         update_column(:compiled_css, compiled)
-      rescue => e
+      rescue TailwindCompiler::CompilationError => e
         Rails.logger.error "[ActiveCanvas] Failed to compile Tailwind CSS for partial #{id}: #{e.message}"
       end
     end

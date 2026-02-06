@@ -61,19 +61,13 @@ module ActiveCanvas
         executable = Tailwindcss::Ruby.executable
         log_debug "Using Tailwind executable: #{executable}"
 
-        # For Tailwind v4, we need to use an input CSS file with @source directive
-        # instead of the --content CLI flag
-        input_css_file = File.join(File.dirname(html_file), "input.css")
+        dir = File.dirname(html_file)
+        input_css_file = File.join(dir, "input.css")
 
-        # Tailwind 4.x uses @import "tailwindcss" with source() function
-        # or @source directive to specify content paths
-        input_css = <<~CSS
-          @import "tailwindcss";
-          @source "#{html_file}";
-        CSS
-
+        # Build input CSS with Tailwind import and source directive
+        input_css = build_input_css(html_file)
         File.write(input_css_file, input_css)
-        log_debug "Input CSS with @source: #{input_css.strip}"
+        log_debug "Input CSS with config: #{input_css.lines.first(10).join.strip}..."
 
         command = [
           executable,
@@ -113,6 +107,33 @@ module ActiveCanvas
         log_debug "Read #{css_content.bytesize} bytes from output file"
 
         css_content
+      end
+
+      def build_input_css(html_file)
+        config = Setting.tailwind_config rescue {}
+        theme_extends = config.dig(:theme, :extend) || {}
+
+        css_parts = [
+          '@import "tailwindcss";',
+          "@source \"#{html_file}\";"
+        ]
+
+        # Apply custom colors from config
+        if theme_extends[:colors].present?
+          theme_extends[:colors].each do |name, value|
+            css_parts << "@theme { --color-#{name}: #{value}; }"
+          end
+        end
+
+        # Apply custom fonts from config
+        if theme_extends[:fontFamily].present?
+          theme_extends[:fontFamily].each do |name, fonts|
+            font_list = Array(fonts).map { |f| f.include?(" ") ? "\"#{f}\"" : f }.join(", ")
+            css_parts << "@theme { --font-#{name}: #{font_list}; }"
+          end
+        end
+
+        css_parts.join("\n")
       end
 
       def log_info(message)
