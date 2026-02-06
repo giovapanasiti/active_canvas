@@ -217,9 +217,9 @@ module ActiveCanvas
         http_basic_password.present?
     end
 
-    # Helper to check if AI features are available
+    # Helper to check if AI features are enabled
     def ai_available?
-      @enable_ai_features && defined?(RubyLLM)
+      @enable_ai_features
     end
 
     # Helper to check if Tailwind compilation is available
