@@ -25,6 +25,8 @@ ActiveCanvas::Engine.routes.draw do
       post :sync_ai_models
       patch :toggle_ai_model
       patch :bulk_toggle_ai_models
+      post :create_ai_model
+      delete :destroy_ai_model
       patch :update_tailwind_config
       post :recompile_tailwind
     end
