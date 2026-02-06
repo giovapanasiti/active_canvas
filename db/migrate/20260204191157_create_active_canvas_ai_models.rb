@@ -1,6 +1,6 @@
 class CreateActiveCanvasAiModels < ActiveRecord::Migration[8.0]
   def change
-    create_table :active_canvas_ai_models do |t|
+    create_table :active_canvas_ai_models, if_not_exists: true do |t|
       t.string :model_id, null: false
       t.string :provider, null: false
       t.string :model_type
@@ -17,9 +17,9 @@ class CreateActiveCanvasAiModels < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :active_canvas_ai_models, :model_id, unique: true
-    add_index :active_canvas_ai_models, :provider
-    add_index :active_canvas_ai_models, :model_type
-    add_index :active_canvas_ai_models, :active
+    add_index :active_canvas_ai_models, :model_id, unique: true, if_not_exists: true
+    add_index :active_canvas_ai_models, :provider, if_not_exists: true
+    add_index :active_canvas_ai_models, :model_type, if_not_exists: true
+    add_index :active_canvas_ai_models, :active, if_not_exists: true
   end
 end

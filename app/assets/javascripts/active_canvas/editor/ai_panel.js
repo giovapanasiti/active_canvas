@@ -5,9 +5,12 @@
 (function() {
   'use strict';
 
+  const STORAGE_PREFIX = 'active_canvas_ai_model_';
+
   // State
   let aiStatus = null;
   let availableModels = { text: [], image: [], vision: [] };
+  let selectedModels = { text: null, image: null, screenshot: null };
   let currentMode = 'page';
   let currentTab = 'text';
   let isGenerating = false;
@@ -15,6 +18,9 @@
 
   // DOM Elements (cached after init)
   let elements = {};
+
+  // Model pickers state
+  let pickers = {};
 
   /**
    * Initialize the AI panel
@@ -26,6 +32,7 @@
     }
 
     cacheElements();
+    initModelPickers();
     setupEventListeners();
     checkAiStatus();
     setupTextareaAutoResize();
@@ -42,7 +49,6 @@
       tabPanels: document.querySelectorAll('.ai-tab-panel'),
       // Text generation
       textPrompt: document.getElementById('ai-text-prompt'),
-      textModelSelect: document.getElementById('ai-text-model'),
       textGenerateBtn: document.getElementById('btn-ai-text-generate'),
       textOutput: document.getElementById('ai-text-output'),
       textOutputWrapper: document.getElementById('ai-text-output-wrapper'),
@@ -52,7 +58,6 @@
       copyBtn: document.getElementById('btn-ai-copy'),
       // Image generation
       imagePrompt: document.getElementById('ai-image-prompt'),
-      imageModelSelect: document.getElementById('ai-image-model'),
       imageGenerateBtn: document.getElementById('btn-ai-image-generate'),
       imageOutput: document.getElementById('ai-image-output'),
       imageOutputWrapper: document.getElementById('ai-image-output-wrapper'),
@@ -62,7 +67,6 @@
       screenshotInput: document.getElementById('ai-screenshot-input'),
       screenshotPreview: document.getElementById('ai-screenshot-preview'),
       screenshotPrompt: document.getElementById('ai-screenshot-prompt'),
-      screenshotModelSelect: document.getElementById('ai-screenshot-model'),
       screenshotConvertBtn: document.getElementById('btn-ai-screenshot-convert'),
       screenshotOutput: document.getElementById('ai-screenshot-output'),
       screenshotOutputWrapper: document.getElementById('ai-screenshot-output-wrapper'),
@@ -79,6 +83,175 @@
       notConfigured: document.getElementById('ai-not-configured'),
       panelTabs: document.getElementById('ai-panel-tabs')
     };
+  }
+
+  /**
+   * Initialize model picker components
+   */
+  function initModelPickers() {
+    ['text', 'image', 'screenshot'].forEach(tab => {
+      const el = document.getElementById(`ai-${tab}-model-picker`);
+      if (!el) return;
+
+      const picker = {
+        root: el,
+        btn: el.querySelector('.ai-model-picker-btn'),
+        label: el.querySelector('.ai-model-picker-label'),
+        dropdown: el.querySelector('.ai-model-picker-dropdown'),
+        search: el.querySelector('.ai-model-picker-search'),
+        list: el.querySelector('.ai-model-picker-list'),
+        open: false,
+        tab: tab
+      };
+
+      picker.btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePicker(tab);
+      });
+
+      picker.search.addEventListener('input', () => filterModels(tab));
+      picker.search.addEventListener('keydown', (e) => handlePickerKeydown(e, tab));
+
+      pickers[tab] = picker;
+    });
+
+    // Close all pickers on outside click
+    document.addEventListener('click', closeAllPickers);
+  }
+
+  /**
+   * Toggle a model picker open/closed
+   */
+  function togglePicker(tab) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    if (picker.open) {
+      closePicker(tab);
+    } else {
+      closeAllPickers();
+      openPicker(tab);
+    }
+  }
+
+  function openPicker(tab) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    picker.open = true;
+    picker.root.classList.add('open');
+    picker.search.value = '';
+    filterModels(tab);
+    picker.search.focus();
+  }
+
+  function closePicker(tab) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    picker.open = false;
+    picker.root.classList.remove('open');
+  }
+
+  function closeAllPickers() {
+    Object.keys(pickers).forEach(closePicker);
+  }
+
+  /**
+   * Filter models in a picker based on search input
+   */
+  function filterModels(tab) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    const query = picker.search.value.toLowerCase().trim();
+    const modelKey = tab === 'screenshot' ? 'vision' : tab;
+    const models = availableModels[modelKey] || [];
+
+    const filtered = query
+      ? models.filter(m => m.name.toLowerCase().includes(query) || m.id.toLowerCase().includes(query) || (m.provider || '').toLowerCase().includes(query))
+      : models;
+
+    renderPickerList(tab, filtered);
+  }
+
+  /**
+   * Render the model list in a picker
+   */
+  function renderPickerList(tab, models) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    if (!models.length) {
+      picker.list.innerHTML = '<li class="ai-model-picker-empty">No models found</li>';
+      return;
+    }
+
+    picker.list.innerHTML = models.map(m => {
+      const isSelected = selectedModels[tab] === m.id;
+      return `<li class="ai-model-picker-item${isSelected ? ' selected' : ''}" data-value="${escapeHtml(m.id)}" role="option" aria-selected="${isSelected}">
+        <span class="ai-model-picker-item-name">${escapeHtml(m.name)}</span>
+        <span class="ai-model-picker-item-provider">${escapeHtml(m.provider || '')}</span>
+      </li>`;
+    }).join('');
+
+    // Bind click on each item
+    picker.list.querySelectorAll('.ai-model-picker-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectModel(tab, item.dataset.value);
+      });
+    });
+  }
+
+  /**
+   * Select a model for a tab
+   */
+  function selectModel(tab, modelId) {
+    const modelKey = tab === 'screenshot' ? 'vision' : tab;
+    const models = availableModels[modelKey] || [];
+    const model = models.find(m => m.id === modelId);
+
+    selectedModels[tab] = modelId;
+
+    // Update button label
+    const picker = pickers[tab];
+    if (picker && model) {
+      picker.label.textContent = model.name;
+    }
+
+    // Persist to localStorage
+    try {
+      localStorage.setItem(STORAGE_PREFIX + tab, modelId);
+    } catch (e) {
+      // localStorage not available
+    }
+
+    closePicker(tab);
+  }
+
+  /**
+   * Get the currently selected model ID for a tab
+   */
+  function getSelectedModel(tab) {
+    return selectedModels[tab] || null;
+  }
+
+  /**
+   * Handle keyboard navigation inside picker
+   */
+  function handlePickerKeydown(e, tab) {
+    const picker = pickers[tab];
+    if (!picker) return;
+
+    if (e.key === 'Escape') {
+      closePicker(tab);
+      picker.btn.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = picker.list.querySelector('.ai-model-picker-item');
+      if (first) selectModel(tab, first.dataset.value);
+    }
   }
 
   /**
@@ -135,33 +308,49 @@
         vision: data.vision || []
       };
 
-      populateModelSelects(data.default_text, data.default_image, data.default_vision);
+      populateModelPickers(data.default_text, data.default_image, data.default_vision);
     } catch (error) {
       console.error('AI Panel: Failed to load models', error);
     }
   }
 
   /**
-   * Populate model select dropdowns
+   * Populate model pickers with loaded data, restoring last-used from localStorage
    */
-  function populateModelSelects(defaultText, defaultImage, defaultVision) {
-    if (elements.textModelSelect && availableModels.text.length) {
-      elements.textModelSelect.innerHTML = availableModels.text
-        .map(m => `<option value="${m.id}" ${m.id === defaultText ? 'selected' : ''}>${m.name}</option>`)
-        .join('');
-    }
+  function populateModelPickers(defaultText, defaultImage, defaultVision) {
+    const defaults = { text: defaultText, image: defaultImage, screenshot: defaultVision };
+    const modelKeys = { text: 'text', image: 'image', screenshot: 'vision' };
 
-    if (elements.imageModelSelect && availableModels.image.length) {
-      elements.imageModelSelect.innerHTML = availableModels.image
-        .map(m => `<option value="${m.id}" ${m.id === defaultImage ? 'selected' : ''}>${m.name}</option>`)
-        .join('');
-    }
+    ['text', 'image', 'screenshot'].forEach(tab => {
+      const models = availableModels[modelKeys[tab]] || [];
+      if (!models.length) return;
 
-    if (elements.screenshotModelSelect && availableModels.vision.length) {
-      elements.screenshotModelSelect.innerHTML = availableModels.vision
-        .map(m => `<option value="${m.id}" ${m.id === defaultVision ? 'selected' : ''}>${m.name}</option>`)
-        .join('');
-    }
+      // Determine which model to select: localStorage > server default > first
+      let saved = null;
+      try { saved = localStorage.getItem(STORAGE_PREFIX + tab); } catch (e) {}
+
+      const serverDefault = defaults[tab];
+      const modelIds = models.map(m => m.id);
+
+      let chosen = null;
+      if (saved && modelIds.includes(saved)) {
+        chosen = saved;
+      } else if (serverDefault && modelIds.includes(serverDefault)) {
+        chosen = serverDefault;
+      } else {
+        chosen = modelIds[0];
+      }
+
+      selectedModels[tab] = chosen;
+
+      // Update picker label
+      const picker = pickers[tab];
+      if (picker) {
+        const model = models.find(m => m.id === chosen);
+        picker.label.textContent = model ? model.name : chosen;
+        renderPickerList(tab, models);
+      }
+    });
   }
 
   /**
@@ -184,18 +373,6 @@
       panel.style.display = aiStatus.configured && panel.dataset.tab === currentTab ? 'flex' : 'none';
       panel.classList.toggle('active', aiStatus.configured && panel.dataset.tab === currentTab);
     });
-
-    // Update status badge
-    // if (elements.statusBadge) {
-    //   if (aiStatus.configured) {
-    //     const providers = aiStatus.providers || [];
-    //     elements.statusBadge.textContent = providers.join(' + ');
-    //     elements.statusBadge.className = 'ai-status-indicator configured';
-    //   } else {
-    //     elements.statusBadge.textContent = 'Not configured';
-    //     elements.statusBadge.className = 'ai-status-indicator';
-    //   }
-    // }
 
     updateTabStates();
   }
@@ -483,7 +660,7 @@
     if (!endpoints?.chat) return;
 
     const prompt = elements.textPrompt.value.trim();
-    const model = elements.textModelSelect?.value;
+    const model = getSelectedModel('text');
 
     // Get current element HTML if in element mode
     let currentHtml = '';
@@ -600,7 +777,7 @@
     if (!endpoints?.image) return;
 
     const prompt = elements.imagePrompt.value.trim();
-    const model = elements.imageModelSelect?.value;
+    const model = getSelectedModel('image');
 
     setGenerating(true);
 
@@ -699,7 +876,7 @@
     if (!endpoints?.screenshot) return;
 
     const additionalPrompt = elements.screenshotPrompt?.value.trim();
-    const model = elements.screenshotModelSelect?.value;
+    const model = getSelectedModel('screenshot');
 
     setGenerating(true);
 
@@ -747,7 +924,7 @@
   function insertTextContent() {
     const html = elements.textOutput?.textContent;
     if (html) {
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.textInsertBtn);
     }
   }
 
@@ -758,7 +935,7 @@
     const imageUrl = elements.imageOutput?.dataset.imageUrl;
     if (imageUrl) {
       const html = `<img src="${imageUrl}" alt="AI Generated Image" style="max-width: 100%; height: auto;" />`;
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.imageInsertBtn);
     }
   }
 
@@ -768,7 +945,7 @@
   function insertScreenshotContent() {
     const html = elements.screenshotOutput?.textContent;
     if (html) {
-      insertHtmlToEditor(html);
+      insertHtmlToEditor(html, elements.screenshotInsertBtn);
     }
   }
 
@@ -790,7 +967,7 @@
   /**
    * Insert HTML into GrapeJS editor
    */
-  function insertHtmlToEditor(html) {
+  function insertHtmlToEditor(html, insertButton) {
     const editor = window.ActiveCanvasEditor?.instance;
     if (!editor) {
       showToast('Editor not ready', 'error');
@@ -802,21 +979,71 @@
         const selected = editor.getSelected();
         if (selected) {
           selected.components(html);
+          selected.components().forEach(c => stripAutoStyles(editor, c));
           showToast('Content updated', 'success');
         } else {
           const wrapper = editor.getWrapper();
-          wrapper.append(html);
+          const added = wrapper.append(html);
+          added.forEach(c => stripAutoStyles(editor, c));
           showToast('Content added to page', 'success');
         }
       } else {
         const wrapper = editor.getWrapper();
-        wrapper.append(html);
+        const added = wrapper.append(html);
+        added.forEach(c => stripAutoStyles(editor, c));
         showToast('Content added to page', 'success');
+      }
+
+      // Apply cooldown to prevent double-insertion
+      if (insertButton) {
+        startInsertCooldown(insertButton);
       }
     } catch (error) {
       console.error('Insert error:', error);
       showToast('Failed to insert content', 'error');
     }
+  }
+
+  /**
+   * Remove auto-generated CSS rules that GrapeJS adds for component-type defaults
+   * (e.g. #isx3 { min-height: 100px; padding: 2rem; } on sections)
+   */
+  function stripAutoStyles(editor, component) {
+    const id = component.getId();
+    if (id) {
+      const rule = editor.Css.getRule(`#${id}`);
+      if (rule) {
+        editor.Css.remove(rule);
+      }
+    }
+    component.components().forEach(c => stripAutoStyles(editor, c));
+  }
+
+  /**
+   * Start cooldown on insert button to prevent accidental double-insertion
+   */
+  function startInsertCooldown(button) {
+    if (!button) return;
+
+    const originalText = button.innerHTML;
+    const cooldownSeconds = 20;
+    let remaining = cooldownSeconds;
+
+    button.disabled = true;
+    button.classList.add('cooldown');
+    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Inserted (${remaining}s)`;
+
+    const interval = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Inserted (${remaining}s)`;
+      } else {
+        clearInterval(interval);
+        button.disabled = false;
+        button.classList.remove('cooldown');
+        button.innerHTML = originalText;
+      }
+    }, 1000);
   }
 
   /**

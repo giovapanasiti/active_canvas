@@ -2,10 +2,17 @@ module ActiveCanvas
   class Setting < ApplicationRecord
     validates :key, presence: true, uniqueness: true
 
+    # Keys that should be encrypted in the database
+    ENCRYPTED_KEYS = %w[
+      ai_openai_api_key
+      ai_anthropic_api_key
+      ai_openrouter_api_key
+    ].freeze
+
     CSS_FRAMEWORKS = {
       "tailwind" => {
         name: "Tailwind CSS",
-        url: "https://cdn.tailwindcss.com",
+        url: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
         type: :script
       },
       "bootstrap5" => {
@@ -22,14 +29,90 @@ module ActiveCanvas
 
     class << self
       def get(key)
-        find_by(key: key)&.value
+        setting = find_by(key: key)
+        return nil unless setting
+
+        if ENCRYPTED_KEYS.include?(key.to_s) && setting.encrypted_value.present?
+          decrypt_value(setting.encrypted_value)
+        else
+          setting.value
+        end
       end
 
       def set(key, value)
         setting = find_or_initialize_by(key: key)
-        setting.update!(value: value)
+
+        if ENCRYPTED_KEYS.include?(key.to_s) && value.present?
+          setting.encrypted_value = encrypt_value(value)
+          setting.value = nil # Clear plain text value
+        else
+          setting.value = value
+          setting.encrypted_value = nil if ENCRYPTED_KEYS.include?(key.to_s)
+        end
+
+        setting.save!
         value
       end
+
+      # Check if an API key is configured (without revealing the value)
+      def api_key_configured?(key)
+        setting = find_by(key: key)
+        return false unless setting
+
+        setting.encrypted_value.present? || setting.value.present?
+      end
+
+      # Get a masked version of the API key for display (last 4 chars only)
+      def masked_api_key(key)
+        value = get(key)
+        return nil if value.blank?
+
+        mask_value(value)
+      end
+
+      private
+
+      def encrypt_value(value)
+        return nil if value.blank?
+
+        encryptor.encrypt_and_sign(value)
+      end
+
+      def decrypt_value(encrypted_value)
+        return nil if encrypted_value.blank?
+
+        encryptor.decrypt_and_verify(encrypted_value)
+      rescue ActiveSupport::MessageEncryptor::InvalidMessage => e
+        Rails.logger.error "[ActiveCanvas] Failed to decrypt setting: #{e.message}"
+        nil
+      end
+
+      def encryptor
+        @encryptor ||= begin
+          secret = secret_key_base
+          key = ActiveSupport::KeyGenerator.new(secret).generate_key("active_canvas_settings", 32)
+          ActiveSupport::MessageEncryptor.new(key)
+        end
+      end
+
+      def secret_key_base
+        if Rails.application.respond_to?(:secret_key_base)
+          Rails.application.secret_key_base
+        elsif Rails.application.respond_to?(:credentials) && Rails.application.credentials.secret_key_base
+          Rails.application.credentials.secret_key_base
+        else
+          raise "Rails secret_key_base not available for encryption"
+        end
+      end
+
+      def mask_value(value)
+        return nil if value.blank?
+        return "****" if value.length <= 8
+
+        "****#{value[-4..]}"
+      end
+
+      public
 
       def homepage_page_id
         get("homepage_page_id")&.to_i
@@ -182,13 +265,13 @@ module ActiveCanvas
 
       def tailwind_config=(config)
         value = case config
-                when String
+        when String
                   config
-                when Hash
+        when Hash
                   config.to_json
-                else
+        else
                   config.to_s
-                end
+        end
         set("tailwind_config", value)
       end
 

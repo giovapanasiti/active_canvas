@@ -10,21 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_05_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
     t.datetime "created_at", null: false
     t.string "family"
+    t.text "input_modalities"
     t.decimal "input_price_per_million", precision: 10, scale: 4
     t.integer "max_tokens"
     t.string "model_id", null: false
     t.string "model_type"
     t.string "name"
+    t.text "output_modalities"
     t.decimal "output_price_per_million", precision: 10, scale: 4
     t.string "provider", null: false
     t.boolean "supports_functions", default: false
-    t.boolean "supports_vision", default: false
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_active_canvas_ai_models_on_active"
     t.index ["model_id"], name: "index_active_canvas_ai_models_on_model_id", unique: true
@@ -86,6 +87,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_05_000001) do
     t.string "og_title"
     t.integer "page_type_id", null: false
     t.boolean "published", default: false, null: false
+    t.boolean "show_footer", default: true, null: false
+    t.boolean "show_header", default: true, null: false
     t.string "slug"
     t.text "structured_data"
     t.datetime "tailwind_compiled_at"
@@ -99,8 +102,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_05_000001) do
     t.index ["slug"], name: "index_active_canvas_pages_on_slug", unique: true
   end
 
+  create_table "active_canvas_partials", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.text "compiled_css"
+    t.text "content"
+    t.text "content_components"
+    t.text "content_css"
+    t.text "content_js"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "partial_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["partial_type"], name: "index_active_canvas_partials_on_partial_type", unique: true
+  end
+
   create_table "active_canvas_settings", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.text "encrypted_value"
     t.string "key", null: false
     t.datetime "updated_at", null: false
     t.text "value"

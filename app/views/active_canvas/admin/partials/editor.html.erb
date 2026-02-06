@@ -319,13 +319,15 @@
             <!-- Model Selector -->
             <div class="ai-model-row">
               <label class="ai-model-label">Model</label>
-              <div class="ai-model-select-wrapper">
-                <select id="ai-text-model" class="ai-model-select">
-                  <option value="">Loading...</option>
-                </select>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron">
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
+              <div class="ai-model-picker" id="ai-text-model-picker" data-tab="text">
+                <button type="button" class="ai-model-picker-btn" aria-haspopup="listbox">
+                  <span class="ai-model-picker-label">Loading...</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="ai-model-picker-dropdown">
+                  <input type="text" class="ai-model-picker-search" placeholder="Search models..." autocomplete="off" />
+                  <ul class="ai-model-picker-list" role="listbox"></ul>
+                </div>
               </div>
             </div>
 
@@ -395,13 +397,15 @@
           <div class="ai-tab-panel" data-tab="image">
             <div class="ai-model-row">
               <label class="ai-model-label">Model</label>
-              <div class="ai-model-select-wrapper">
-                <select id="ai-image-model" class="ai-model-select">
-                  <option value="">Loading...</option>
-                </select>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron">
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
+              <div class="ai-model-picker" id="ai-image-model-picker" data-tab="image">
+                <button type="button" class="ai-model-picker-btn" aria-haspopup="listbox">
+                  <span class="ai-model-picker-label">Loading...</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="ai-model-picker-dropdown">
+                  <input type="text" class="ai-model-picker-search" placeholder="Search models..." autocomplete="off" />
+                  <ul class="ai-model-picker-list" role="listbox"></ul>
+                </div>
               </div>
             </div>
 
@@ -481,11 +485,18 @@
               </div>
             </div>
 
-            <div class="ai-model-selector">
-              <label for="ai-screenshot-model">Vision Model</label>
-              <select id="ai-screenshot-model" class="ai-model-select">
-                <option value="gpt-4o">GPT-4o</option>
-              </select>
+            <div class="ai-model-row">
+              <label class="ai-model-label">Model</label>
+              <div class="ai-model-picker" id="ai-screenshot-model-picker" data-tab="screenshot">
+                <button type="button" class="ai-model-picker-btn" aria-haspopup="listbox">
+                  <span class="ai-model-picker-label">Loading...</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-select-chevron"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="ai-model-picker-dropdown">
+                  <input type="text" class="ai-model-picker-search" placeholder="Search models..." autocomplete="off" />
+                  <ul class="ai-model-picker-list" role="listbox"></ul>
+                </div>
+              </div>
             </div>
 
             <div class="ai-prompt-container">

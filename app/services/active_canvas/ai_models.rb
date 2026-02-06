@@ -2,22 +2,30 @@ module ActiveCanvas
   class AiModels
     # Fallback models when database is empty
     DEFAULT_TEXT_MODELS = [
-      { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai" },
-      { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "anthropic" },
-      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", provider: "anthropic" }
+      { id: "gpt-4o", name: "GPT-4o", provider: "openai",
+        input_modalities: %w[text image], output_modalities: %w[text] },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai",
+        input_modalities: %w[text image], output_modalities: %w[text] },
+      { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "anthropic",
+        input_modalities: %w[text image], output_modalities: %w[text] },
+      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", provider: "anthropic",
+        input_modalities: %w[text], output_modalities: %w[text] }
     ].freeze
 
     DEFAULT_IMAGE_MODELS = [
-      { id: "dall-e-3", name: "DALL-E 3", provider: "openai" },
-      { id: "gpt-image-1", name: "GPT Image 1", provider: "openai" }
+      { id: "dall-e-3", name: "DALL-E 3", provider: "openai",
+        input_modalities: %w[text], output_modalities: %w[image] },
+      { id: "gpt-image-1", name: "GPT Image 1", provider: "openai",
+        input_modalities: %w[text], output_modalities: %w[image] }
     ].freeze
 
     DEFAULT_VISION_MODELS = [
-      { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai" },
-      { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "anthropic" },
-      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", provider: "anthropic" }
+      { id: "gpt-4o", name: "GPT-4o", provider: "openai",
+        input_modalities: %w[text image], output_modalities: %w[text] },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai",
+        input_modalities: %w[text image], output_modalities: %w[text] },
+      { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "anthropic",
+        input_modalities: %w[text image], output_modalities: %w[text] }
     ].freeze
 
     class << self
@@ -47,7 +55,7 @@ module ActiveCanvas
       end
 
       def all_text_models
-        models = AiModel.active.chat_models.order(:provider, :name)
+        models = AiModel.active.text_models.order(:provider, :name)
         return models.map(&:as_json_for_editor) if models.any?
 
         DEFAULT_TEXT_MODELS
@@ -61,7 +69,7 @@ module ActiveCanvas
       end
 
       def all_vision_models
-        models = AiModel.active.chat_models.with_vision.order(:provider, :name)
+        models = AiModel.active.vision_models.order(:provider, :name)
         return models.map(&:as_json_for_editor) if models.any?
 
         DEFAULT_VISION_MODELS
