@@ -68,9 +68,11 @@ module ActiveCanvas
         framework = Setting.css_framework
         <<~PROMPT
           You are an expert web designer creating content for a visual page builder.
-          Generate clean, semantic HTML using #{framework_name(framework)}.
+          Generate clean, semantic HTML.
 
-          Guidelines:
+          #{framework_guidelines(framework)}
+
+          General guidelines:
           - Use proper semantic HTML5 elements (section, article, header, nav, etc.)
           - Include responsive design patterns
           - Return ONLY the HTML code, no explanations or markdown code blocks
@@ -83,7 +85,9 @@ module ActiveCanvas
 
       def build_screenshot_prompt(framework, additional)
         base = <<~PROMPT
-          Convert this screenshot into clean HTML using #{framework_name(framework)}.
+          Convert this screenshot into clean HTML.
+
+          #{framework_guidelines(framework)}
 
           Requirements:
           - Create semantic, accessible HTML5 structure
@@ -97,11 +101,51 @@ module ActiveCanvas
         additional.present? ? "#{base}\n\nAdditional instructions: #{additional}" : base
       end
 
-      def framework_name(framework)
+      def framework_guidelines(framework)
         case framework.to_s
-        when "tailwind" then "Tailwind CSS classes"
-        when "bootstrap5" then "Bootstrap 5 classes"
-        else "vanilla CSS with inline styles"
+        when "tailwind"
+          <<~GUIDELINES
+            CSS Framework: Tailwind CSS v4
+
+            You MUST use Tailwind CSS utility classes exclusively for all styling. Do NOT use inline styles or custom CSS.
+
+            Tailwind v4 rules:
+            - Use slash syntax for opacity: bg-blue-500/50, text-black/75 (NOT bg-opacity-50 or text-opacity-75)
+            - Use modern color syntax: bg-red-500/20 instead of bg-red-500 bg-opacity-20
+            - Use arbitrary values with square brackets when needed: w-[72rem], text-[#1a2b3c]
+            - Use the new shadow and ring syntax: shadow-sm, ring-1 ring-gray-200
+            - Prefer gap-* over space-x-*/space-y-* for flex and grid layouts
+            - Use size-* for equal width and height: size-8 instead of w-8 h-8
+            - Use grid with grid-cols-subgrid where appropriate
+            - All legacy utilities removed in v4 are forbidden (bg-opacity-*, text-opacity-*, divide-opacity-*, etc.)
+          GUIDELINES
+        when "bootstrap5"
+          <<~GUIDELINES
+            CSS Framework: Bootstrap 5
+
+            Use Bootstrap 5 classes exclusively for all styling. Do NOT use inline styles or custom CSS.
+
+            Bootstrap 5 rules:
+            - Use the grid system: container, row, col-*, col-md-*, col-lg-*
+            - Use Bootstrap utility classes: d-flex, justify-content-center, align-items-center, p-3, m-2, etc.
+            - Use Bootstrap components: card, btn, navbar, alert, badge, etc.
+            - Use responsive breakpoints: sm, md, lg, xl, xxl
+            - Use spacing utilities: p-*, m-*, gap-*
+            - Use text utilities: text-center, fw-bold, fs-*, text-muted
+            - Use background utilities: bg-primary, bg-light, bg-dark, etc.
+          GUIDELINES
+        else
+          <<~GUIDELINES
+            CSS Framework: None (vanilla CSS)
+
+            Use inline styles for all styling since no CSS framework is loaded.
+
+            Vanilla CSS rules:
+            - Apply all styles via the style attribute directly on HTML elements
+            - Use modern CSS: flexbox, grid, clamp(), min(), max()
+            - Ensure responsive behavior with relative units (%, rem, vw) and media queries via <style> blocks when necessary
+            - Use CSS custom properties (variables) in a <style> block for consistent theming
+          GUIDELINES
         end
       end
 
