@@ -12,7 +12,7 @@ module ActiveCanvas
     CSS_FRAMEWORKS = {
       "tailwind" => {
         name: "Tailwind CSS",
-        url: "https://cdn.tailwindcss.com",
+        url: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
         type: :script
       },
       "bootstrap5" => {
