@@ -1043,6 +1043,18 @@
                         <span class="model-price"><%= model.price_info %></span>
                       <% end %>
                     </div>
+                    <% if params[:debug] %>
+                      <div class="model-modalities">
+                        <span class="modality-label">in:</span>
+                        <% Array(model.input_modalities).each do |m| %>
+                          <span class="model-badge model-badge-modality"><%= m %></span>
+                        <% end %>
+                        <span class="modality-label">out:</span>
+                        <% Array(model.output_modalities).each do |m| %>
+                          <span class="model-badge model-badge-modality"><%= m %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </div>
                   <div class="model-actions">
                     <button type="button"
@@ -1467,6 +1479,23 @@
     .model-badge-functions {
       background: rgba(59, 130, 246, 0.15);
       color: #3b82f6;
+    }
+    .model-badge-modality {
+      background: rgba(107, 114, 128, 0.15);
+      color: #9ca3af;
+      font-size: 0.6rem;
+    }
+    .model-modalities {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.2rem;
+    }
+    .modality-label {
+      font-size: 0.6rem;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
     }
     .model-meta {
       display: flex;

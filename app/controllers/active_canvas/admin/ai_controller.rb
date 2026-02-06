@@ -116,10 +116,21 @@ module ActiveCanvas
       end
 
       def models
+        text   = AiModels.text_models
+        image  = AiModels.image_models
+        vision = AiModels.vision_models
+
+        unless params[:debug]
+          strip = ->(list) { list.map { |m| m.except(:input_modalities, :output_modalities, "input_modalities", "output_modalities") } }
+          text   = strip.call(text)
+          image  = strip.call(image)
+          vision = strip.call(vision)
+        end
+
         render json: {
-          text: AiModels.text_models,
-          image: AiModels.image_models,
-          vision: AiModels.vision_models,
+          text: text,
+          image: image,
+          vision: vision,
           default_text: Setting.ai_default_text_model,
           default_image: Setting.ai_default_image_model,
           default_vision: Setting.ai_default_vision_model

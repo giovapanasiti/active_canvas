@@ -2358,14 +2358,19 @@
   white-space: nowrap;
 }
 
-.ai-model-select-wrapper {
+/* Model Picker */
+.ai-model-picker {
   flex: 1;
   position: relative;
 }
 
-.ai-model-select {
+.ai-model-picker-btn {
   width: 100%;
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--editor-text);
@@ -2373,27 +2378,118 @@
   border: 1px solid var(--editor-border);
   border-radius: 8px;
   cursor: pointer;
-  appearance: none;
   transition: all 0.15s ease;
+  text-align: left;
 }
 
-.ai-model-select:hover {
+.ai-model-picker-btn:hover {
   border-color: var(--editor-border-light);
 }
 
-.ai-model-select:focus {
-  outline: none;
+.ai-model-picker.open .ai-model-picker-btn {
   border-color: var(--editor-primary);
   box-shadow: 0 0 0 3px var(--editor-primary-light);
 }
 
+.ai-model-picker.open .ai-select-chevron {
+  transform: rotate(180deg);
+}
+
+.ai-model-picker-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
 .ai-select-chevron {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   color: var(--editor-text-muted);
-  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.ai-model-picker-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--editor-surface);
+  border: 1px solid var(--editor-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.ai-model-picker.open .ai-model-picker-dropdown {
+  display: block;
+}
+
+.ai-model-picker-search {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--editor-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--editor-border);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ai-model-picker-search::placeholder {
+  color: var(--editor-text-muted);
+}
+
+.ai-model-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ai-model-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.625rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.ai-model-picker-item:hover {
+  background: var(--editor-hover);
+}
+
+.ai-model-picker-item.selected {
+  background: var(--editor-primary-light);
+}
+
+.ai-model-picker-item-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--editor-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-model-picker-item-provider {
+  font-size: 0.6875rem;
+  color: var(--editor-text-muted);
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.ai-model-picker-empty {
+  padding: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--editor-text-muted);
+  text-align: center;
 }
 
 /* Conversation Area */
