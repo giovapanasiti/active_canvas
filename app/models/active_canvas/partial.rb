@@ -50,7 +50,7 @@ module ActiveCanvas
     end
 
     def full_css
-      [compiled_css, content_css].compact.join("\n")
+      [ compiled_css, content_css ].compact.join("\n")
     end
 
     private

@@ -559,45 +559,45 @@
             <%= form.label :ai_openai_api_key, "OpenAI API Key" %>
             <div class="api-key-input">
               <%= form.password_field :ai_openai_api_key,
-                    value: @ai_openai_key,
-                    placeholder: "sk-...",
+                    value: "",
+                    placeholder: @ai_openai_configured ? "#{@ai_openai_key} (leave blank to keep)" : "sk-...",
                     class: "form-control",
                     autocomplete: "off" %>
-              <% if @ai_openai_key.present? %>
+              <% if @ai_openai_configured %>
                 <span class="api-key-status configured">Configured</span>
               <% end %>
             </div>
-            <p class="help-text">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a></p>
+            <p class="help-text">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>. Keys are encrypted in the database.</p>
           </div>
 
           <div class="form-group">
             <%= form.label :ai_anthropic_api_key, "Anthropic API Key" %>
             <div class="api-key-input">
               <%= form.password_field :ai_anthropic_api_key,
-                    value: @ai_anthropic_key,
-                    placeholder: "sk-ant-...",
+                    value: "",
+                    placeholder: @ai_anthropic_configured ? "#{@ai_anthropic_key} (leave blank to keep)" : "sk-ant-...",
                     class: "form-control",
                     autocomplete: "off" %>
-              <% if @ai_anthropic_key.present? %>
+              <% if @ai_anthropic_configured %>
                 <span class="api-key-status configured">Configured</span>
               <% end %>
             </div>
-            <p class="help-text">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a></p>
+            <p class="help-text">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Keys are encrypted in the database.</p>
           </div>
 
           <div class="form-group">
             <%= form.label :ai_openrouter_api_key, "OpenRouter API Key" %>
             <div class="api-key-input">
               <%= form.password_field :ai_openrouter_api_key,
-                    value: @ai_openrouter_key,
-                    placeholder: "sk-or-...",
+                    value: "",
+                    placeholder: @ai_openrouter_configured ? "#{@ai_openrouter_key} (leave blank to keep)" : "sk-or-...",
                     class: "form-control",
                     autocomplete: "off" %>
-              <% if @ai_openrouter_key.present? %>
+              <% if @ai_openrouter_configured %>
                 <span class="api-key-status configured">Configured</span>
               <% end %>
             </div>
-            <p class="help-text">Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai</a>. Provides access to many models including Gemini.</p>
+            <p class="help-text">Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai</a>. Keys are encrypted in the database.</p>
           </div>
         </div>
 

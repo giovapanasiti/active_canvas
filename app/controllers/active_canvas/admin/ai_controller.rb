@@ -2,9 +2,14 @@ module ActiveCanvas
   module Admin
     class AiController < ApplicationController
       include ActionController::Live
+      include ActiveCanvas::RateLimitable
 
-      skip_forgery_protection only: %i[ chat ]
-      before_action :ensure_ai_configured, except: %i[ status models ]
+      # Use null_session for JSON requests (allows CSRF token via header)
+      protect_from_forgery with: :null_session, if: -> { request.format.json? }
+
+      before_action :ensure_ai_configured, except: %i[status models]
+      before_action :verify_request_origin, only: %i[chat]
+      before_action :check_ai_rate_limit, only: %i[chat image screenshot_to_code]
 
       def chat
         unless AiConfiguration.text_enabled?
@@ -14,6 +19,12 @@ module ActiveCanvas
         response.headers["Content-Type"] = "text/event-stream"
         response.headers["Cache-Control"] = "no-cache"
         response.headers["X-Accel-Buffering"] = "no"
+        response.headers["Connection"] = "keep-alive"
+
+        config = ActiveCanvas.config
+        start_time = Time.current
+        last_write = Time.current
+        total_bytes = 0
 
         begin
           AiService.generate_text(
@@ -21,15 +32,45 @@ module ActiveCanvas
             model: params[:model],
             context: build_context
           ) do |chunk|
-            write_sse_event("chunk", { content: chunk.content })
+            # Check stream timeout
+            if Time.current - start_time > config.ai_stream_timeout
+              write_sse_event("error", { error: "Stream timeout exceeded" })
+              break
+            end
+
+            # Check idle timeout
+            if Time.current - last_write > config.ai_stream_idle_timeout
+              write_sse_event("error", { error: "Idle timeout - no data received" })
+              break
+            end
+
+            # Check response size limit
+            chunk_content = chunk.content.to_s
+            chunk_size = chunk_content.bytesize
+            total_bytes += chunk_size
+
+            if total_bytes > config.ai_max_response_size
+              write_sse_event("error", { error: "Response too large" })
+              break
+            end
+
+            write_sse_event("chunk", { content: chunk_content })
+            last_write = Time.current
           end
 
-          write_sse_event("done", {})
+          write_sse_event("done", { total_bytes: total_bytes })
+        rescue IOError => e
+          # Client disconnected, this is normal
+          Rails.logger.debug "AI Chat client disconnected: #{e.message}"
         rescue => e
-          Rails.logger.error "AI Chat Error: #{e.message}"
-          write_sse_event("error", { error: e.message })
+          Rails.logger.error "AI Chat Error: #{e.class.name}: #{e.message}"
+          begin
+            write_sse_event("error", { error: e.message })
+          rescue IOError
+            # Client already disconnected
+          end
         ensure
-          response.stream.close
+          response.stream.close rescue nil
         end
       end
 
@@ -119,6 +160,10 @@ module ActiveCanvas
 
       def write_sse_event(event, data)
         response.stream.write("event: #{event}\ndata: #{data.to_json}\n\n")
+      end
+
+      def check_ai_rate_limit
+        check_rate_limit(namespace: "ai")
       end
     end
   end

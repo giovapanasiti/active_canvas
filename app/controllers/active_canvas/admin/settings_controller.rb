@@ -14,10 +14,13 @@ module ActiveCanvas
         @tailwind_available = ActiveCanvas::TailwindCompiler.available?
         @tailwind_compiled_mode = Setting.tailwind_compiled_mode?
 
-        # AI settings
-        @ai_openai_key = Setting.ai_openai_api_key
-        @ai_anthropic_key = Setting.ai_anthropic_api_key
-        @ai_openrouter_key = Setting.ai_openrouter_api_key
+        # AI settings - use masked values for display
+        @ai_openai_key = Setting.masked_api_key("ai_openai_api_key")
+        @ai_anthropic_key = Setting.masked_api_key("ai_anthropic_api_key")
+        @ai_openrouter_key = Setting.masked_api_key("ai_openrouter_api_key")
+        @ai_openai_configured = Setting.api_key_configured?("ai_openai_api_key")
+        @ai_anthropic_configured = Setting.api_key_configured?("ai_anthropic_api_key")
+        @ai_openrouter_configured = Setting.api_key_configured?("ai_openrouter_api_key")
         @ai_default_text_model = Setting.ai_default_text_model
         @ai_default_image_model = Setting.ai_default_image_model
         @ai_text_enabled = Setting.ai_text_enabled?
@@ -69,10 +72,10 @@ module ActiveCanvas
       end
 
       def update_ai
-        # API Keys
-        Setting.ai_openai_api_key = params[:ai_openai_api_key] if params.key?(:ai_openai_api_key)
-        Setting.ai_anthropic_api_key = params[:ai_anthropic_api_key] if params.key?(:ai_anthropic_api_key)
-        Setting.ai_openrouter_api_key = params[:ai_openrouter_api_key] if params.key?(:ai_openrouter_api_key)
+        # API Keys - only update if a new value is provided (not empty, not masked)
+        update_api_key("ai_openai_api_key", params[:ai_openai_api_key])
+        update_api_key("ai_anthropic_api_key", params[:ai_anthropic_api_key])
+        update_api_key("ai_openrouter_api_key", params[:ai_openrouter_api_key])
 
         # Default models
         Setting.ai_default_text_model = params[:ai_default_text_model] if params.key?(:ai_default_text_model)
@@ -165,6 +168,17 @@ module ActiveCanvas
         end
       end
 
+      private
+
+      def update_api_key(key, value)
+        return if value.blank?
+        return if value.start_with?("****") # Masked value, don't update
+
+        Setting.set(key, value)
+      end
+
+      public
+
       def recompile_tailwind
         unless ActiveCanvas::TailwindCompiler.available?
           respond_to do |format|
@@ -182,7 +196,7 @@ module ActiveCanvas
           return
         end
 
-        pages = Page.where.not(content: [nil, ""])
+        pages = Page.where.not(content: [ nil, "" ])
         pages.find_each do |page|
           CompileTailwindJob.perform_later(page.id)
         end

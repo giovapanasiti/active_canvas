@@ -4,7 +4,7 @@ module ActiveCanvas
     # Host app can set ActiveCanvas.config.storage_service = :public
     # and define a 'public' service in config/storage.yml for cloud storage
     has_one_attached :file, service: (ActiveCanvas.config.storage_service rescue nil) do |attachable|
-      attachable.variant :thumb, resize_to_limit: [200, 200]
+      attachable.variant :thumb, resize_to_limit: [ 200, 200 ]
     end
 
     serialize :metadata, coder: JSON
@@ -15,7 +15,7 @@ module ActiveCanvas
     validate :acceptable_file, on: :create
 
     before_save :set_file_attributes, if: -> { file.attached? && file.blob.present? }
-    after_commit :make_blob_public, on: [:create, :update], if: :should_make_public?
+    after_commit :make_blob_public, on: [ :create, :update ], if: :should_make_public?
 
     scope :images, -> { where(content_type: ActiveCanvas.config.allowed_content_types) }
     scope :recent, -> { order(created_at: :desc) }
@@ -27,17 +27,22 @@ module ActiveCanvas
     def url
       return nil unless file.attached?
 
-      # For public blobs, use the public URL directly
-      # For private blobs, use the redirect URL
-      if file.blob.service.respond_to?(:public?) && file.blob.service.public?
+      # If public_uploads is enabled and blob service supports public URLs
+      if ActiveCanvas.config.public_uploads &&
+         file.blob.service.respond_to?(:public?) &&
+         file.blob.service.public?
         file.url
       else
-        # Use permanent URL for local disk service or when public URL isn't available
+        # Use signed URL with expiration for better security
         Rails.application.routes.url_helpers.rails_blob_url(
           file,
+          expires_in: 1.hour,
           only_path: true
         )
       end
+    rescue ArgumentError
+      # Fallback for services that don't support expires_in
+      Rails.application.routes.url_helpers.rails_blob_url(file, only_path: true)
     end
 
     def public_url
@@ -79,12 +84,31 @@ module ActiveCanvas
     def acceptable_file
       return unless file.attached?
 
-      unless ActiveCanvas.config.allowed_content_types.include?(file.content_type)
-        errors.add(:file, "must be an image (JPEG, PNG, GIF, WebP, or SVG)")
+      content_type = file.content_type
+      config = ActiveCanvas.config
+
+      # Check against dangerous content types first
+      if ActiveCanvas::Configuration::DANGEROUS_CONTENT_TYPES.include?(content_type)
+        errors.add(:file, "type is not allowed for security reasons")
+        return
       end
 
-      if file.blob.byte_size > ActiveCanvas.config.max_upload_size
-        errors.add(:file, "is too large (maximum is #{ActiveCanvas.config.max_upload_size / 1.megabyte}MB)")
+      # Special handling for SVG
+      if content_type == "image/svg+xml"
+        unless config.allow_svg_uploads
+          errors.add(:file, "SVG uploads are disabled for security reasons. Contact your administrator if you need to upload SVG files.")
+          return
+        end
+      end
+
+      # Check against allowed content types
+      unless config.effective_allowed_content_types.include?(content_type)
+        allowed = config.effective_allowed_content_types.map { |t| t.split("/").last.upcase }.join(", ")
+        errors.add(:file, "type is not allowed. Allowed types: #{allowed}")
+      end
+
+      if file.blob.byte_size > config.max_upload_size
+        errors.add(:file, "is too large (maximum is #{config.max_upload_size / 1.megabyte}MB)")
       end
     end
 

@@ -60,7 +60,7 @@ module ActiveCanvas
 
       # Simple line-by-line diff
       diff_lines = []
-      max_lines = [before_lines.size, after_lines.size].max
+      max_lines = [ before_lines.size, after_lines.size ].max
 
       max_lines.times do |i|
         before_line = before_lines[i]

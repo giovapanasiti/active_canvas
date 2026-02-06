@@ -8,6 +8,7 @@ module ActiveCanvas
 
     before_save :set_default_slug
     before_save :normalize_slug
+    before_save :sanitize_content_if_enabled
     after_update :create_version_if_content_changed
 
     scope :published, -> { where(published: true) }
@@ -47,6 +48,18 @@ module ActiveCanvas
 
     def normalize_slug
       self.slug = slug.parameterize if slug.present?
+    end
+
+    def sanitize_content_if_enabled
+      return unless ActiveCanvas.config.sanitize_content
+
+      if content_changed?
+        self.content = ContentSanitizer.sanitize_html(content)
+      end
+
+      if content_css_changed?
+        self.content_css = ContentSanitizer.sanitize_css(content_css)
+      end
     end
 
     def create_version_if_content_changed

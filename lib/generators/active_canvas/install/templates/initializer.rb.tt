@@ -4,19 +4,39 @@
 
 ActiveCanvas.configure do |config|
   # ==========================================================================
-  # Authentication (IMPORTANT: Configure for production!)
+  # Authentication (REQUIRED for production!)
   # ==========================================================================
+  #
+  # IMPORTANT: Configure one of these options before deploying to production.
+  # The admin interface will be inaccessible in production until authentication
+  # is configured.
 
-  # Admin pages authentication - REQUIRED for production!
-  # The admin interface is open by default. Uncomment one of these options:
-  #
-  # With Devise:
+  # --------------------------------------------------------------------------
+  # Option 1: Use your app's authentication method (recommended for Devise)
+  # --------------------------------------------------------------------------
   # config.authenticate_admin = :authenticate_user!
-  #
-  # With custom logic:
+  # Or with admin check:
   # config.authenticate_admin = -> {
   #   redirect_to main_app.login_path, alert: "Please log in" unless current_user&.admin?
   # }
+
+  # --------------------------------------------------------------------------
+  # Option 2: Inherit from your existing admin controller
+  # --------------------------------------------------------------------------
+  # This is useful if you already have an admin area with authentication.
+  # ActiveCanvas admin controllers will inherit from your controller.
+  # config.admin_parent_controller = "Admin::ApplicationController"
+
+  # --------------------------------------------------------------------------
+  # Option 3: HTTP Basic Authentication
+  # --------------------------------------------------------------------------
+  # Simple password protection. Good for staging or simple setups.
+  # IMPORTANT: Use strong credentials and store password in credentials.yml.enc
+  config.authenticate_admin = :http_basic_auth
+  config.http_basic_user = "admin"
+  config.http_basic_password = ENV.fetch("ACTIVE_CANVAS_PASSWORD", "change_me_in_production!")
+
+  # --------------------------------------------------------------------------
 
   # Public pages authentication (optional, nil = public access)
   # config.authenticate_public = nil
@@ -48,14 +68,20 @@ ActiveCanvas.configure do |config|
     image/png
     image/gif
     image/webp
-    image/svg+xml
     image/avif
     application/pdf
   ]
 
+  # SVG uploads are disabled by default due to XSS risks.
+  # Only enable if you trust all content authors.
+  # config.allow_svg_uploads = false
+
   # Active Storage service (nil = default service from storage.yml)
   # config.storage_service = :amazon
-  # config.public_uploads = true
+
+  # Public uploads: when false (default), uses signed URLs with expiration.
+  # When true, uploads are world-readable. Only enable for truly public content.
+  # config.public_uploads = false
 
   # ==========================================================================
   # Editor Features
@@ -74,4 +100,19 @@ ActiveCanvas.configure do |config|
 
   # Maximum versions to keep per page (0 = unlimited)
   config.max_versions_per_page = 50
+
+  # ==========================================================================
+  # Security
+  # ==========================================================================
+
+  # Sanitize HTML content on save (enabled by default for security)
+  # Disable only if all content authors are fully trusted
+  # config.sanitize_content = true
+
+  # AI rate limiting (requests per minute per IP)
+  # config.ai_rate_limit_per_minute = 30
+
+  # AI streaming timeouts
+  # config.ai_stream_timeout = 5.minutes
+  # config.ai_stream_idle_timeout = 30.seconds
 end
