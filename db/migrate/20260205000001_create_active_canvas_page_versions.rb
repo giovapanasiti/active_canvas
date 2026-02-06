@@ -1,6 +1,6 @@
 class CreateActiveCanvasPageVersions < ActiveRecord::Migration[8.0]
   def change
-    create_table :active_canvas_page_versions do |t|
+    create_table :active_canvas_page_versions, if_not_exists: true do |t|
       t.references :page, null: false, foreign_key: { to_table: :active_canvas_pages }
       t.integer :version_number, null: false
       t.text :content_before
@@ -16,7 +16,7 @@ class CreateActiveCanvasPageVersions < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :active_canvas_page_versions, [ :page_id, :version_number ], unique: true
-    add_index :active_canvas_page_versions, :created_at
+    add_index :active_canvas_page_versions, [ :page_id, :version_number ], unique: true, if_not_exists: true
+    add_index :active_canvas_page_versions, :created_at, if_not_exists: true
   end
 end

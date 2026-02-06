@@ -1,4 +1,14 @@
 namespace :active_canvas do
+  namespace :install do
+    desc "Copy migrations from active_canvas to application"
+    task :migrations do
+      source = ActiveCanvas::Engine.root.join("db/migrate")
+      destination = ActiveRecord::Tasks::DatabaseTasks.migrations_paths.first
+
+      ActiveRecord::Migration.copy(destination, { active_canvas: source })
+    end
+  end
+
   desc "Sync AI models from configured providers (OpenAI, Anthropic, OpenRouter)"
   task sync_models: :environment do
     unless ActiveCanvas::AiConfiguration.ruby_llm_available?
@@ -23,9 +33,9 @@ namespace :active_canvas do
     puts "Done! Synced #{count} models."
 
     # Show breakdown by type
-    text_count = ActiveCanvas::AiModel.active.chat_models.count
+    text_count = ActiveCanvas::AiModel.active.text_models.count
     image_count = ActiveCanvas::AiModel.active.image_models.count
-    vision_count = ActiveCanvas::AiModel.active.chat_models.with_vision.count
+    vision_count = ActiveCanvas::AiModel.active.vision_models.count
 
     puts ""
     puts "Breakdown:"
@@ -42,8 +52,8 @@ namespace :active_canvas do
     end
 
     puts "=== Text/Chat Models ==="
-    ActiveCanvas::AiModel.active.chat_models.order(:provider, :name).each do |m|
-      vision = m.supports_vision ? " [vision]" : ""
+    ActiveCanvas::AiModel.active.text_models.order(:provider, :name).each do |m|
+      vision = m.supports_vision? ? " [vision]" : ""
       puts "  #{m.provider.ljust(12)} #{m.display_name}#{vision}"
     end
 

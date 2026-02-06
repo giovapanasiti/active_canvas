@@ -2,9 +2,11 @@ module ActiveCanvas
   class Engine < ::Rails::Engine
     isolate_namespace ActiveCanvas
 
-    # Clear the engine's db/migrate path to prevent duplicate migrations
-    # Migrations should be installed via: rails active_canvas:install:migrations
-    paths["db/migrate"] = []
+    # Prevent engine migrations from auto-running in the host app.
+    # Host apps copy migrations via: rails active_canvas:install:migrations
+    initializer "active_canvas.migrations", before: :append_migrations do
+      config.paths["db/migrate"] = []
+    end
 
     # Ensure engine assets are precompiled
     initializer "active_canvas.assets.precompile" do |app|
