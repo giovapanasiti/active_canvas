@@ -11,10 +11,10 @@ namespace :active_canvas do
 
   desc "Sync AI models from configured providers (OpenAI, Anthropic, OpenRouter)"
   task sync_models: :environment do
-    unless ActiveCanvas::AiConfiguration.ruby_llm_available?
-      puts "RubyLLM gem is not available. Add 'ruby_llm' to your Gemfile."
-      exit 1
-    end
+    # unless ActiveCanvas::AiConfiguration.ruby_llm_available?
+    #   puts "RubyLLM gem is not available. Add 'ruby_llm' to your Gemfile."
+    #   exit 1
+    # end
 
     unless ActiveCanvas::AiConfiguration.configured?
       puts "No API keys configured."

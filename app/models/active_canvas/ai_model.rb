@@ -96,9 +96,9 @@ module ActiveCanvas
       end
 
       def raise_if_ruby_llm_not_available!
-        return if AiConfiguration.ruby_llm_available?
+        # return if AiConfiguration.ruby_llm_available?
 
-        raise LoadError, "RubyLLM gem is not available. Add 'ruby_llm' to your Gemfile."
+        # raise LoadError, "RubyLLM gem is not available. Add 'ruby_llm' to your Gemfile."
       end
     end
 
