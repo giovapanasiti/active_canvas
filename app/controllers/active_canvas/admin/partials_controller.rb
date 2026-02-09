@@ -1,6 +1,8 @@
 module ActiveCanvas
   module Admin
     class PartialsController < ApplicationController
+      include ActiveCanvas::TailwindCompilation
+
       before_action :ensure_partials_exist, only: [:index]
       before_action :set_partial, only: %i[edit update editor save_editor]
 
@@ -37,7 +39,14 @@ module ActiveCanvas
         content_changed = @partial.content != editor_params[:content]
 
         if @partial.update(editor_params)
-          tailwind_info = compile_tailwind_if_needed(content_changed)
+          tailwind_info = compile_tailwind_if_needed(content_changed) do
+            compiled_css = ActiveCanvas::TailwindCompiler.compile(
+              @partial.content.to_s,
+              identifier: "partial ##{@partial.id} (#{@partial.name})"
+            )
+            @partial.update_columns(compiled_css: compiled_css)
+            compiled_css
+          end
 
           respond_to do |format|
             format.html { redirect_to editor_admin_partial_path(@partial), notice: "#{@partial.name} saved successfully." }
@@ -58,36 +67,6 @@ module ActiveCanvas
       end
 
       private
-
-      def compile_tailwind_if_needed(content_changed)
-        return { compiled: false, reason: "content_unchanged" } unless content_changed
-        return { compiled: false, reason: "not_tailwind" } unless Setting.css_framework == "tailwind"
-        return { compiled: false, reason: "gem_not_available" } unless ActiveCanvas::TailwindCompiler.available?
-
-        begin
-          compiled_css = ActiveCanvas::TailwindCompiler.compile(
-            @partial.content.to_s,
-            identifier: "partial ##{@partial.id} (#{@partial.name})"
-          )
-
-          @partial.update_columns(
-            compiled_css: compiled_css
-          )
-
-          {
-            compiled: true,
-            success: true,
-            css_size: compiled_css.bytesize
-          }
-        rescue ActiveCanvas::TailwindCompiler::CompilationError => e
-          Rails.logger.error "[ActiveCanvas] Tailwind compilation failed for partial #{@partial.id}: #{e.message}"
-          {
-            compiled: true,
-            success: false,
-            error: e.message
-          }
-        end
-      end
 
       def ensure_partials_exist
         ActiveCanvas::Partial.ensure_defaults!

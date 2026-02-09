@@ -1,6 +1,8 @@
 module ActiveCanvas
   module Admin
     class PagesController < ApplicationController
+      include ActiveCanvas::TailwindCompilation
+
       before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions]
 
       def index
@@ -73,7 +75,11 @@ module ActiveCanvas
         Rails.logger.info "[ActiveCanvas::PagesController]   content_changed: #{content_changed}"
 
         if @page.update(editor_params)
-          tailwind_info = compile_tailwind_if_needed(content_changed)
+          tailwind_info = compile_tailwind_if_needed(content_changed) do
+            compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(@page)
+            @page.update_columns(compiled_tailwind_css: compiled_css, tailwind_compiled_at: Time.current)
+            compiled_css
+          end
 
           respond_to do |format|
             format.html { redirect_to editor_admin_page_path(@page), notice: "Page saved successfully." }
@@ -98,56 +104,6 @@ module ActiveCanvas
       end
 
       private
-
-      def compile_tailwind_if_needed(content_changed)
-        Rails.logger.info "[ActiveCanvas::PagesController] compile_tailwind_if_needed called"
-        Rails.logger.info "[ActiveCanvas::PagesController]   content_changed: #{content_changed}"
-        Rails.logger.info "[ActiveCanvas::PagesController]   css_framework: #{Setting.css_framework}"
-        Rails.logger.info "[ActiveCanvas::PagesController]   ActiveCanvas::TailwindCompiler.available?: #{ActiveCanvas::TailwindCompiler.available?}"
-
-        unless content_changed
-          Rails.logger.info "[ActiveCanvas::PagesController]   Skipping: content unchanged"
-          return { compiled: false, reason: "content_unchanged" }
-        end
-
-        unless Setting.css_framework == "tailwind"
-          Rails.logger.info "[ActiveCanvas::PagesController]   Skipping: not tailwind (#{Setting.css_framework})"
-          return { compiled: false, reason: "not_tailwind" }
-        end
-
-        unless ActiveCanvas::TailwindCompiler.available?
-          Rails.logger.info "[ActiveCanvas::PagesController]   Skipping: gem not available"
-          return { compiled: false, reason: "gem_not_available" }
-        end
-
-        begin
-          Rails.logger.info "[ActiveCanvas::PagesController]   Starting Tailwind compilation..."
-          start_time = Time.current
-          compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(@page)
-          elapsed_ms = ((Time.current - start_time) * 1000).round
-
-          @page.update_columns(
-            compiled_tailwind_css: compiled_css,
-            tailwind_compiled_at: Time.current
-          )
-
-          Rails.logger.info "[ActiveCanvas::PagesController]   Compilation successful: #{compiled_css.bytesize} bytes in #{elapsed_ms}ms"
-
-          {
-            compiled: true,
-            success: true,
-            css_size: compiled_css.bytesize,
-            elapsed_ms: elapsed_ms
-          }
-        rescue ActiveCanvas::TailwindCompiler::CompilationError => e
-          Rails.logger.error "[ActiveCanvas::PagesController] Tailwind compilation failed: #{e.message}"
-          {
-            compiled: true,
-            success: false,
-            error: e.message
-          }
-        end
-      end
 
       def set_page
         @page = ActiveCanvas::Page.find(params[:id])

@@ -1,6 +1,8 @@
 module ActiveCanvas
   module Admin
     class ApplicationController < ActiveCanvas.config.admin_parent_controller.constantize
+      include ActiveCanvas::CurrentUser
+
       protect_from_forgery with: :exception
       layout "active_canvas/admin/application"
 
@@ -48,11 +50,6 @@ module ActiveCanvas
           ActiveSupport::SecurityUtils.secure_compare(username, config.http_basic_user) &
             ActiveSupport::SecurityUtils.secure_compare(password, config.http_basic_password)
         end
-      end
-
-      def active_canvas_current_user
-        method_name = ActiveCanvas.config.current_user_method
-        respond_to?(method_name, true) ? send(method_name) : nil
       end
     end
   end

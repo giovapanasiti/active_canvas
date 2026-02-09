@@ -1,5 +1,7 @@
 module ActiveCanvas
   class ApplicationController < ActionController::Base
+    include ActiveCanvas::CurrentUser
+
     before_action :active_canvas_authenticate_public
 
     private
@@ -13,11 +15,6 @@ module ActiveCanvas
       elsif auth.respond_to?(:call)
         instance_exec(&auth)
       end
-    end
-
-    def active_canvas_current_user
-      method_name = ActiveCanvas.config.current_user_method
-      respond_to?(method_name, true) ? send(method_name) : nil
     end
   end
 end
