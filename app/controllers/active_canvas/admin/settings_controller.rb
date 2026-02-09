@@ -238,7 +238,7 @@ module ActiveCanvas
           return
         end
 
-        pages = Page.where.not(content: [ nil, "" ])
+        pages = Page.where.not(content: [nil, ""])
         pages.find_each do |page|
           CompileTailwindJob.perform_later(page.id)
         end

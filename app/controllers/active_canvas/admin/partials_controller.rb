@@ -1,7 +1,7 @@
 module ActiveCanvas
   module Admin
     class PartialsController < ApplicationController
-      before_action :ensure_partials_exist, only: [ :index ]
+      before_action :ensure_partials_exist, only: [:index]
       before_action :set_partial, only: %i[edit update editor save_editor]
 
       def index

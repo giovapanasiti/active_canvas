@@ -4,7 +4,7 @@ module ActiveCanvas
     # Host app can set ActiveCanvas.config.storage_service = :public
     # and define a 'public' service in config/storage.yml for cloud storage
     has_one_attached :file, service: (ActiveCanvas.config.storage_service rescue nil) do |attachable|
-      attachable.variant :thumb, resize_to_limit: [ 200, 200 ]
+      attachable.variant :thumb, resize_to_limit: [200, 200]
     end
 
     serialize :metadata, coder: JSON
@@ -15,7 +15,7 @@ module ActiveCanvas
     validate :acceptable_file, on: :create
 
     before_save :set_file_attributes, if: -> { file.attached? && file.blob.present? }
-    after_commit :make_blob_public, on: [ :create, :update ], if: :should_make_public?
+    after_commit :make_blob_public, on: [:create, :update], if: :should_make_public?
 
     scope :images, -> { where(content_type: ActiveCanvas.config.allowed_content_types) }
     scope :recent, -> { order(created_at: :desc) }

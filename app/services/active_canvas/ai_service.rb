@@ -260,7 +260,7 @@ module ActiveCanvas
         validate_image_magic_bytes!(image_binary, extension)
 
         # Create temp file with proper extension
-        tempfile = Tempfile.new([ "screenshot", ".#{extension}" ])
+        tempfile = Tempfile.new(["screenshot", ".#{extension}"])
         tempfile.binmode
         tempfile.write(image_binary)
         tempfile.rewind

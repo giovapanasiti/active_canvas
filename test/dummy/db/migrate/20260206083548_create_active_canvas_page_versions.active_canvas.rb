@@ -16,7 +16,7 @@ class CreateActiveCanvasPageVersions < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :active_canvas_page_versions, [ :page_id, :version_number ], unique: true, if_not_exists: true
+    add_index :active_canvas_page_versions, [:page_id, :version_number], unique: true, if_not_exists: true
     add_index :active_canvas_page_versions, :created_at, if_not_exists: true
   end
 end
