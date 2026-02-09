@@ -48,7 +48,6 @@ module ActiveCanvas
 
       def update
         Setting.homepage_page_id = params[:homepage_page_id]
-        Setting.css_framework = params[:css_framework]
 
         redirect_to admin_settings_path, notice: "Settings saved successfully."
       end

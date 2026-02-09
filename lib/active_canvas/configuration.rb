@@ -228,17 +228,4 @@ module ActiveCanvas
     end
   end
 
-  class << self
-    def configuration
-      @configuration ||= Configuration.new
-    end
-
-    def configure
-      yield(configuration)
-    end
-
-    def config
-      configuration
-    end
-  end
 end

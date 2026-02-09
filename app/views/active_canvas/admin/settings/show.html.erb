@@ -70,17 +70,8 @@
           <p class="help-text">Select which published page to display when visiting the root URL.</p>
         </div>
 
-        <div class="form-group">
-          <%= form.label :css_framework, "CSS Framework" %>
-          <%= form.select :css_framework,
-                options_for_select(
-                  ActiveCanvas::Setting::CSS_FRAMEWORKS.map { |key, config| [config[:name], key] },
-                  @css_framework
-                ),
-                {},
-                class: "form-control" %>
-          <p class="help-text">Choose the CSS framework for the visual editor and published pages.</p>
-        </div>
+        <%# CSS Framework is configured via the initializer (config.css_framework) %>
+        <%# To change it, update your config/initializers/active_canvas.rb %>
 
         <div class="form-actions">
           <%= form.submit "Save Settings", class: "btn btn-primary" %>
