@@ -935,6 +935,90 @@
     }
   </style>
 <% elsif @active_tab == "models" %>
+  <!-- Add Custom Model -->
+  <div class="card add-model-card" style="margin-bottom: 1rem;">
+    <div class="card-body" style="padding: 1rem 1.5rem;">
+      <button type="button" class="add-model-toggle" onclick="toggleAddModelForm()">
+        <svg class="add-model-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Custom Model
+      </button>
+      <div class="add-model-form" id="add-model-form" style="display: none;">
+        <%= form_with url: create_ai_model_admin_settings_path, method: :post, local: true do |f| %>
+          <div class="add-model-grid">
+            <div class="form-group">
+              <%= f.label :model_id, "Model ID" %>
+              <%= f.text_field :model_id, class: "form-control", required: true, placeholder: "e.g. my-custom/model-v1" %>
+            </div>
+            <div class="form-group">
+              <%= f.label :name, "Display Name" %>
+              <%= f.text_field :name, class: "form-control", placeholder: "e.g. My Custom Model" %>
+            </div>
+          </div>
+          <div class="add-model-grid">
+            <div class="form-group">
+              <%= f.label :provider, "Provider" %>
+              <%= f.text_field :provider, class: "form-control", required: true, placeholder: "e.g. openai, anthropic, custom" %>
+            </div>
+            <div class="form-group">
+              <%= f.label :model_type, "Model Type" %>
+              <%= f.select :model_type, options_for_select([["Chat", "chat"], ["Image", "image"], ["Embedding", "embedding"], ["Audio", "audio"]], "chat"), {}, class: "form-control" %>
+            </div>
+          </div>
+          <div class="add-model-grid">
+            <div class="form-group">
+              <%= f.label :context_window, "Context Window" %>
+              <%= f.number_field :context_window, class: "form-control", placeholder: "e.g. 128000" %>
+            </div>
+            <div class="form-group">
+              <%= f.label :max_tokens, "Max Output Tokens" %>
+              <%= f.number_field :max_tokens, class: "form-control", placeholder: "e.g. 4096" %>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Input Modalities</label>
+            <div class="modality-checkboxes">
+              <label class="modality-check"><input type="checkbox" name="input_modalities[]" value="text" checked> text</label>
+              <label class="modality-check"><input type="checkbox" name="input_modalities[]" value="image"> image</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Output Modalities</label>
+            <div class="modality-checkboxes">
+              <label class="modality-check"><input type="checkbox" name="output_modalities[]" value="text" checked> text</label>
+              <label class="modality-check"><input type="checkbox" name="output_modalities[]" value="image"> image</label>
+              <label class="modality-check"><input type="checkbox" name="output_modalities[]" value="embedding"> embedding</label>
+              <label class="modality-check"><input type="checkbox" name="output_modalities[]" value="audio"> audio</label>
+            </div>
+          </div>
+
+          <div class="modality-checkboxes" style="margin-bottom: 1rem;">
+            <label class="modality-check"><input type="checkbox" name="supports_functions" value="1"> Supports function calling</label>
+            <label class="modality-check"><input type="checkbox" name="active" value="1" checked> Active</label>
+          </div>
+
+          <div class="form-actions" style="margin: 0;">
+            <%= f.submit "Add Model", class: "btn btn-primary btn-sm" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleAddModelForm() {
+      const form = document.getElementById('add-model-form');
+      const icon = document.querySelector('.add-model-icon');
+      const isHidden = form.style.display === 'none';
+      form.style.display = isHidden ? 'block' : 'none';
+      icon.style.transform = isHidden ? 'rotate(45deg)' : '';
+    }
+  </script>
+
   <% if @ai_models_synced && @all_models_by_provider.present? %>
     <!-- Search and Bulk Actions -->
     <div class="card" style="margin-bottom: 1rem;">
@@ -1066,6 +1150,17 @@
                       <span class="toggle-track">
                         <span class="toggle-thumb"></span>
                       </span>
+                    </button>
+                    <button type="button"
+                          class="model-delete-btn"
+                          title="Delete model"
+                          data-model-id="<%= model.id %>"
+                          data-provider="<%= model.provider %>"
+                          onclick="deleteModel(this)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -1230,6 +1325,41 @@
           setTimeout(() => {
             text.textContent = 'Refresh Models';
           }, 2000);
+        }
+      }
+
+      async function deleteModel(btn) {
+        if (!confirm('Delete this model? This cannot be undone.')) return;
+
+        const modelId = btn.dataset.modelId;
+        const provider = btn.dataset.provider;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        try {
+          const response = await fetch('<%= destroy_ai_model_admin_settings_path %>', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ model_id: modelId })
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            const row = btn.closest('.model-item');
+            row.remove();
+            updateProviderCount(provider);
+          }
+        } catch (error) {
+          console.error('Delete failed:', error);
+          btn.disabled = false;
+          btn.style.opacity = '';
         }
       }
 
@@ -1510,6 +1640,9 @@
       color: var(--text-tertiary);
     }
     .model-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       flex-shrink: 0;
       margin-left: 1rem;
     }
@@ -1547,7 +1680,83 @@
     .model-toggle-btn.active .toggle-thumb {
       transform: translateX(18px);
     }
+    /* Add Custom Model */
+    .add-model-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: transparent;
+      border: 1px dashed var(--border-color);
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .add-model-toggle:hover {
+      color: var(--primary-color, #6366f1);
+      border-color: var(--primary-color, #6366f1);
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .add-model-icon {
+      transition: transform 0.2s ease;
+    }
+    .add-model-form {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .add-model-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .modality-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .modality-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .modality-check input[type="checkbox"] {
+      accent-color: var(--primary-color, #6366f1);
+    }
+
+    /* Delete Button */
+    .model-delete-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 0.25rem;
+      border-radius: 4px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.15s ease;
+    }
+    .model-item:hover .model-delete-btn {
+      opacity: 1;
+    }
+    .model-delete-btn:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
     @media (max-width: 640px) {
+      .add-model-grid {
+        grid-template-columns: 1fr;
+      }
       .model-meta {
         flex-wrap: wrap;
         gap: 0.5rem;
@@ -1560,6 +1769,9 @@
       .model-actions {
         margin-left: 0;
         align-self: flex-end;
+      }
+      .model-delete-btn {
+        opacity: 1;
       }
     }
   </style>

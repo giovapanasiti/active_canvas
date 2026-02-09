@@ -133,6 +133,48 @@ module ActiveCanvas
         end
       end
 
+      def create_ai_model
+        model = AiModel.new(
+          model_id: params[:model_id],
+          provider: params[:provider],
+          model_type: params[:model_type],
+          name: params[:name],
+          context_window: params[:context_window].presence,
+          max_tokens: params[:max_tokens].presence,
+          supports_functions: params[:supports_functions] == "1",
+          active: params[:active] != "0",
+          input_modalities: Array(params[:input_modalities]).reject(&:blank?),
+          output_modalities: Array(params[:output_modalities]).reject(&:blank?)
+        )
+
+        if model.save
+          respond_to do |format|
+            format.html { redirect_to admin_settings_path(tab: "models"), notice: "Model '#{model.display_name}' added." }
+            format.json { render json: { success: true, model: model.as_json_for_editor } }
+          end
+        else
+          respond_to do |format|
+            format.html { redirect_to admin_settings_path(tab: "models"), alert: model.errors.full_messages.to_sentence }
+            format.json { render json: { success: false, errors: model.errors.full_messages }, status: :unprocessable_entity }
+          end
+        end
+      end
+
+      def destroy_ai_model
+        model = AiModel.find(params[:model_id])
+        model.destroy!
+
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "models"), notice: "Model '#{model.display_name}' removed." }
+          format.json { render json: { success: true } }
+        end
+      rescue ActiveRecord::RecordNotFound
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "models"), alert: "Model not found." }
+          format.json { render json: { success: false, error: "Model not found" }, status: :not_found }
+        end
+      end
+
       def bulk_toggle_ai_models
         action = params[:action_type]
         scope = params[:scope]

@@ -67,31 +67,25 @@ module ActiveCanvas
       end
 
       def configure_ai_features
-        say "Step 3: AI Features (Optional)", :yellow
+        say "Step 3: AI Features", :yellow
         say "-" * 40
         say "ActiveCanvas includes AI-powered features:"
         say "  • Text/HTML generation from prompts"
-        say "  • Image generation"
+        say "  • Image generation (DALL-E)"
         say "  • Screenshot to code conversion"
         say ""
+        say "Supported providers:", :cyan
+        say "  • OpenAI (GPT-4, DALL-E) - recommended"
+        say "  • Anthropic (Claude)"
+        say "  • OpenRouter (access to many models)"
+        say ""
 
-        @setup_ai = yes_no?("Configure AI features?", default: true)
+        @setup_ai = yes_no?("Configure AI API keys now?", default: true)
 
         if @setup_ai
-          say ""
-          say "Supported providers:", :cyan
-          say "  • OpenAI (GPT-4, DALL-E)"
-          say "  • Anthropic (Claude)"
-          say "  • OpenRouter (Multiple models)"
-          say ""
-          say "API keys can be added later in Admin > Settings > AI"
-          say ""
-
-          if yes_no?("Add RubyLLM gem to Gemfile?", default: true)
-            add_rubyllm_gem
-          end
+          configure_ai_keys
         else
-          say "→ You can enable AI features later in Admin > Settings > AI", :yellow
+          say "→ Add API keys later in Admin > Settings > AI", :yellow
         end
         say ""
       end
@@ -156,10 +150,9 @@ module ActiveCanvas
           say ""
         end
 
-        if @setup_ai
+        unless @setup_ai
           say "  5. Add AI API keys in Admin > Settings > AI", :cyan
-          say "     Or set environment variables:"
-          say "     OPENAI_API_KEY, ANTHROPIC_API_KEY, OPENROUTER_API_KEY", :cyan
+          say "     Or via environment variables / Rails credentials", :cyan
           say ""
         end
 
@@ -208,23 +201,62 @@ module ActiveCanvas
         say "✓ Bootstrap 5 will be loaded from CDN", :green
       end
 
-      def add_rubyllm_gem
-        gemfile_path = Rails.root.join("Gemfile")
-        gemfile_content = File.read(gemfile_path)
+      def configure_ai_keys
+        say ""
+        @openai_key = ask("OpenAI API key (leave blank to skip):")
+        @anthropic_key = ask("Anthropic API key (leave blank to skip):")
+        @openrouter_key = ask("OpenRouter API key (leave blank to skip):")
 
-        if gemfile_content.include?("ruby_llm")
-          say "✓ ruby_llm gem already in Gemfile", :green
-        else
-          gem "ruby_llm"
-          say "✓ Added ruby_llm to Gemfile", :green
-
-          if yes_no?("Run bundle install now?", default: true)
-            run "bundle install"
-            say "✓ Bundle installed", :green
-          else
-            say "→ Remember to run: bundle install", :yellow
-          end
+        if @openai_key.blank? && @anthropic_key.blank? && @openrouter_key.blank?
+          say "→ No API keys provided. Add them later in Admin > Settings > AI", :yellow
+          return
         end
+
+        say ""
+        say "How do you want to store the API keys?", :cyan
+        say "  1. Environment variables (recommended for production)"
+        say "  2. Rails credentials (encrypted)"
+        say ""
+
+        storage = ask("Enter choice [1]:")
+        storage = "1" if storage.blank?
+
+        if storage == "2"
+          store_keys_in_credentials
+        else
+          store_keys_in_env
+        end
+      end
+
+      def store_keys_in_env
+        say ""
+        say "Add these to your .env or environment:", :yellow
+        say ""
+        say "  export OPENAI_API_KEY=\"#{@openai_key}\"" if @openai_key.present?
+        say "  export ANTHROPIC_API_KEY=\"#{@anthropic_key}\"" if @anthropic_key.present?
+        say "  export OPENROUTER_API_KEY=\"#{@openrouter_key}\"" if @openrouter_key.present?
+        say ""
+
+        # Update initializer template vars
+        @ai_openai_env = true if @openai_key.present?
+        @ai_anthropic_env = true if @anthropic_key.present?
+        @ai_openrouter_env = true if @openrouter_key.present?
+
+        say "✓ Remember to set these environment variables before starting the server", :green
+      end
+
+      def store_keys_in_credentials
+        say ""
+        say "Add these to your Rails credentials (bin/rails credentials:edit):", :yellow
+        say ""
+        say "active_canvas:"
+        say "  openai_api_key: #{@openai_key}" if @openai_key.present?
+        say "  anthropic_api_key: #{@anthropic_key}" if @anthropic_key.present?
+        say "  openrouter_api_key: #{@openrouter_key}" if @openrouter_key.present?
+        say ""
+
+        @ai_use_credentials = true
+        say "✓ Remember to add these to your credentials file", :green
       end
     end
   end
