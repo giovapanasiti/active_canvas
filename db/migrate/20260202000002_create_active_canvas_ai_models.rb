@@ -8,11 +8,12 @@ class CreateActiveCanvasAiModels < ActiveRecord::Migration[8.0]
       t.string :family
       t.integer :context_window
       t.integer :max_tokens
-      t.boolean :supports_vision, default: false
       t.boolean :supports_functions, default: false
       t.decimal :input_price_per_million, precision: 10, scale: 4
       t.decimal :output_price_per_million, precision: 10, scale: 4
       t.boolean :active, default: true
+      t.text :input_modalities
+      t.text :output_modalities
 
       t.timestamps
     end
