@@ -1,18 +1,19 @@
 # ActiveCanvas
 
-A mountable Rails engine that provides a simple CMS for creating and managing static pages. Features an admin interface for content management and public routes for displaying pages.
+A mountable Rails engine that turns any Rails app into a full-featured CMS. Includes a visual drag-and-drop editor (GrapeJS), AI-powered content generation, Tailwind CSS compilation, media management, page versioning, and SEO controls -- all behind an admin interface that works out of the box.
 
 ## Features
 
-- **Page Management**: Create, edit, and delete pages with HTML content
-- **Page Types**: Categorize pages (e.g., "Page", "Blog Post", "Landing Page")
-- **Slug Support**: Custom slugs or auto-generated ones (`active_canvas_id_#{id}`)
-- **Draft/Published Status**: Control page visibility
-- **Admin Interface**: Clean, built-in admin UI (no external dependencies)
-- **Visual Editor**: Drag-and-drop page builder powered by GrapeJS
-- **CSS Framework Support**: Tailwind CSS, Bootstrap 5, or custom CSS
-- **Tailwind Compilation**: Compile Tailwind CSS per-page for production (no CDN)
-- **Isolated Namespace**: No conflicts with your host application
+- **Visual Editor** -- Drag-and-drop page builder powered by GrapeJS
+- **AI Content Generation** -- Text, images, and screenshot-to-code via OpenAI, Anthropic, or OpenRouter
+- **Tailwind CSS Compilation** -- Per-page compiled CSS for production (no CDN dependency)
+- **Media Library** -- Upload and manage images/files with Active Storage
+- **Page Versioning** -- Automatic version history with diffs and rollback
+- **Header & Footer Partials** -- Reusable components, togglable per page
+- **SEO** -- Meta tags, Open Graph, Twitter Cards, JSON-LD structured data
+- **Page Types** -- Categorize pages (blog posts, landing pages, etc.)
+- **Authentication** -- Pluggable auth (Devise, custom, or HTTP Basic)
+- **Isolated Namespace** -- No conflicts with your host application
 
 ## Requirements
 
@@ -21,7 +22,7 @@ A mountable Rails engine that provides a simple CMS for creating and managing st
 
 ## Installation
 
-Add ActiveCanvas to your Gemfile:
+Add to your Gemfile:
 
 ```ruby
 gem "active_canvas"
@@ -32,158 +33,152 @@ Run the install generator:
 ```bash
 bundle install
 bin/rails generate active_canvas:install
-bin/rails active_canvas:install:migrations
-bin/rails db:migrate
 ```
 
-This will:
+The interactive installer will:
+- Copy and run database migrations
 - Create `config/initializers/active_canvas.rb` with configuration options
-- Mount the engine at `/canvas` in your routes
-- Copy the database migrations
+- Mount the engine in your routes (default: `/canvas`)
+- Prompt you to choose a CSS framework (Tailwind, Bootstrap 5, or none)
+- Optionally configure AI API keys
 
-## Usage
+Then visit `/canvas/admin` to start building pages.
 
-### Admin Interface
+## Quick Start
 
-Access the admin interface at `/canvas/admin` to:
+1. Go to `/canvas/admin`
+2. Create a **Page Type** (e.g., "Landing Page")
+3. Create a **Page**, then click **Editor** to open the visual builder
+4. Drag blocks, use AI to generate content, upload images
+5. Publish the page -- it's live at `/canvas/your-slug`
 
-1. **Create Page Types** - Define categories for your pages
-2. **Create Pages** - Add new pages with:
-   - Title (required)
-   - Slug (optional, auto-generated if blank)
-   - Content (HTML)
-   - Page Type
-   - Published status
-3. **Configure Settings** - Set the homepage and other options
+## Visual Editor
 
-### Public Pages
+The GrapeJS editor provides:
 
-Published pages are accessible at `/canvas/:slug`:
+- Drag-and-drop blocks (text, images, columns, forms, etc.)
+- Code editor panel for direct HTML/CSS editing
+- Asset manager integrated with the media library
+- AI assistant panel for content generation
+- Component-level AI toolbar (edit, rewrite, expand)
+- Auto-save (configurable interval, default: 60s)
 
-```
-/canvas/about-us
-/canvas/contact
-/canvas/active_canvas_id_42  # Auto-generated slug
-```
+## AI Integration
 
-Only published pages are visible. Draft pages return a 404.
+ActiveCanvas uses [RubyLLM](https://github.com/crmne/ruby_llm) to provide AI features directly in the editor.
 
-### Homepage
+### Capabilities
 
-Set a homepage in **Settings** to display a specific page when visiting the root URL (`/canvas/`). Only published pages can be set as the homepage.
-
-### Customizing the Mount Path
-
-You can mount the engine at any path:
-
-```ruby
-# Pages at /pages/:slug, admin at /pages/admin
-mount ActiveCanvas::Engine => "/pages"
-
-# Or at root level
-mount ActiveCanvas::Engine => "/"
-```
-
-## Models
-
-### ActiveCanvas::Page
-
-```ruby
-# Attributes
-page.title      # String, required
-page.slug       # String, unique, auto-generated if blank
-page.content    # Text, HTML content
-page.published  # Boolean, default: false
-
-# Associations
-page.page_type  # belongs_to
-
-# Scopes
-ActiveCanvas::Page.published  # Only published pages
-ActiveCanvas::Page.draft      # Only draft pages
-
-# Methods
-page.rendered_content  # Returns HTML-safe content
-```
-
-### ActiveCanvas::PageType
-
-```ruby
-# Attributes
-page_type.name  # String, required (e.g., "Blog Post")
-page_type.key   # String, unique, auto-generated from name
-
-# Associations
-page_type.pages  # has_many
-
-# Class Methods
-ActiveCanvas::PageType.default  # Returns or creates the default "Page" type
-```
-
-### ActiveCanvas::Setting
-
-```ruby
-# Class Methods
-ActiveCanvas::Setting.get("key")           # Get a setting value
-ActiveCanvas::Setting.set("key", "value")  # Set a setting value
-ActiveCanvas::Setting.homepage             # Get the homepage Page object
-ActiveCanvas::Setting.homepage_page_id     # Get/set the homepage page ID
-```
-
-## Tailwind CSS Compilation
-
-ActiveCanvas can compile Tailwind CSS at runtime, generating optimized per-page stylesheets instead of loading the full Tailwind CDN.
+| Feature | Description | Supported Models |
+|---------|-------------|-----------------|
+| **Chat** | Generate and edit HTML content with streaming | GPT-4o, Claude Sonnet 4, Claude 3.5 Haiku |
+| **Image Generation** | Create images from text prompts | DALL-E 3, GPT Image 1 |
+| **Screenshot to Code** | Upload a screenshot, get HTML/CSS | GPT-4o, Claude Sonnet 4 (vision models) |
 
 ### Setup
 
-1. Add the `tailwindcss-ruby` gem to your Gemfile:
+Add your API keys via environment variables or Rails credentials:
+
+```ruby
+# config/initializers/active_canvas.rb
+Rails.application.config.after_initialize do
+  # Via environment variables
+  ActiveCanvas::Setting.ai_openai_api_key = ENV["OPENAI_API_KEY"]
+  ActiveCanvas::Setting.ai_anthropic_api_key = ENV["ANTHROPIC_API_KEY"]
+  ActiveCanvas::Setting.ai_openrouter_api_key = ENV["OPENROUTER_API_KEY"]
+
+  # Or via Rails credentials
+  credentials = Rails.application.credentials.active_canvas || {}
+  ActiveCanvas::Setting.ai_openai_api_key = credentials[:openai_api_key]
+end
+```
+
+You can also configure API keys from the admin UI at `/canvas/admin/settings` (AI tab).
+
+Once configured, sync available models:
+
+```bash
+bin/rails active_canvas:sync_models
+```
+
+Or use the **Sync Models** button in admin settings.
+
+## Tailwind CSS Compilation
+
+ActiveCanvas can compile Tailwind CSS at runtime so your public pages don't need the Tailwind CDN.
+
+### How it works
+
+- **In the editor**: Uses Tailwind CDN for instant live preview
+- **On save**: Compiles only the CSS classes used on that page
+- **Public pages**: Serves compiled CSS inline (fast, no CDN)
+
+### Setup
+
+Add the `tailwindcss-ruby` gem (optional -- falls back to CDN if missing):
 
 ```ruby
 gem "tailwindcss-ruby", ">= 4.0"
 ```
 
-Any 4.x version works - the engine only uses the stable `Tailwindcss::Ruby.executable` API.
+Select "Tailwind CSS" as the CSS framework in your initializer or admin settings. That's it -- CSS compiles automatically when you save pages.
 
-2. Run the migration to add compilation columns:
+You can customize the Tailwind theme (colors, fonts) from admin settings, and trigger a bulk recompile of all pages when needed.
 
-```bash
-bin/rails active_canvas:install:migrations
-bin/rails db:migrate
-```
+## Media Library
 
-3. Select "Tailwind CSS" in admin settings (`/canvas/admin/settings`)
+Upload and manage images directly from the admin or from within the editor's asset manager.
 
-### How It Works
+- Supports JPEG, PNG, GIF, WebP, AVIF, and PDF
+- SVG uploads available (disabled by default for security)
+- Configurable max file size (default: 10MB)
+- Works with any Active Storage backend (local, S3, GCS, etc.)
+- Public or signed URL modes
 
-- **Editor**: Uses Tailwind CDN for instant live preview while editing
-- **On Save**: Compiles only the CSS classes used on that page
-- **Public Pages**: Serves compiled CSS inline (no CDN dependency)
+## Page Versioning
 
-When you save a page, the compiled CSS is stored in the database. Public pages load this compiled CSS instead of the 300KB+ Tailwind CDN script, resulting in faster page loads.
+Every content change creates a version automatically. View the version history from the page admin to see:
 
-### Graceful Degradation
+- What changed (before/after diffs)
+- Who made the change
+- When it was made
+- Content size differences
 
-If `tailwindcss-ruby` is not installed, ActiveCanvas falls back to CDN loading automatically.
-
-See [docs/tailwind_compilation.md](docs/tailwind_compilation.md) for detailed documentation.
+Configure the maximum versions kept per page (default: 50, set to 0 for unlimited).
 
 ## Authentication
 
-**Important:** The admin interface is open by default. Configure authentication in your initializer.
+**The admin interface is open by default.** Configure authentication before deploying to production.
 
 ### With Devise
 
 ```ruby
-# config/initializers/active_canvas.rb
 ActiveCanvas.configure do |config|
   config.authenticate_admin = :authenticate_user!
 end
 ```
 
-### With Custom Logic
+### With a custom controller
 
 ```ruby
-# config/initializers/active_canvas.rb
+ActiveCanvas.configure do |config|
+  config.admin_parent_controller = "Admin::ApplicationController"
+end
+```
+
+### With HTTP Basic Auth
+
+```ruby
+ActiveCanvas.configure do |config|
+  config.authenticate_admin = :http_basic_auth
+  config.http_basic_user = "admin"
+  config.http_basic_password = Rails.application.credentials.active_canvas_password
+end
+```
+
+### With custom logic
+
+```ruby
 ActiveCanvas.configure do |config|
   config.authenticate_admin = -> {
     unless current_user&.admin?
@@ -193,44 +188,65 @@ ActiveCanvas.configure do |config|
 end
 ```
 
-### Configuration Options
+## Configuration
+
+Full configuration reference:
 
 ```ruby
+# config/initializers/active_canvas.rb
 ActiveCanvas.configure do |config|
-  # Authentication for admin pages (required for production!)
-  config.authenticate_admin = :authenticate_user!
+  # === Authentication ===
+  config.authenticate_admin = :authenticate_user!  # method name, lambda, or :http_basic_auth
+  config.authenticate_public = nil                 # nil = public access
+  config.current_user_method = :current_user       # for version tracking & AI features
 
-  # Authentication for public pages (optional, nil = public access)
-  config.authenticate_public = nil
+  # === CSS Framework ===
+  config.css_framework = :tailwind                 # :tailwind, :bootstrap5, or :none
 
-  # Current user method name (for AI features, etc.)
-  config.current_user_method = :current_user
+  # === Media Uploads ===
+  config.enable_uploads = true
+  config.max_upload_size = 10.megabytes
+  config.allow_svg_uploads = false
+  config.storage_service = nil                     # Active Storage service name
+  config.public_uploads = false                    # false = signed URLs
+
+  # === Editor ===
+  config.enable_ai_features = true
+  config.enable_code_editor = true
+  config.enable_asset_manager = true
+  config.autosave_interval = 60                    # seconds (0 = disabled)
+
+  # === Pages ===
+  config.max_versions_per_page = 50                # 0 = unlimited
+
+  # === Security ===
+  config.sanitize_content = true
+  config.ai_rate_limit_per_minute = 30
 end
 ```
 
 ## Customization
 
-### Custom Layouts
+### Mount path
 
-Override the admin layout by creating:
+```ruby
+# config/routes.rb
+mount ActiveCanvas::Engine => "/pages"   # or "/cms", "/blog", "/"
+```
+
+### Override views
+
+Copy any view into your app to customize it:
 
 ```
+app/views/active_canvas/pages/show.html.erb
+app/views/active_canvas/admin/pages/index.html.erb
 app/views/layouts/active_canvas/admin/application.html.erb
 ```
 
-### Custom Views
-
-Override any view by copying it to your app:
-
-```
-app/views/active_canvas/admin/pages/index.html.erb
-app/views/active_canvas/pages/show.html.erb
-```
-
-### Extending Models
+### Extend models
 
 ```ruby
-# config/initializers/active_canvas.rb
 ActiveCanvas::Page.class_eval do
   validates :content, presence: true
 
@@ -240,48 +256,18 @@ ActiveCanvas::Page.class_eval do
 end
 ```
 
-## Routes
+## Rake Tasks
 
+```bash
+bin/rails active_canvas:sync_models    # Sync AI models from configured providers
+bin/rails active_canvas:list_models    # List all synced AI models
 ```
-# Admin Routes
-GET    /canvas/admin                    # Admin root (pages list)
-GET    /canvas/admin/pages              # List pages
-POST   /canvas/admin/pages              # Create page
-GET    /canvas/admin/pages/new          # New page form
-GET    /canvas/admin/pages/:id          # Show page
-GET    /canvas/admin/pages/:id/edit     # Edit page form
-PATCH  /canvas/admin/pages/:id          # Update page
-DELETE /canvas/admin/pages/:id          # Delete page
-
-GET    /canvas/admin/page_types         # List page types
-POST   /canvas/admin/page_types         # Create page type
-GET    /canvas/admin/page_types/new     # New page type form
-GET    /canvas/admin/page_types/:id     # Show page type
-GET    /canvas/admin/page_types/:id/edit# Edit page type form
-PATCH  /canvas/admin/page_types/:id     # Update page type
-DELETE /canvas/admin/page_types/:id     # Delete page type
-
-GET    /canvas/admin/settings           # Settings page
-PATCH  /canvas/admin/settings           # Update settings
-
-# Public Routes
-GET    /canvas/                         # Homepage (configured page)
-GET    /canvas/:slug                    # View published page
-```
-
-## Documentation
-
-Additional documentation is available in the `docs/` directory:
-
-- [CSS Framework Support](docs/css_framework_support.md) - Tailwind, Bootstrap, and custom CSS setup
-- [Tailwind Compilation](docs/tailwind_compilation.md) - Runtime Tailwind CSS compilation
-- [Editor Panels Guide](docs/editor_panels_guide.md) - GrapeJS editor customization
 
 ## Development
 
-Clone the repository and run:
-
 ```bash
+git clone https://github.com/giovapanasiti/active_canvas.git
+cd active_canvas
 bundle install
 bin/rails db:migrate
 bin/rails test
@@ -293,15 +279,13 @@ Start the dummy app:
 bin/rails server
 ```
 
-Visit:
-- http://localhost:3000/canvas/admin - Admin interface
-- http://localhost:3000/canvas/:slug - Public pages
+Then visit `http://localhost:3000/canvas/admin`.
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -am 'Add my feature'`)
+3. Commit your changes
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Create a Pull Request
 
