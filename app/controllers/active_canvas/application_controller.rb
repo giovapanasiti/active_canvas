@@ -1,5 +1,5 @@
 module ActiveCanvas
-  class ApplicationController < ActionController::Base
+  class ApplicationController < ActiveCanvas.config.public_parent_controller.constantize
     include ActiveCanvas::CurrentUser
 
     before_action :active_canvas_authenticate_public

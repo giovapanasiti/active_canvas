@@ -20,6 +20,7 @@ module ActiveCanvas
     # Set to a string like "Admin::ApplicationController" to inherit authentication
     # Example: config.admin_parent_controller = "Admin::ApplicationController"
     attr_accessor :admin_parent_controller
+    attr_accessor :public_parent_controller
 
     # Current user method name (used by AI features, version tracking, etc.)
     attr_accessor :current_user_method
@@ -111,6 +112,7 @@ module ActiveCanvas
       @http_basic_user = nil
       @http_basic_password = nil
       @admin_parent_controller = "ActionController::Base"
+      @public_parent_controller = "ActionController::Base"
       @current_user_method = :current_user
 
       # CSS Framework
@@ -227,5 +229,4 @@ module ActiveCanvas
       @css_framework == :tailwind && defined?(Tailwindcss::Ruby)
     end
   end
-
 end
