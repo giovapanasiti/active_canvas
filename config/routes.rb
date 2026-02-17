@@ -43,5 +43,6 @@ ActiveCanvas::Engine.routes.draw do
   end
 
   root to: "pages#home"
-  get ":slug", to: "pages#show", as: :public_page
+  get ":slug", to: "pages#show", as: :public_page,
+    constraints: ->(req) { ActiveCanvas::Page.published.exists?(slug: req.params[:slug]) }
 end
