@@ -103,6 +103,30 @@ bin/rails active_canvas:sync_models
 
 Or use the **Sync Models** button in admin settings.
 
+### Server Timeout
+
+AI requests (especially image generation and screenshot-to-code) can take longer than typical web requests. If you're running Puma in clustered mode (multiple workers), increase the worker timeout to avoid requests being killed mid-flight:
+
+```ruby
+# config/puma.rb
+worker_timeout 180
+```
+
+Or via environment variable:
+
+```bash
+PUMA_WORKER_TIMEOUT=180
+```
+
+If you're behind a reverse proxy (Nginx, Apache), also increase its read timeout for the ActiveCanvas routes:
+
+```nginx
+location /canvas {
+  proxy_read_timeout 180s;
+  proxy_send_timeout 180s;
+}
+```
+
 ## Tailwind CSS Compilation
 
 ActiveCanvas can compile Tailwind CSS at runtime so your public pages don't need the Tailwind CDN.

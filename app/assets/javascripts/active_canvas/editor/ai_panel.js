@@ -794,14 +794,20 @@
     }
 
     try {
+      abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 180000);
+
       const response = await fetch(endpoints.image, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': getCSRFToken()
         },
-        body: JSON.stringify({ prompt, model })
+        body: JSON.stringify({ prompt, model }),
+        signal: abortController.signal
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -814,10 +820,15 @@
       elements.imageOutput.dataset.imageUrl = data.url;
 
     } catch (error) {
-      console.error('AI Image Generation Error:', error);
-      elements.imageOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+      if (error.name === 'AbortError') {
+        elements.imageOutput.innerHTML = '<div class="ai-error">Request timed out. Please try again.</div>';
+      } else {
+        console.error('AI Image Generation Error:', error);
+        elements.imageOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+      }
     } finally {
       setGenerating(false);
+      abortController = null;
     }
   }
 
@@ -889,6 +900,9 @@
     }
 
     try {
+      abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 180000);
+
       const response = await fetch(endpoints.screenshot, {
         method: 'POST',
         headers: {
@@ -899,8 +913,11 @@
           screenshot: imageData,
           model: model,
           additional_prompt: additionalPrompt
-        })
+        }),
+        signal: abortController.signal
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -911,10 +928,15 @@
       elements.screenshotOutput.textContent = data.html;
 
     } catch (error) {
-      console.error('AI Screenshot Conversion Error:', error);
-      elements.screenshotOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+      if (error.name === 'AbortError') {
+        elements.screenshotOutput.innerHTML = '<div class="ai-error">Request timed out. Please try again.</div>';
+      } else {
+        console.error('AI Screenshot Conversion Error:', error);
+        elements.screenshotOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+      }
     } finally {
       setGenerating(false);
+      abortController = null;
     }
   }
 

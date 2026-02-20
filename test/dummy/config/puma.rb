@@ -37,3 +37,6 @@ plugin :tmp_restart
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.
 pidfile ENV["PIDFILE"] if ENV["PIDFILE"]
+
+# Allow longer requests for AI endpoints (image generation, screenshot-to-code)
+worker_timeout ENV.fetch("PUMA_WORKER_TIMEOUT", 180).to_i

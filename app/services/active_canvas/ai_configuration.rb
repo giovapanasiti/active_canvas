@@ -6,7 +6,7 @@ module ActiveCanvas
           config.openai_api_key = Setting.ai_openai_api_key
           config.anthropic_api_key = Setting.ai_anthropic_api_key
           config.openrouter_api_key = Setting.ai_openrouter_api_key
-          config.request_timeout = 120
+          config.request_timeout = 180
         end
       end
 
