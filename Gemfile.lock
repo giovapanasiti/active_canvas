@@ -253,7 +253,7 @@ GEM
     securerandom (0.4.1)
     sqlite3 (2.9.0-x86_64-linux-gnu)
     stringio (3.2.0)
-    tailwindcss-ruby (4.1.18-x86_64-linux-gnu)
+    tailwindcss-ruby (4.2.0-x86_64-linux-gnu)
     thor (1.5.0)
     timeout (0.6.0)
     tsort (0.2.0)
@@ -279,7 +279,7 @@ DEPENDENCIES
   puma
   rubocop-rails-omakase
   sqlite3
-  tailwindcss-ruby (~> 4.0)
+  tailwindcss-ruby (~> 4.2)
 
 BUNDLED WITH
    2.7.2
