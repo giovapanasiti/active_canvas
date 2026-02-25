@@ -215,6 +215,15 @@ module ActiveCanvas
         set("ai_default_vision_model", model.presence)
       end
 
+      # AI Connection Mode
+      def ai_connection_mode
+        get("ai_connection_mode") || "server"
+      end
+
+      def ai_connection_mode=(value)
+        set("ai_connection_mode", value.presence || "server")
+      end
+
       # AI Feature Toggles
       def ai_text_enabled?
         get("ai_text_enabled") != "false"

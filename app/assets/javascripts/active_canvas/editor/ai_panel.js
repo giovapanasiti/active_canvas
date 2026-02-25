@@ -7,6 +7,14 @@
 
   const STORAGE_PREFIX = 'active_canvas_ai_model_';
 
+  // Direct mode endpoint map
+  const DIRECT_ENDPOINTS = {
+    openai:     { chat: 'https://api.openai.com/v1/chat/completions',
+                  image: 'https://api.openai.com/v1/images/generations' },
+    openrouter: { chat: 'https://openrouter.ai/api/v1/chat/completions' },
+    anthropic:  { chat: 'https://api.anthropic.com/v1/messages' }
+  };
+
   // State
   let aiStatus = null;
   let availableModels = { text: [], image: [], vision: [] };
@@ -21,6 +29,425 @@
 
   // Model pickers state
   let pickers = {};
+
+  // ==================== Direct Mode Helpers ====================
+
+  function isDirectMode() {
+    return window.ActiveCanvasEditor?.config?.aiConnectionMode === 'direct';
+  }
+
+  function getModelProvider(modelId) {
+    const allModels = [...(availableModels.text || []), ...(availableModels.image || []), ...(availableModels.vision || [])];
+    const model = allModels.find(m => m.id === modelId);
+    return model?.provider || null;
+  }
+
+  function getApiKey(provider) {
+    return window.ActiveCanvasEditor?.config?.aiApiKeys?.[provider] || null;
+  }
+
+  function buildSystemPrompt(context) {
+    const framework = window.ActiveCanvasEditor?.config?.cssFramework || 'custom';
+    let frameworkGuidelines = '';
+
+    if (framework === 'tailwind') {
+      frameworkGuidelines = `CSS Framework: Tailwind CSS v4
+
+You MUST use Tailwind CSS utility classes exclusively for all styling. Do NOT use inline styles or custom CSS.
+
+Tailwind v4 rules:
+- Use slash syntax for opacity: bg-blue-500/50, text-black/75 (NOT bg-opacity-50 or text-opacity-75)
+- Use modern color syntax: bg-red-500/20 instead of bg-red-500 bg-opacity-20
+- Use arbitrary values with square brackets when needed: w-[72rem], text-[#1a2b3c]
+- Use the new shadow and ring syntax: shadow-sm, ring-1 ring-gray-200
+- Prefer gap-* over space-x-*/space-y-* for flex and grid layouts
+- Use size-* for equal width and height: size-8 instead of w-8 h-8
+- Use grid with grid-cols-subgrid where appropriate
+- All legacy utilities removed in v4 are forbidden (bg-opacity-*, text-opacity-*, divide-opacity-*, etc.)`;
+    } else if (framework === 'bootstrap5') {
+      frameworkGuidelines = `CSS Framework: Bootstrap 5
+
+Use Bootstrap 5 classes exclusively for all styling. Do NOT use inline styles or custom CSS.
+
+Bootstrap 5 rules:
+- Use the grid system: container, row, col-*, col-md-*, col-lg-*
+- Use Bootstrap utility classes: d-flex, justify-content-center, align-items-center, p-3, m-2, etc.
+- Use Bootstrap components: card, btn, navbar, alert, badge, etc.
+- Use responsive breakpoints: sm, md, lg, xl, xxl
+- Use spacing utilities: p-*, m-*, gap-*
+- Use text utilities: text-center, fw-bold, fs-*, text-muted
+- Use background utilities: bg-primary, bg-light, bg-dark, etc.`;
+    } else {
+      frameworkGuidelines = `CSS Framework: None (vanilla CSS)
+
+Use inline styles for all styling since no CSS framework is loaded.
+
+Vanilla CSS rules:
+- Apply all styles via the style attribute directly on HTML elements
+- Use modern CSS: flexbox, grid, clamp(), min(), max()
+- Ensure responsive behavior with relative units (%, rem, vw) and media queries via <style> blocks when necessary
+- Use CSS custom properties (variables) in a <style> block for consistent theming`;
+    }
+
+    return `You are an expert web designer creating content for a visual page builder.
+Generate clean, semantic HTML.
+
+${frameworkGuidelines}
+
+General guidelines:
+- Use proper semantic HTML5 elements (section, article, header, nav, etc.)
+- Include responsive design patterns
+- Return ONLY the HTML code, no explanations or markdown code blocks
+- Do not include <html>, <head>, or <body> tags - just the content
+- Use placeholder images from https://placehold.co/ when images are needed
+
+${context || ''}`;
+  }
+
+  function buildScreenshotPrompt(additionalPrompt) {
+    const framework = window.ActiveCanvasEditor?.config?.cssFramework || 'custom';
+    let frameworkGuidelines = '';
+
+    if (framework === 'tailwind') {
+      frameworkGuidelines = 'CSS Framework: Tailwind CSS v4\n\nYou MUST use Tailwind CSS utility classes exclusively for all styling. Do NOT use inline styles or custom CSS.';
+    } else if (framework === 'bootstrap5') {
+      frameworkGuidelines = 'CSS Framework: Bootstrap 5\n\nUse Bootstrap 5 classes exclusively for all styling. Do NOT use inline styles or custom CSS.';
+    } else {
+      frameworkGuidelines = 'CSS Framework: None (vanilla CSS)\n\nUse inline styles for all styling since no CSS framework is loaded.';
+    }
+
+    let base = `Convert this screenshot into clean HTML.
+
+${frameworkGuidelines}
+
+Requirements:
+- Create semantic, accessible HTML5 structure
+- Make it fully responsive
+- Use placeholder images from https://placehold.co/ for any images
+- Match the layout, colors, and typography as closely as possible
+- Return ONLY the HTML code, no explanations or markdown code blocks
+- Do not include <html>, <head>, or <body> tags - just the content`;
+
+    if (additionalPrompt) {
+      base += `\n\nAdditional instructions: ${additionalPrompt}`;
+    }
+
+    return base;
+  }
+
+  // ==================== Direct Mode SSE Parsers ====================
+
+  async function processOpenAIStream(body, outputElement) {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    outputElement.innerHTML = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const payload = line.slice(6).trim();
+            if (payload === '[DONE]') return;
+
+            try {
+              const data = JSON.parse(payload);
+              const content = data.choices?.[0]?.delta?.content;
+              if (content) {
+                fullContent += content;
+                outputElement.textContent = fullContent;
+                outputElement.scrollTop = outputElement.scrollHeight;
+              }
+            } catch (e) {
+              // Ignore incomplete JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function processAnthropicStream(body, outputElement) {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    outputElement.innerHTML = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === 'content_block_delta' && data.delta?.type === 'text_delta') {
+                fullContent += data.delta.text;
+                outputElement.textContent = fullContent;
+                outputElement.scrollTop = outputElement.scrollHeight;
+              }
+
+              if (data.type === 'message_stop') return;
+
+              if (data.type === 'error') {
+                showOutputError(outputElement, data.error?.message || 'Anthropic stream error');
+                return;
+              }
+            } catch (e) {
+              // Ignore incomplete JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ==================== Direct Mode API Calls ====================
+
+  async function generateTextDirect(prompt, model, currentHtml) {
+    const provider = getModelProvider(model);
+    if (!provider) {
+      throw new Error(`Unknown provider for model ${model}. Check your model configuration.`);
+    }
+
+    const apiKey = getApiKey(provider);
+    if (!apiKey) {
+      throw new Error(`No API key configured for ${provider}. Add it in Settings > AI.`);
+    }
+
+    const endpoint = DIRECT_ENDPOINTS[provider]?.chat;
+    if (!endpoint) {
+      throw new Error(`Direct mode not supported for provider: ${provider}`);
+    }
+
+    let context = '';
+    if (currentMode === 'element' && currentHtml) {
+      context = `The user is editing an existing element. Current HTML:\n${currentHtml}`;
+    }
+    const systemPrompt = buildSystemPrompt(context);
+
+    abortController = new AbortController();
+
+    let response;
+
+    if (provider === 'anthropic') {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          stream: true,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: abortController.signal
+      });
+    } else {
+      // OpenAI / OpenRouter
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          stream: true,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ]
+        }),
+        signal: abortController.signal
+      });
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error(`API key may be incorrect for ${provider}.`);
+      }
+      let errMsg = `Request failed (${response.status})`;
+      try {
+        const errData = await response.json();
+        errMsg = errData.error?.message || errData.error || errMsg;
+      } catch (e) {}
+      throw new Error(errMsg);
+    }
+
+    if (provider === 'anthropic') {
+      await processAnthropicStream(response.body, elements.textOutput);
+    } else {
+      await processOpenAIStream(response.body, elements.textOutput);
+    }
+  }
+
+  async function generateImageDirect(prompt, model) {
+    const provider = getModelProvider(model);
+
+    // Only OpenAI supports image generation in direct mode
+    if (provider !== 'openai') {
+      throw new Error(`Direct image generation only supported for OpenAI models. Switch to server mode for ${provider}.`);
+    }
+
+    const apiKey = getApiKey('openai');
+    if (!apiKey) {
+      throw new Error('No API key configured for openai. Add it in Settings > AI.');
+    }
+
+    abortController = new AbortController();
+
+    const response = await fetch(DIRECT_ENDPOINTS.openai.image, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        n: 1,
+        size: '1024x1024'
+      }),
+      signal: abortController.signal
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('API key may be incorrect for openai.');
+      }
+      let errMsg = `Image generation failed (${response.status})`;
+      try {
+        const errData = await response.json();
+        errMsg = errData.error?.message || errMsg;
+      } catch (e) {}
+      throw new Error(errMsg);
+    }
+
+    const data = await response.json();
+    return data.data?.[0]?.url || data.data?.[0]?.b64_json;
+  }
+
+  async function convertScreenshotDirect(imageDataUrl, model, additionalPrompt) {
+    const provider = getModelProvider(model);
+    if (!provider) {
+      throw new Error(`Unknown provider for model ${model}.`);
+    }
+
+    const apiKey = getApiKey(provider);
+    if (!apiKey) {
+      throw new Error(`No API key configured for ${provider}. Add it in Settings > AI.`);
+    }
+
+    const endpoint = DIRECT_ENDPOINTS[provider]?.chat;
+    if (!endpoint) {
+      throw new Error(`Direct mode not supported for provider: ${provider}`);
+    }
+
+    const screenshotPrompt = buildScreenshotPrompt(additionalPrompt);
+    abortController = new AbortController();
+
+    let response;
+
+    if (provider === 'anthropic') {
+      // Extract base64 data and media type from data URL
+      const match = imageDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+      const mediaType = match ? match[1] : 'image/png';
+      const rawBase64 = match ? match[2] : imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
+
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          stream: true,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: rawBase64 } },
+              { type: 'text', text: screenshotPrompt }
+            ]
+          }]
+        }),
+        signal: abortController.signal
+      });
+    } else {
+      // OpenAI / OpenRouter vision format
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          stream: true,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: screenshotPrompt },
+              { type: 'image_url', image_url: { url: imageDataUrl } }
+            ]
+          }]
+        }),
+        signal: abortController.signal
+      });
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error(`API key may be incorrect for ${provider}.`);
+      }
+      let errMsg = `Screenshot conversion failed (${response.status})`;
+      try {
+        const errData = await response.json();
+        errMsg = errData.error?.message || errData.error || errMsg;
+      } catch (e) {}
+      throw new Error(errMsg);
+    }
+
+    if (provider === 'anthropic') {
+      await processAnthropicStream(response.body, elements.screenshotOutput);
+    } else {
+      await processOpenAIStream(response.body, elements.screenshotOutput);
+    }
+  }
+
+  // ==================== Initialization ====================
 
   /**
    * Initialize the AI panel
@@ -650,14 +1077,13 @@
     }
   }
 
+  // ==================== Main Generation Functions ====================
+
   /**
    * Generate text content using SSE streaming
    */
   async function generateText() {
     if (isGenerating || !elements.textPrompt?.value.trim()) return;
-
-    const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
-    if (!endpoints?.chat) return;
 
     const prompt = elements.textPrompt.value.trim();
     const model = getSelectedModel('text');
@@ -685,34 +1111,51 @@
     showLoadingInOutput(elements.textOutput);
 
     try {
-      abortController = new AbortController();
+      if (isDirectMode()) {
+        await generateTextDirect(prompt, model, currentHtml);
+      } else {
+        // Server mode (existing behavior)
+        const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
+        if (!endpoints?.chat) return;
 
-      const response = await fetch(endpoints.chat, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken()
-        },
-        body: JSON.stringify({
-          prompt,
-          model,
-          mode: currentMode,
-          current_html: currentHtml
-        }),
-        signal: abortController.signal
-      });
+        abortController = new AbortController();
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Generation failed');
+        const response = await fetch(endpoints.chat, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCSRFToken()
+          },
+          body: JSON.stringify({
+            prompt,
+            model,
+            mode: currentMode,
+            current_html: currentHtml
+          }),
+          signal: abortController.signal
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Generation failed');
+        }
+
+        await processSSEStream(response.body, elements.textOutput);
       }
-
-      await processSSEStream(response.body, elements.textOutput);
-
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('AI Text Generation Error:', error);
-        showOutputError(elements.textOutput, error.message);
+        // Detect Anthropic CORS issues
+        if (isDirectMode() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          const provider = getModelProvider(model);
+          if (provider === 'anthropic') {
+            showOutputError(elements.textOutput, 'Direct mode not available for Anthropic. Try server mode or check browser settings.');
+          } else {
+            showOutputError(elements.textOutput, error.message);
+          }
+        } else {
+          showOutputError(elements.textOutput, error.message);
+        }
       }
     } finally {
       setGenerating(false);
@@ -721,7 +1164,7 @@
   }
 
   /**
-   * Process SSE stream and update output
+   * Process SSE stream and update output (server mode)
    */
   async function processSSEStream(body, outputElement) {
     const reader = body.getReader();
@@ -773,9 +1216,6 @@
   async function generateImage() {
     if (isGenerating || !elements.imagePrompt?.value.trim()) return;
 
-    const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
-    if (!endpoints?.image) return;
-
     const prompt = elements.imagePrompt.value.trim();
     const model = getSelectedModel('image');
 
@@ -794,31 +1234,40 @@
     }
 
     try {
-      abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 180000);
+      if (isDirectMode()) {
+        const imageUrl = await generateImageDirect(prompt, model);
+        elements.imageOutput.innerHTML = `<img src="${imageUrl}" alt="AI Generated: ${escapeHtml(prompt)}" />`;
+        elements.imageOutput.dataset.imageUrl = imageUrl;
+      } else {
+        // Server mode (existing behavior)
+        const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
+        if (!endpoints?.image) return;
 
-      const response = await fetch(endpoints.image, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken()
-        },
-        body: JSON.stringify({ prompt, model }),
-        signal: abortController.signal
-      });
+        abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 180000);
 
-      clearTimeout(timeoutId);
+        const response = await fetch(endpoints.image, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCSRFToken()
+          },
+          body: JSON.stringify({ prompt, model }),
+          signal: abortController.signal
+        });
 
-      const data = await response.json();
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Image generation failed');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Image generation failed');
+        }
+
+        // Display generated image
+        elements.imageOutput.innerHTML = `<img src="${data.url}" alt="AI Generated: ${escapeHtml(prompt)}" />`;
+        elements.imageOutput.dataset.imageUrl = data.url;
       }
-
-      // Display generated image
-      elements.imageOutput.innerHTML = `<img src="${data.url}" alt="AI Generated: ${escapeHtml(prompt)}" />`;
-      elements.imageOutput.dataset.imageUrl = data.url;
-
     } catch (error) {
       if (error.name === 'AbortError') {
         elements.imageOutput.innerHTML = '<div class="ai-error">Request timed out. Please try again.</div>';
@@ -883,9 +1332,6 @@
       return;
     }
 
-    const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
-    if (!endpoints?.screenshot) return;
-
     const additionalPrompt = elements.screenshotPrompt?.value.trim();
     const model = getSelectedModel('screenshot');
 
@@ -900,45 +1346,64 @@
     }
 
     try {
-      abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 180000);
+      if (isDirectMode()) {
+        await convertScreenshotDirect(imageData, model, additionalPrompt);
+      } else {
+        // Server mode (existing behavior)
+        const endpoints = window.ActiveCanvasEditor.config.aiEndpoints;
+        if (!endpoints?.screenshot) return;
 
-      const response = await fetch(endpoints.screenshot, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken()
-        },
-        body: JSON.stringify({
-          screenshot: imageData,
-          model: model,
-          additional_prompt: additionalPrompt
-        }),
-        signal: abortController.signal
-      });
+        abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 180000);
 
-      clearTimeout(timeoutId);
+        const response = await fetch(endpoints.screenshot, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCSRFToken()
+          },
+          body: JSON.stringify({
+            screenshot: imageData,
+            model: model,
+            additional_prompt: additionalPrompt
+          }),
+          signal: abortController.signal
+        });
 
-      const data = await response.json();
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Conversion failed');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Conversion failed');
+        }
+
+        elements.screenshotOutput.textContent = data.html;
       }
-
-      elements.screenshotOutput.textContent = data.html;
-
     } catch (error) {
       if (error.name === 'AbortError') {
         elements.screenshotOutput.innerHTML = '<div class="ai-error">Request timed out. Please try again.</div>';
       } else {
         console.error('AI Screenshot Conversion Error:', error);
-        elements.screenshotOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+        // Detect Anthropic CORS issues
+        if (isDirectMode() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          const provider = getModelProvider(model);
+          if (provider === 'anthropic') {
+            showOutputError(elements.screenshotOutput, 'Direct mode not available for Anthropic. Try server mode or check browser settings.');
+          } else {
+            elements.screenshotOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+          }
+        } else {
+          elements.screenshotOutput.innerHTML = `<div class="ai-error">${escapeHtml(error.message)}</div>`;
+        }
       }
     } finally {
       setGenerating(false);
       abortController = null;
     }
   }
+
+  // ==================== Insert & Utility Functions ====================
 
   /**
    * Insert text content into editor

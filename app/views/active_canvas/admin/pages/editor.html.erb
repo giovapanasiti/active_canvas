@@ -612,6 +612,14 @@
       tailwindConfig: <%= raw ActiveCanvas::Setting.tailwind_config_js %>,
       globalCss: <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>,
       globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>,
+      aiConnectionMode: '<%= ActiveCanvas::Setting.ai_connection_mode %>',
+      <% if ActiveCanvas::Setting.ai_connection_mode == "direct" %>
+      aiApiKeys: {
+        openai: <%= raw ActiveCanvas::Setting.ai_openai_api_key.to_json %>,
+        anthropic: <%= raw ActiveCanvas::Setting.ai_anthropic_api_key.to_json %>,
+        openrouter: <%= raw ActiveCanvas::Setting.ai_openrouter_api_key.to_json %>
+      },
+      <% end %>
       aiEndpoints: {
         status: '<%= admin_ai_status_path %>',
         models: '<%= admin_ai_models_path %>',

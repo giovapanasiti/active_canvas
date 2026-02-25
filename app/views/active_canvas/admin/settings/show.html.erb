@@ -593,6 +593,42 @@
         </div>
 
         <div class="settings-section">
+          <h4>Connection Mode</h4>
+          <p class="help-text">Choose how AI requests are routed between the editor and AI providers.</p>
+
+          <div class="form-group">
+            <div class="radio-group">
+              <label class="radio-label">
+                <%= form.radio_button :ai_connection_mode, "server", checked: @ai_connection_mode == "server" %>
+                <span class="radio-text">
+                  <strong>Server (proxied)</strong>
+                  <span class="radio-description">AI requests are proxied through your Rails backend. Recommended for production. If you experience timeouts, increase your server's <code>worker_timeout</code> to at least 180 seconds (see README).</span>
+                </span>
+              </label>
+
+              <label class="radio-label">
+                <%= form.radio_button :ai_connection_mode, "direct", checked: @ai_connection_mode == "direct" %>
+                <span class="radio-text">
+                  <strong>Direct (browser)</strong>
+                  <span class="radio-description">AI requests go directly from the browser to provider APIs. API keys will be exposed to anyone with admin access to the editor. Only use in trusted environments.</span>
+                </span>
+              </label>
+            </div>
+
+            <% if @ai_connection_mode == "direct" %>
+              <div class="connection-mode-warning" style="margin-top: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>Anthropic direct mode requires the <code>anthropic-dangerous-direct-browser-access</code> header. Some browsers or network policies may block these requests.</span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h4>Default Models</h4>
           <p class="help-text">Select default models for each feature. Users can override in the editor.</p>
 
@@ -840,6 +876,65 @@
       background: rgba(234, 179, 8, 0.1);
       color: #eab308;
     }
+    /* Radio Group */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .radio-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    .radio-label input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--primary-color);
+    }
+    .radio-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+    .radio-text strong {
+      color: var(--text-primary);
+    }
+    .radio-description {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .radio-description code {
+      background: var(--bg-secondary);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .connection-mode-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .connection-mode-warning svg {
+      color: #eab308;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .connection-mode-warning code {
+      background: var(--bg-secondary);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
     @media (max-width: 640px) {
       .form-row {
         flex-direction: column;

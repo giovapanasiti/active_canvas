@@ -32,6 +32,7 @@ module ActiveCanvas
         @ai_models_last_synced = AiModels.last_synced_at
         @ai_models_count = AiModel.count if @ai_models_synced
         @ai_default_vision_model = Setting.ai_default_vision_model
+        @ai_connection_mode = Setting.ai_connection_mode
         @ai_text_models = AiModels.all_text_models
         @ai_image_models = AiModels.all_image_models
         @ai_vision_models = AiModels.all_vision_models
@@ -80,6 +81,9 @@ module ActiveCanvas
         Setting.ai_default_text_model = params[:ai_default_text_model] if params.key?(:ai_default_text_model)
         Setting.ai_default_image_model = params[:ai_default_image_model] if params.key?(:ai_default_image_model)
         Setting.ai_default_vision_model = params[:ai_default_vision_model] if params.key?(:ai_default_vision_model)
+
+        # Connection mode
+        Setting.ai_connection_mode = params[:ai_connection_mode] if params.key?(:ai_connection_mode)
 
         # Feature toggles
         Setting.ai_text_enabled = params[:ai_text_enabled] == "1"
