@@ -1,5 +1,7 @@
 # ActiveCanvas
 
+![ActiveCanvas Demo](https://www.active-canvas.com/assets/images/active-canvas-demo-2.gif)
+
 A mountable Rails engine that turns any Rails app into a full-featured CMS. Includes a visual drag-and-drop editor (GrapeJS), AI-powered content generation, Tailwind CSS compilation, media management, page versioning, and SEO controls -- all behind an admin interface that works out of the box.
 
 ## Features
