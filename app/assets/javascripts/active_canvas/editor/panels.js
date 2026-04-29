@@ -180,9 +180,12 @@
     document.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
+        if (document.activeElement && document.activeElement.closest('.monaco-editor')) return;
         saveContent(false);
       }
     });
+
+    let saveInProgress = false;
 
     // Auto-save every 60 seconds
     setInterval(() => {
@@ -190,7 +193,9 @@
     }, 60000);
 
     function saveContent(isAutoSave) {
-      const saveBtn = document.getElementById('btn-save');
+      if (saveInProgress) return;
+      saveInProgress = true;
+
       if (saveBtn) saveBtn.disabled = true;
 
       const html = editor.getHtml();
@@ -243,6 +248,7 @@
         console.error('Save error:', error);
       })
       .finally(() => {
+        saveInProgress = false;
         if (saveBtn) saveBtn.disabled = false;
       });
     }

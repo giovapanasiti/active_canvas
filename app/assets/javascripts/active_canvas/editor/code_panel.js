@@ -29,6 +29,7 @@
     let cssMonacoEditor = null;
     let jsMonacoEditor = null;
     let monacoInitialized = false;
+    let isSyncing = false;
 
     // Component editing mode
     let editingComponent = null;
@@ -201,6 +202,7 @@
     // Sync GrapeJS content to Monaco editors
     function syncGrapeJSToMonaco() {
       if (!monacoInitialized) return;
+      isSyncing = true;
 
       if (isComponentMode && editingComponent) {
         htmlMonacoEditor.setValue(editingComponent.toHTML());
@@ -208,7 +210,13 @@
         htmlMonacoEditor.setValue(editor.getHtml());
       }
       cssMonacoEditor.setValue(editor.getCss());
-      setTimeout(formatAllCode, 50);
+      setTimeout(async () => {
+        try {
+          await formatAllCode();
+        } finally {
+          isSyncing = false;
+        }
+      }, 50);
     }
 
     // Update GrapeJS preview from Monaco
@@ -252,7 +260,9 @@
       } catch (e) {
         console.error('Error replacing component:', e);
         try {
+          component.components().reset();
           component.components(html);
+          editor.select(component);
         } catch (e2) {
           console.error('Error updating component content:', e2);
         }
@@ -285,8 +295,15 @@
       if (!monacoInitialized) {
         initMonacoEditors();
         setTimeout(() => {
+          isSyncing = true;
           htmlMonacoEditor.setValue(component.toHTML());
-          setTimeout(() => htmlMonacoEditor.getAction('editor.action.formatDocument').run(), 50);
+          setTimeout(async () => {
+            try {
+              await htmlMonacoEditor.getAction('editor.action.formatDocument').run();
+            } finally {
+              isSyncing = false;
+            }
+          }, 50);
 
           document.getElementById('monaco-html-container').style.display = 'block';
           document.getElementById('monaco-css-container').style.display = 'none';
@@ -296,8 +313,15 @@
           htmlMonacoEditor.focus();
         }, 200);
       } else {
+        isSyncing = true;
         htmlMonacoEditor.setValue(component.toHTML());
-        setTimeout(() => htmlMonacoEditor.getAction('editor.action.formatDocument').run(), 50);
+        setTimeout(async () => {
+          try {
+            await htmlMonacoEditor.getAction('editor.action.formatDocument').run();
+          } finally {
+            isSyncing = false;
+          }
+        }, 50);
 
         document.getElementById('monaco-html-container').style.display = 'block';
         document.getElementById('monaco-css-container').style.display = 'none';
@@ -343,6 +367,8 @@
     }
 
     function scheduleCodeUpdate() {
+      if (isSyncing) return;
+
       if (statusEl) {
         statusEl.textContent = 'Modified...';
         statusEl.className = 'code-status modified';
