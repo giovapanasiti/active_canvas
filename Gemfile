@@ -16,4 +16,4 @@ gem "rubocop-rails-omakase", require: false
 # gem "debug", ">= 1.0.0"
 
 # Tailwind CSS compiler (optional - for compiled mode)
-gem "tailwindcss-ruby", "~> 4.0"
+gem "tailwindcss-ruby", "~> 4.2"
