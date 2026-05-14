@@ -40,18 +40,27 @@ module ActiveCanvas
       end
 
       def set(key, value)
-        setting = find_or_initialize_by(key: key)
+        retried = false
+        begin
+          setting = find_or_initialize_by(key: key)
 
-        if ENCRYPTED_KEYS.include?(key.to_s) && value.present?
-          setting.encrypted_value = encrypt_value(value)
-          setting.value = nil # Clear plain text value
-        else
-          setting.value = value
-          setting.encrypted_value = nil if ENCRYPTED_KEYS.include?(key.to_s)
+          if ENCRYPTED_KEYS.include?(key.to_s) && value.present?
+            setting.encrypted_value = encrypt_value(value)
+            setting.value = nil # Clear plain text value
+          else
+            setting.value = value
+            setting.encrypted_value = nil if ENCRYPTED_KEYS.include?(key.to_s)
+          end
+
+          setting.save!
+          value
+        rescue ActiveRecord::RecordNotUnique
+          # Another process inserted the same key between find_or_initialize_by
+          # and save!. Reload and retry once; the second pass will UPDATE.
+          raise if retried
+          retried = true
+          retry
         end
-
-        setting.save!
-        value
       end
 
       # Check if an API key is configured (without revealing the value)
