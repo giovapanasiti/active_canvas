@@ -2,11 +2,11 @@
 
 ![ActiveCanvas Demo](docs/images/active-canvas-demo.gif)
 
-A mountable Rails engine that turns any Rails app into a full-featured CMS. Includes a visual drag-and-drop editor (GrapeJS), AI-powered content generation, Tailwind CSS compilation, media management, page versioning, and SEO controls -- all behind an admin interface that works out of the box.
+A mountable Rails engine that turns any Rails app into a full-featured CMS. Includes a visual drag-and-drop editor (GrapesJS), AI-powered content generation, Tailwind CSS compilation, media management, page versioning, and SEO controls -- all behind an admin interface that works out of the box.
 
 ## Features
 
-- **Visual Editor** -- Drag-and-drop page builder powered by GrapeJS
+- **Visual Editor** -- Drag-and-drop page builder powered by GrapesJS
 - **AI Content Generation** -- Text, images, and screenshot-to-code via OpenAI, Anthropic, or OpenRouter
 - **Tailwind CSS Compilation** -- Per-page compiled CSS for production (no CDN dependency)
 - **Media Library** -- Upload and manage images/files with Active Storage
@@ -56,7 +56,7 @@ Then visit `/canvas/admin` to start building pages.
 
 ## Visual Editor
 
-The GrapeJS editor provides:
+The GrapesJS editor provides:
 
 - Drag-and-drop blocks (text, images, columns, forms, etc.)
 - Code editor panel for direct HTML/CSS editing
