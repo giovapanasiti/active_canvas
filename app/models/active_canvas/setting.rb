@@ -29,14 +29,20 @@ module ActiveCanvas
 
     class << self
       def get(key)
-        setting = find_by(key: key)
-        return nil unless setting
+        key = key.to_s
+        cache = Current.settings_cache
+        return cache[key] if cache.key?(key)
 
-        if ENCRYPTED_KEYS.include?(key.to_s) && setting.encrypted_value.present?
+        setting = find_by(key: key)
+        value = if setting.nil?
+          nil
+        elsif ENCRYPTED_KEYS.include?(key) && setting.encrypted_value.present?
           decrypt_value(setting.encrypted_value)
         else
           setting.value
         end
+
+        cache[key] = value
       end
 
       def set(key, value)
@@ -53,6 +59,7 @@ module ActiveCanvas
           end
 
           setting.save!
+          Current.settings_cache[key.to_s] = value
           value
         rescue ActiveRecord::RecordNotUnique
           # Another process inserted the same key between find_or_initialize_by
