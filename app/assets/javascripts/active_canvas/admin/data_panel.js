@@ -17,9 +17,17 @@
 
   function init() {
     loadBindings();
-    loadRegistry().then(renderBindings);
-    document.getElementById('ac-add-binding-btn').addEventListener('click', showForm);
-    document.getElementById('ac-empty-add-btn').addEventListener('click', showForm);
+    const addBtn = document.getElementById('ac-add-binding-btn');
+    const emptyAddBtn = document.getElementById('ac-empty-add-btn');
+    addBtn.disabled = true;
+    emptyAddBtn.disabled = true;
+    loadRegistry().then(() => {
+      addBtn.disabled = false;
+      emptyAddBtn.disabled = false;
+      renderBindings();
+    });
+    addBtn.addEventListener('click', showForm);
+    emptyAddBtn.addEventListener('click', showForm);
   }
 
   function loadBindings() {
@@ -81,15 +89,23 @@
       });
     });
     list.querySelectorAll('.data-panel-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        navigator.clipboard.writeText(chip.dataset.snippet).then(() => flashCopied(chip));
-      });
+      chip.addEventListener('click', () => copySnippet(chip));
     });
   }
 
-  function flashCopied(el) {
+  function copySnippet(chip) {
+    const text = chip.dataset.snippet;
+    const write = navigator.clipboard?.writeText(text);
+    if (write && typeof write.then === 'function') {
+      write.then(() => flashCopied(chip, 'Copied!')).catch(() => flashCopied(chip, 'Press Ctrl+C'));
+    } else {
+      flashCopied(chip, 'Copy unavailable');
+    }
+  }
+
+  function flashCopied(el, message) {
     const original = el.textContent;
-    el.textContent = 'Copied!';
+    el.textContent = message || 'Copied!';
     el.classList.add('is-copied');
     setTimeout(() => {
       el.textContent = original;
@@ -164,7 +180,7 @@
   }
 
   function escape(s) {
-    return String(s).replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
+    return String(s).replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
   document.addEventListener('DOMContentLoaded', init);
