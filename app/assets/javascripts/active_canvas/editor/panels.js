@@ -93,10 +93,12 @@
           const blocksContainer = document.getElementById('blocks-container');
           const assetsContainer = document.getElementById('assets-container');
           const layersContainer = document.getElementById('layers-container');
+          const dataContainer = document.getElementById('data-panel-container');
 
           if (blocksContainer) blocksContainer.style.display = panel === 'blocks' ? 'block' : 'none';
           if (assetsContainer) assetsContainer.style.display = panel === 'assets' ? 'block' : 'none';
           if (layersContainer) layersContainer.style.display = panel === 'layers' ? 'block' : 'none';
+          if (dataContainer) dataContainer.style.display = panel === 'data' ? '' : 'none';
         } else {
           const stylesContainer = document.getElementById('styles-container');
           const traitsContainer = document.getElementById('traits-container');
@@ -205,12 +207,15 @@
 
       // Use entityType from config (defaults to 'page' for backwards compatibility)
       const entityType = config.entityType || 'page';
+      const bindingsJson = localStorage.getItem('ac:bindings:' + config.pageId) || '{}';
       const payload = {};
       payload[entityType] = {
         content: html,
         content_css: css,
         content_js: js,
-        content_components: components
+        content_components: components,
+        bindings: bindingsJson
+        // template_enabled deliberately NOT sent here — page form is authoritative.
       };
 
       fetch(config.saveUrl, {

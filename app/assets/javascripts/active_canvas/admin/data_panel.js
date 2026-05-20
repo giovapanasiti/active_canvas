@@ -17,15 +17,14 @@
 
   function init() {
     loadBindings();
+    renderBindings();
     const addBtn = document.getElementById('ac-add-binding-btn');
     const emptyAddBtn = document.getElementById('ac-empty-add-btn');
     addBtn.disabled = true;
     emptyAddBtn.disabled = true;
-    loadRegistry().then(() => {
-      addBtn.disabled = false;
-      emptyAddBtn.disabled = false;
-      renderBindings();
-    });
+    loadRegistry()
+      .then(() => { addBtn.disabled = false; emptyAddBtn.disabled = false; })
+      .catch(err => { console.error('ActiveCanvas: data sources unavailable', err); });
     addBtn.addEventListener('click', showForm);
     emptyAddBtn.addEventListener('click', showForm);
   }
@@ -118,8 +117,11 @@
     if (list.querySelector('#ac-binding-form')) return;
     const tpl = document.getElementById('ac-binding-form-template');
     const form = tpl.content.firstElementChild.cloneNode(true);
-    list.prepend(form);
+    const li = document.createElement('li');
+    li.className = 'data-panel-add-card-wrapper';
+    li.appendChild(form);
     list.dataset.empty = 'false';
+    list.prepend(li);
     renderSources(form);
     form.addEventListener('submit', onSave);
     form.querySelector('#ac-binding-cancel').addEventListener('click', hideForm);
@@ -129,8 +131,6 @@
   }
 
   function hideForm() {
-    const form = document.querySelector('#ac-bindings-list #ac-binding-form');
-    if (form) form.remove();
     renderBindings();
   }
 
@@ -160,6 +160,7 @@
     e.preventDefault();
     const form = e.target;
     const name = form.name.value.trim();
+    if (!name) { form.querySelector('input[name="name"]').focus(); return; }
     const sourceName = form.source.value;
     const source = registry.find(s => s.name === sourceName);
     const params = {};
