@@ -1,12 +1,16 @@
 ActiveCanvas::Engine.routes.draw do
   namespace :admin do
     resources :pages do
+      collection do
+        get :data_sources
+      end
       member do
         get :content
         patch :update_content
         get :editor
         patch :save_editor
         get :versions
+        post :render_preview
       end
       resources :versions, only: [:show], controller: "page_versions"
     end

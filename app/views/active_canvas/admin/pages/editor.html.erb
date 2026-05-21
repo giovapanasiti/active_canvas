@@ -170,6 +170,7 @@
           <button class="panel-tab active" data-panel="blocks">Blocks</button>
           <button class="panel-tab" data-panel="assets">Assets</button>
           <button class="panel-tab" data-panel="layers">Layers</button>
+          <button class="panel-tab" data-panel="data">Data</button>
         </div>
         <div class="panel-content">
           <div id="blocks-container"></div>
@@ -199,6 +200,7 @@
             </div>
           </div>
           <div id="layers-container" style="display: none;"></div>
+          <%= render "data_panel" %>
         </div>
       </div>
 
@@ -640,6 +642,9 @@
 <%= javascript_include_tag "active_canvas/editor/panels" %>
 <%= javascript_include_tag "active_canvas/editor/ai_panel" %>
 <%= javascript_include_tag "active_canvas/editor" %>
+<script id="ac-server-bindings" type="application/json"><%= json_escape(@page.bindings.to_json).html_safe %></script>
+<%= javascript_include_tag "active_canvas/admin/data_panel" %>
+<%= javascript_include_tag "active_canvas/admin/grape_chips_plugin" %>
 
 <!-- Theme Switcher JavaScript -->
 <script>

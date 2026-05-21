@@ -13,6 +13,8 @@ module ActiveCanvas
       app.config.assets.precompile += %w[
         active_canvas/editor.js
         active_canvas/editor.css
+        active_canvas/admin/data_panel.js
+        active_canvas/admin/grape_chips_plugin.js
       ]
     end
 
@@ -39,6 +41,13 @@ module ActiveCanvas
           MSG
         end
       end
+    end
+
+    # Freeze the data source registry after all after_initialize hooks have run
+    # (including the host app's own after_initialize blocks that register sources)
+    # so subsequent registration attempts raise loudly.
+    initializer "active_canvas.freeze_data_sources", after: :finisher_hook do
+      ActiveCanvas::DataSources.freeze!
     end
   end
 end

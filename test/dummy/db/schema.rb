@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_17_100003) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -53,6 +53,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
   end
 
   create_table "active_canvas_page_versions", force: :cascade do |t|
+    t.json "bindings_after"
+    t.json "bindings_before"
     t.string "change_summary"
     t.string "changed_by"
     t.text "content_after"
@@ -72,6 +74,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
   end
 
   create_table "active_canvas_pages", force: :cascade do |t|
+    t.json "bindings", default: {}, null: false
     t.string "canonical_url"
     t.text "compiled_tailwind_css"
     t.text "content"
@@ -92,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
     t.string "slug"
     t.text "structured_data"
     t.datetime "tailwind_compiled_at"
+    t.boolean "template_enabled", default: false, null: false
     t.string "title", null: false
     t.string "twitter_card"
     t.text "twitter_description"
@@ -123,6 +127,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_100002) do
     t.datetime "updated_at", null: false
     t.text "value"
     t.index ["key"], name: "index_active_canvas_settings_on_key", unique: true
+  end
+
+  create_table "articles", force: :cascade do |t|
+    t.string "category"
+    t.datetime "created_at", null: false
+    t.text "excerpt"
+    t.boolean "published", default: false
+    t.datetime "published_at"
+    t.string "slug"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "active_canvas_page_versions", "active_canvas_pages", column: "page_id"

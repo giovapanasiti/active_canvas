@@ -70,11 +70,20 @@ module ActiveCanvas
       end
 
       def save_editor
-        content_changed = @page.content != editor_params[:content]
+        attrs = editor_params
+        if attrs[:bindings].is_a?(String)
+          begin
+            attrs[:bindings] = JSON.parse(attrs[:bindings])
+          rescue JSON::ParserError => e
+            return render json: { success: false, error: e.message }, status: :unprocessable_entity
+          end
+        end
+
+        content_changed = @page.content != attrs[:content]
         Rails.logger.info "[ActiveCanvas::PagesController] save_editor for page ##{@page.id}"
         Rails.logger.info "[ActiveCanvas::PagesController]   content_changed: #{content_changed}"
 
-        if @page.update(editor_params)
+        if @page.update(attrs)
           tailwind_info = compile_tailwind_if_needed(content_changed) do
             compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(@page)
             @page.update_columns(compiled_tailwind_css: compiled_css, tailwind_compiled_at: Time.current)
@@ -103,6 +112,30 @@ module ActiveCanvas
         @versions = @page.versions.recent.limit(50)
       end
 
+      def render_preview
+        page = Page.find(params[:id])
+        snapshot = page.dup
+        snapshot.content = params[:content].to_s
+        snapshot.template_enabled = true
+        snapshot.bindings = parse_bindings(params[:bindings])
+
+        html = TemplateRenderer.new(snapshot, mode: :preview).render
+        render json: { html: html, error: nil }
+      rescue ActiveCanvas::DataSources::TemplateRenderError => e
+        render json: { html: nil, error: { message: e.message, line: e.line, column: e.column } },
+               status: :unprocessable_entity
+      rescue ActiveCanvas::DataSources::Error => e
+        render json: { html: nil, error: { message: e.message } }, status: :unprocessable_entity
+      end
+
+      def data_sources
+        sources = ActiveCanvas::DataSources.registered_names.map do |name|
+          source = ActiveCanvas::DataSources.lookup(name)
+          { name: name, params: source.param_schema }
+        end
+        render json: sources
+      end
+
       private
 
       def set_page
@@ -111,7 +144,7 @@ module ActiveCanvas
 
       def page_params
         params.require(:page).permit(
-          :title, :slug, :content, :page_type_id, :published,
+          :title, :slug, :content, :page_type_id, :published, :template_enabled,
           # Header/Footer
           :show_header, :show_footer,
           # SEO fields
@@ -126,7 +159,14 @@ module ActiveCanvas
       end
 
       def editor_params
-        params.require(:page).permit(:content, :content_css, :content_js, :content_components)
+        params.require(:page).permit(:content, :content_css, :content_js, :content_components, :template_enabled, :bindings)
+      end
+
+      def parse_bindings(raw)
+        return {} if raw.blank?
+        raw.is_a?(String) ? JSON.parse(raw) : raw.to_unsafe_h.to_h
+      rescue JSON::ParserError
+        {}
       end
     end
   end

@@ -56,6 +56,16 @@
   </div>
 </div>
 
+<div class="form-group">
+  <div class="form-check" style="background: var(--bg-main, #f8fafc); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border, #e2e8f0);">
+    <%= form.check_box :template_enabled, id: "page_template_enabled" %>
+    <label for="page_template_enabled" style="font-weight: 500;">
+      Render dynamic content (Liquid)
+    </label>
+    <p class="help-text" style="margin-left: 1.5rem; margin-top: 0.25rem;">Enable Liquid template rendering for dynamic content and data bindings.</p>
+  </div>
+</div>
+
 <div class="form-actions">
   <%= form.submit class: "btn btn-primary" %>
   <%= link_to "Cancel", admin_pages_path, class: "btn btn-secondary" %>

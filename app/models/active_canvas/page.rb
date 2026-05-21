@@ -3,6 +3,9 @@ module ActiveCanvas
     belongs_to :page_type
     has_many :versions, class_name: "ActiveCanvas::PageVersion", dependent: :destroy
 
+    # bindings column is JSON; ensure default and not-null at the model level too.
+    attribute :bindings, default: {}
+
     validates :title, presence: true
     validates :slug, uniqueness: true, allow_blank: true
 
@@ -22,7 +25,7 @@ module ActiveCanvas
     end
 
     def rendered_content
-      content.to_s.html_safe
+      ActiveCanvas::TemplateRenderer.new(self, mode: :public).render.html_safe
     end
 
     def current_version_number
@@ -63,22 +66,28 @@ module ActiveCanvas
     end
 
     def create_version_if_content_changed
-      return unless saved_change_to_content? || saved_change_to_content_css?
+      content_changed_now  = saved_change_to_content?
+      css_changed_now      = saved_change_to_content_css?
+      bindings_changed_now = saved_change_to_bindings?
+      return unless content_changed_now || css_changed_now || bindings_changed_now
 
       versions.create!(
-        content_before: content_before_last_save,
-        content_after: content,
-        css_before: content_css_before_last_save,
-        css_after: content_css,
-        changed_by: self.class.current_editor,
-        change_summary: generate_change_summary
+        content_before:  content_before_last_save,
+        content_after:   content,
+        css_before:      content_css_before_last_save,
+        css_after:       content_css,
+        bindings_before: bindings_before_last_save,
+        bindings_after:  bindings,
+        changed_by:      self.class.current_editor,
+        change_summary:  generate_change_summary
       )
     end
 
     def generate_change_summary
       changes = []
-      changes << "content updated" if saved_change_to_content?
-      changes << "CSS updated" if saved_change_to_content_css?
+      changes << "content updated"  if saved_change_to_content?
+      changes << "CSS updated"      if saved_change_to_content_css?
+      changes << "bindings updated" if saved_change_to_bindings?
       changes.join(", ").presence || "Updated"
     end
   end

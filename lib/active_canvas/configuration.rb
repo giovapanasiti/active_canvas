@@ -94,6 +94,16 @@ module ActiveCanvas
     # Allowed hosts for AI-generated image downloads
     attr_accessor :allowed_ai_image_hosts
 
+    # ==> Dynamic Content (Liquid templating)
+    # Maximum total output size in bytes
+    attr_accessor :template_render_length_limit
+    # Maximum render score (Liquid's complexity counter)
+    attr_accessor :template_render_score_limit
+    # Maximum assign score (Liquid variable-assignment counter)
+    attr_accessor :template_assign_score_limit
+    # Default on_error for data sources: :raise or :silent
+    attr_accessor :template_default_on_error
+
     # Dangerous content types that are always blocked
     DANGEROUS_CONTENT_TYPES = %w[
       application/x-executable
@@ -174,6 +184,12 @@ module ActiveCanvas
         oaidalleapiprodscus.blob.core.windows.net
         dalleprodsec.blob.core.windows.net
       ]
+
+      # Dynamic Content (Liquid templating)
+      @template_render_length_limit = 1_000_000
+      @template_render_score_limit  = 100_000
+      @template_assign_score_limit  = 10_000
+      @template_default_on_error    = :raise
     end
 
     # Get effective allowed content types (includes SVG if enabled, excludes dangerous types)
