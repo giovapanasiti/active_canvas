@@ -11,6 +11,7 @@ ActiveCanvas::Engine.routes.draw do
         patch :save_editor
         get :versions
         post :render_preview
+        post :preview_iframe
       end
       resources :versions, only: [:show], controller: "page_versions"
     end

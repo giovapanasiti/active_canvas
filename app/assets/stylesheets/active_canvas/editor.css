@@ -3305,3 +3305,140 @@
 .data-panel-list[data-empty="true"] ~ .data-panel-help {
   display: none;
 }
+
+/* ==================== Preview Modal ==================== */
+
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  animation: previewModalFadeIn 0.15s ease-out;
+}
+
+.preview-modal[hidden] {
+  display: none;
+}
+
+@keyframes previewModalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.preview-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 1rem;
+  background: var(--editor-surface);
+  border-bottom: 1px solid var(--editor-border);
+  flex-shrink: 0;
+}
+
+.preview-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--editor-text-muted);
+}
+
+.preview-modal-title strong {
+  color: var(--editor-text);
+  font-weight: 600;
+}
+
+.preview-modal-title svg {
+  color: var(--editor-primary);
+}
+
+.preview-modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--editor-border);
+  border-radius: 8px;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.preview-modal-close:hover {
+  color: var(--editor-text);
+  background: var(--editor-surface-hover);
+  border-color: var(--editor-primary);
+}
+
+.preview-modal-body {
+  position: relative;
+  flex: 1;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.preview-modal-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #ffffff;
+}
+
+.preview-modal-loading,
+.preview-modal-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var(--editor-bg);
+  color: var(--editor-text-muted);
+  font-size: 0.875rem;
+}
+
+.preview-modal-loading[hidden],
+.preview-modal-error[hidden] {
+  display: none;
+}
+
+.preview-modal-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--editor-border);
+  border-top-color: var(--editor-primary);
+  border-radius: 50%;
+  animation: previewModalSpin 0.8s linear infinite;
+}
+
+@keyframes previewModalSpin {
+  to { transform: rotate(360deg); }
+}
+
+.preview-modal-error svg {
+  color: var(--editor-danger, #ef4444);
+}
+
+.preview-modal-error h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--editor-text);
+}
+
+.preview-modal-error p {
+  margin: 0;
+  max-width: 480px;
+  padding: 0 1rem;
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 0.8125rem;
+  color: var(--editor-text-muted);
+}

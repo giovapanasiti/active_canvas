@@ -3,7 +3,7 @@ module ActiveCanvas
     class PagesController < ApplicationController
       include ActiveCanvas::TailwindCompilation
 
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions preview_iframe]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -125,6 +125,30 @@ module ActiveCanvas
         render json: { html: nil, error: { message: e.message, line: e.line, column: e.column } },
                status: :unprocessable_entity
       rescue ActiveCanvas::DataSources::Error => e
+        render json: { html: nil, error: { message: e.message } }, status: :unprocessable_entity
+      end
+
+      # Renders a complete HTML page (with layout, partials, CSS framework, etc.)
+      # using the editor's current unsaved state. The response is meant to be
+      # loaded directly into an iframe via srcdoc — what visitors would see.
+      def preview_iframe
+        snapshot = @page.dup
+        snapshot.id = @page.id
+        snapshot.content = params[:content].to_s if params.key?(:content)
+        snapshot.content_css = params[:content_css].to_s if params.key?(:content_css)
+        snapshot.content_js = params[:content_js].to_s if params.key?(:content_js)
+        snapshot.template_enabled = true
+        snapshot.bindings = parse_bindings(params[:bindings])
+
+        # Reuse the public show view + layout so the iframe matches what a
+        # visitor would actually see (SEO meta, Tailwind, partials, scripts).
+        @page = snapshot
+        html = render_to_string(template: "active_canvas/pages/show",
+                                layout: "active_canvas/application",
+                                formats: [:html])
+        render json: { html: html, error: nil }
+      rescue ActiveCanvas::DataSources::Error => e
+        Rails.logger.warn("[ActiveCanvas] preview_iframe failed: #{e.class}: #{e.message}")
         render json: { html: nil, error: { message: e.message } }, status: :unprocessable_entity
       end
 
