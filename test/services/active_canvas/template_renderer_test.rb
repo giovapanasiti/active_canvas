@@ -151,6 +151,26 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     assert_match(/World/, output)
   end
 
+  test "decodes HTML entities inside Liquid tags (WYSIWYG editor encoding)" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{% if n &gt; 0 %}positive{% else %}zero{% endif %}",
+      template_enabled: true,
+      bindings: { "n" => { "source" => "_literal", "value" => 5 } }
+    )
+    assert_includes ActiveCanvas::TemplateRenderer.new(page, mode: :public).render, "positive"
+  end
+
+  test "decodes &amp; &lt; &quot; inside output tags" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: %({{ name | append: &quot;!&quot; }}),
+      template_enabled: true,
+      bindings: { "name" => { "source" => "_literal", "value" => "hi" } }
+    )
+    assert_includes ActiveCanvas::TemplateRenderer.new(page, mode: :public).render, "hi!"
+  end
+
   test "public mode does NOT include chip markers" do
     page = ActiveCanvas::Page.create!(
       title: "Dyn", page_type: @page_type,

@@ -7,7 +7,27 @@ class ActiveCanvas::TemplateRenderer::MarkerInjectorTest < ActiveSupport::TestCa
 
   test "wraps simple {{ var }} with marker span" do
     out = inject("Hello {{ name }}!")
-    assert_match(/<span data-ac-var="name" data-ac-source="\{\{ name \}\}" class="ac-chip">\{\{ name \}\}<\/span>/, out)
+    assert_match(/<span data-ac-var="name" data-ac-source="\{% raw %\}\{\{ name \}\}\{% endraw %\}" class="ac-chip">\{\{ name \}\}<\/span>/, out)
+  end
+
+  test "data-ac-source survives Liquid render and preserves the original tag" do
+    injected = inject("Hello {{ name }}!")
+    rendered = Liquid::Template.parse(injected, error_mode: :strict).render!("name" => "World")
+    # Attribute keeps the original Liquid tag literally (no substitution inside).
+    assert_match(/data-ac-source="\{\{ name \}\}"/, rendered)
+    # Chip body is rendered.
+    assert_match(/<span[^>]*class="ac-chip">World<\/span>/, rendered)
+  end
+
+  test "for-block with HTML in body produces well-formed nested chips after Liquid render" do
+    injected = inject("<ul>{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul>")
+    rendered = Liquid::Template.parse(injected, error_mode: :strict).render!("items" => %w[a b c])
+    # Outer attribute survives intact (HTML-escaped original source).
+    assert_match(/data-ac-source="\{% for item in items %\}&lt;li&gt;\{\{ item \}\}&lt;\/li&gt;\{% endfor %\}"/, rendered)
+    # Inner chips render each item.
+    %w[a b c].each { |v| assert_match(/<span[^>]*class="ac-chip">#{v}<\/span>/, rendered) }
+    # No broken attributes: count of < and > inside attributes should not desync.
+    refute_match(/data-ac-source="[^"]*<span/, rendered, "data-ac-source should not contain a raw <span> (attribute boundary broken)")
   end
 
   test "wraps multiple variables independently" do

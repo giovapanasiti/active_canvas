@@ -14,6 +14,7 @@ A mountable Rails engine that turns any Rails app into a full-featured CMS. Incl
 - **Header & Footer Partials** -- Reusable components, togglable per page
 - **SEO** -- Meta tags, Open Graph, Twitter Cards, JSON-LD structured data
 - **Page Types** -- Categorize pages (blog posts, landing pages, etc.)
+- **Dynamic Content** -- Bind host-app data sources, write inline Liquid templates with live preview ([docs](docs/dynamic_content.md))
 - **Authentication** -- Pluggable auth (Devise, custom, or HTTP Basic)
 - **Isolated Namespace** -- No conflicts with your host application
 
