@@ -6,6 +6,8 @@ require_relative "../test/dummy/config/environment"
 # to avoid duplicate migration name errors
 ActiveRecord::Migrator.migrations_paths = [File.expand_path("../test/dummy/db/migrate", __dir__)]
 require "rails/test_help"
+require_relative "support/active_canvas_test_helpers"
+ActiveSupport::TestCase.include(ActiveCanvasTestHelpers)
 
 # Load fixtures from the engine
 if ActiveSupport::TestCase.respond_to?(:fixture_paths=)
