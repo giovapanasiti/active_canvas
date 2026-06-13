@@ -180,7 +180,7 @@ module ActiveCanvas
     def effective_allowed_content_types
       types = allowed_content_types.dup
       types << "image/svg+xml" if allow_svg_uploads
-      types - DANGEROUS_CONTENT_TYPES
+      (types - DANGEROUS_CONTENT_TYPES).uniq
     end
 
     # Check if authentication is properly configured for production
