@@ -161,6 +161,45 @@ Upload and manage images directly from the admin or from within the editor's ass
 - Works with any Active Storage backend (local, S3, GCS, etc.)
 - Public or signed URL modes
 
+## Media & storage
+
+### Stable media references
+
+Images inserted via the editor are stored as `data-ac-media-id` attribute references in page content rather than raw URLs. At render time, `ContentRenderer` resolves each reference to a fresh URL, so time-limited signed URLs are never persisted in the database. Existing pages gain this behaviour automatically after running the backfill migration:
+
+```bash
+bin/rails active_canvas:install:migrations
+bin/rails db:migrate
+```
+
+Note: blobs that were already deleted from Active Storage cannot be recovered by the backfill.
+
+### public_uploads (#4)
+
+Setting `config.public_uploads = true` only takes effect when the Active Storage service is **also** declared `public: true` in `config/storage.yml`. If the service is not public, ActiveCanvas logs a warning and falls back to signed URLs automatically.
+
+For a public Disk service used outside a request context (e.g. background jobs), you must set:
+
+```ruby
+Rails.application.routes.default_url_options[:host] = "https://yourapp.example.com"
+```
+
+### Public S3 buckets (#5)
+
+For S3, make the bucket publicly readable via a **bucket policy**, not per-object ACLs. Modern S3 buckets have Object Ownership set to "Bucket owner enforced" and Block Public Access enabled, which means per-object `public-read` ACLs are silently ignored. A bucket policy that allows `s3:GetObject` for `"Principal": "*"` is the supported path.
+
+Declare the service `public: true` in `config/storage.yml` and set `config.storage_service` to its name -- that combination is what ActiveCanvas checks before switching to public URLs.
+
+### SVG uploads (#6)
+
+SVG uploads are disabled by default because SVGs can contain `<script>` tags and event-handler attributes (stored-XSS).
+
+When you enable them with `config.allow_svg_uploads = true`, ActiveCanvas serves uploaded SVGs with `Content-Disposition: attachment` on the **signed-URL path**, which causes browsers to download the file rather than render it, neutralizing top-level execution.
+
+**Known limitation:** this disposition is **not** applied when `public_uploads` is `true` and the storage service is public. In that configuration the SVG is served inline directly from the public bucket/origin, bypassing the disposition header. If you need SVG uploads with `public_uploads`, serve media uploads from a **separate origin or bucket** (a different domain from your application) so that any injected scripts cannot access your app's cookies or local storage.
+
+Also note: the admin "Open Original" link will trigger a download (not an inline display) for SVG files because of the `attachment` disposition.
+
 ## Page Versioning
 
 Every content change creates a version automatically. View the version history from the page admin to see:

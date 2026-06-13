@@ -38,6 +38,9 @@ module ActiveCanvas
       if ActiveCanvas.config.public_uploads &&
          file.blob.service.respond_to?(:public?) &&
          file.blob.service.public?
+        # NOTE: public services serve the blob directly; the SVG attachment
+        # disposition (see #svg_disposition_option) is NOT applied here. For
+        # public SVG serving, use a separate origin/bucket. See README "Media & storage".
         file.url
       else
         warn_if_public_uploads_misconfigured
