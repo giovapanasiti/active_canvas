@@ -131,7 +131,9 @@ module ActiveCanvas
     end
 
     def svg_disposition_option
-      {}
+      return {} unless file.attached? && file.blob.present?
+
+      file.blob.content_type == "image/svg+xml" ? { disposition: "attachment" } : {}
     end
 
     def should_make_public?

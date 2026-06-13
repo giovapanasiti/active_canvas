@@ -56,5 +56,17 @@ module ActiveCanvas
         refute_match(/public_uploads is true but/, output)
       end
     end
+
+    test "url for an SVG forces attachment disposition" do
+      with_config(allow_svg_uploads: true) do
+        svg = build_saved_media(filename: "icon.svg", content_type: "image/svg+xml")
+        assert_includes svg.url, "disposition=attachment"
+      end
+    end
+
+    test "url for a non-SVG image does not force attachment disposition" do
+      png = build_saved_media(filename: "ok.png", content_type: "image/png")
+      refute_includes png.url, "disposition=attachment"
+    end
   end
 end
