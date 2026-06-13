@@ -8,6 +8,20 @@
   window.ActiveCanvasEditor = window.ActiveCanvasEditor || {};
 
   /**
+   * Warn when a src is a relative asset path the engine cannot resolve.
+   * Absolute URLs, root-relative paths, and data: URIs are fine.
+   */
+  function warnIfUnresolvableSrc(src) {
+    const { showToast } = window.ActiveCanvasEditor;
+    if (!src) return;
+    const ok = /^(https?:)?\/\//i.test(src) || src.startsWith('/') || src.startsWith('data:');
+    if (!ok) {
+      console.warn(`[ActiveCanvas] "${src}" is a relative path the engine will not serve at runtime. Use the media library instead.`);
+      if (showToast) showToast('Relative asset paths won\'t resolve on the published page', 'error');
+    }
+  }
+
+  /**
    * Setup the custom asset manager modal
    * @param {Object} editor - GrapeJS editor instance
    * @param {Object} config - Editor configuration
@@ -168,7 +182,7 @@
 
     function renderMediaGrid(media, container) {
       container.innerHTML = media.map(item => `
-        <div class="ac-asset-item" data-src="${item.src}" data-name="${item.name || ''}">
+        <div class="ac-asset-item" data-src="${item.src}" data-name="${item.name || ''}" data-media-id="${item.id || ''}">
           <div class="ac-asset-thumb">
             <img src="${item.src}" alt="${item.name || 'Image'}" loading="lazy">
           </div>
@@ -179,7 +193,7 @@
       // Add click handlers
       container.querySelectorAll('.ac-asset-item').forEach(item => {
         item.addEventListener('click', () => {
-          selectAsset(item.dataset.src, item.dataset.name);
+          selectAsset(item.dataset.src, item.dataset.name, item.dataset.mediaId);
         });
       });
     }
@@ -221,13 +235,16 @@
       });
     }
 
-    function selectAsset(src, name) {
+    function selectAsset(src, name, mediaId) {
       // Add to GrapeJS asset manager
-      editor.AssetManager.add({ src, name, type: 'image' });
+      editor.AssetManager.add({ src, name, type: 'image', mediaId });
 
-      // If there's a target component, set the image
+      // If there's a target component, set the image + stable media ref
       if (currentTarget) {
         currentTarget.set('src', src);
+        if (mediaId) {
+          currentTarget.addAttributes({ 'data-ac-media-id': mediaId });
+        }
       }
 
       // Close modal
@@ -333,10 +350,10 @@
     }
 
     grid.innerHTML = assets.map(asset => `
-      <div class="asset-item" draggable="true" data-src="${asset.src}" data-name="${asset.name || 'Image'}" title="${asset.name || 'Image'}">
+      <div class="asset-item" draggable="true" data-src="${asset.src}" data-name="${asset.name || 'Image'}" data-media-id="${asset.id || asset.mediaId || ''}" title="${asset.name || 'Image'}">
         <img src="${asset.src}" alt="${asset.name || 'Image'}" loading="lazy">
         <div class="asset-item-overlay">
-          <button class="asset-insert-btn" data-src="${asset.src}" title="Insert image">
+          <button class="asset-insert-btn" data-src="${asset.src}" data-media-id="${asset.id || asset.mediaId || ''}" title="Insert image">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -351,7 +368,9 @@
       // Drag to canvas
       item.addEventListener('dragstart', (e) => {
         const src = item.dataset.src;
-        e.dataTransfer.setData('text/html', `<img src="${src}" alt="Image" style="max-width: 100%;">`);
+        const mediaId = item.dataset.mediaId;
+        const idAttr = mediaId ? ` data-ac-media-id="${mediaId}"` : '';
+        e.dataTransfer.setData('text/html', `<img src="${src}"${idAttr} alt="Image" style="max-width: 100%;">`);
         e.dataTransfer.effectAllowed = 'copy';
       });
 
@@ -360,15 +379,13 @@
       if (insertBtn) {
         insertBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const src = insertBtn.dataset.src;
-          insertImageToCanvas(editor, src);
+          insertImageToCanvas(editor, insertBtn.dataset.src, insertBtn.dataset.mediaId);
         });
       }
 
       // Double-click to insert
       item.addEventListener('dblclick', () => {
-        const src = item.dataset.src;
-        insertImageToCanvas(editor, src);
+        insertImageToCanvas(editor, item.dataset.src, item.dataset.mediaId);
       });
     });
   }
@@ -376,14 +393,20 @@
   /**
    * Insert an image into the canvas
    */
-  function insertImageToCanvas(editor, src) {
+  function insertImageToCanvas(editor, src, mediaId) {
     const { showToast } = window.ActiveCanvasEditor;
+    warnIfUnresolvableSrc(src);
     const selected = editor.getSelected();
     const wrapper = editor.getWrapper();
 
+    const attributes = { src: src, alt: 'Image' };
+    if (mediaId) {
+      attributes['data-ac-media-id'] = mediaId;
+    }
+
     const imageComponent = {
       type: 'image',
-      attributes: { src: src, alt: 'Image' },
+      attributes: attributes,
       style: { 'max-width': '100%' }
     };
 

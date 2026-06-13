@@ -40,13 +40,25 @@ module ActiveCanvas
     # Allowed MIME types for uploads
     attr_accessor :allowed_content_types
 
-    # Allow SVG uploads (disabled by default due to XSS risks)
+    # Allow SVG uploads (disabled by default due to XSS risks).
+    # SECURITY: SVGs can contain <script>/onload. ActiveCanvas serves uploaded
+    # SVGs with Content-Disposition: attachment on the signed-URL path to prevent
+    # top-level execution. NOTE: this disposition is NOT applied when
+    # public_uploads is true and the storage service is public (the file is served
+    # inline from the public bucket/origin). If you enable SVG uploads, prefer
+    # serving uploads from a SEPARATE origin/bucket, especially with public_uploads.
     attr_accessor :allow_svg_uploads
 
     # Active Storage service name (nil = default service)
     attr_accessor :storage_service
 
-    # Make uploads publicly accessible (false = use signed URLs)
+    # Make uploads publicly accessible (false = signed, expiring URLs).
+    # NOTE: this only takes effect when the Active Storage service is ALSO
+    # declared `public: true` in config/storage.yml. For S3, make the bucket
+    # public via a BUCKET POLICY (per-object ACLs are ignored on modern buckets
+    # with Object Ownership = Bucket owner enforced / Block Public Access).
+    # For a public Disk service outside a request, set
+    # Rails.application.routes.default_url_options[:host].
     attr_accessor :public_uploads
 
     # ==> Editor Settings
@@ -196,7 +208,7 @@ module ActiveCanvas
     def effective_allowed_content_types
       types = allowed_content_types.dup
       types << "image/svg+xml" if allow_svg_uploads
-      types - DANGEROUS_CONTENT_TYPES
+      (types - DANGEROUS_CONTENT_TYPES).uniq
     end
 
     # Check if authentication is properly configured for production

@@ -412,6 +412,67 @@
 <% elsif @active_tab == "scripts" %>
   <div class="card settings-code-card">
     <div class="settings-code-header">
+      <h3>Custom &lt;head&gt; HTML</h3>
+      <p class="help-text" style="margin-top: 0;">
+        Injected verbatim into the &lt;head&gt; of every published page (fonts, CDN links, meta tags, third-party scripts).
+        Also shown in the editor preview (external scripts do not execute in the preview; fonts/CSS/meta do).
+        If your app enforces a strict Content-Security-Policy, external resources added here may be blocked.
+      </p>
+    </div>
+    <textarea id="custom-head-html-input" class="form-control" rows="10" spellcheck="false"
+              style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; width: 100%;"
+              placeholder="&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;&gt;
+&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Inter&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;
+&lt;meta name=&quot;theme-color&quot; content=&quot;#000000&quot;&gt;
+&lt;script src=&quot;https://cdn.example.com/lib.js&quot;&gt;&lt;/script&gt;"><%= @custom_head_html %></textarea>
+    <div class="settings-code-actions">
+      <button type="button" id="save-custom-head-btn" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save Custom Head HTML
+      </button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var btn = document.getElementById('save-custom-head-btn');
+      var input = document.getElementById('custom-head-html-input');
+      if (!btn || !input) return;
+      var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      var defaultLabel = btn.innerHTML;
+
+      btn.addEventListener('click', function() {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        fetch('<%= update_custom_head_admin_settings_path %>', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ custom_head_html: input.value })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+          btn.textContent = result.success ? 'Saved!' : 'Error';
+          setTimeout(function() { btn.disabled = false; btn.innerHTML = defaultLabel; }, 2000);
+        })
+        .catch(function(e) {
+          btn.disabled = false;
+          btn.innerHTML = defaultLabel;
+          console.error('Save error:', e);
+        });
+      });
+    })();
+  </script>
+
+  <div class="card settings-code-card">
+    <div class="settings-code-header">
       <h3>Global JavaScript</h3>
       <p class="help-text" style="margin-top: 0;">Custom JavaScript that will be included on all published pages.</p>
     </div>

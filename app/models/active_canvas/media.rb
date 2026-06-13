@@ -9,15 +9,23 @@ module ActiveCanvas
 
     serialize :metadata, coder: JSON
 
+    # Tracks whether the public_uploads-misconfiguration warning was already
+    # logged this process (avoids log spam).
+    @public_uploads_warned = false
+    class << self
+      attr_accessor :public_uploads_warned
+    end
+
     validates :filename, presence: true
     validates :file, presence: true, on: :create
 
     validate :acceptable_file, on: :create
 
-    before_save :set_file_attributes, if: -> { file.attached? && file.blob.present? }
+    before_validation :set_file_attributes, on: :create,
+      if: -> { file.attached? && file.blob.present? }
     after_commit :make_blob_public, on: [:create, :update], if: :should_make_public?
 
-    scope :images, -> { where(content_type: ActiveCanvas.config.allowed_content_types) }
+    scope :images, -> { where(content_type: ActiveCanvas.config.effective_allowed_content_types) }
     scope :recent, -> { order(created_at: :desc) }
 
     def metadata
@@ -27,22 +35,19 @@ module ActiveCanvas
     def url
       return nil unless file.attached?
 
-      # If public_uploads is enabled and blob service supports public URLs
       if ActiveCanvas.config.public_uploads &&
          file.blob.service.respond_to?(:public?) &&
          file.blob.service.public?
+        # NOTE: public services serve the blob directly; the SVG attachment
+        # disposition (see #svg_disposition_option) is NOT applied here. For
+        # public SVG serving, use a separate origin/bucket. See README "Media & storage".
         file.url
       else
-        # Use signed URL with expiration for better security
-        Rails.application.routes.url_helpers.rails_blob_url(
-          file,
-          expires_in: 1.hour,
-          only_path: true
-        )
+        warn_if_public_uploads_misconfigured
+        Rails.application.routes.url_helpers.rails_blob_url(file, **blob_url_options)
       end
     rescue ArgumentError
-      # Fallback for services that don't support expires_in
-      Rails.application.routes.url_helpers.rails_blob_url(file, only_path: true)
+      Rails.application.routes.url_helpers.rails_blob_url(file, only_path: true, **svg_disposition_option)
     end
 
     def public_url
@@ -110,6 +115,28 @@ module ActiveCanvas
       if file.blob.byte_size > config.max_upload_size
         errors.add(:file, "is too large (maximum is #{config.max_upload_size / 1.megabyte}MB)")
       end
+    end
+
+    def warn_if_public_uploads_misconfigured
+      return unless ActiveCanvas.config.public_uploads
+      return if self.class.public_uploads_warned
+
+      self.class.public_uploads_warned = true
+      Rails.logger.warn(
+        "[ActiveCanvas] config.public_uploads is true but the storage service " \
+        "(#{file.blob.service.name}) is not public. Falling back to signed URLs. " \
+        "Declare a `public: true` service (and set config.storage_service) to serve public URLs."
+      )
+    end
+
+    def blob_url_options
+      { expires_in: 1.hour, only_path: true }.merge(svg_disposition_option)
+    end
+
+    def svg_disposition_option
+      return {} unless file.attached? && file.blob.present?
+
+      file.blob.content_type == "image/svg+xml" ? { disposition: "attachment" } : {}
     end
 
     def should_make_public?

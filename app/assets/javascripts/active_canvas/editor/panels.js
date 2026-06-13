@@ -359,6 +359,13 @@
           frame.contentDocument.body.appendChild(globalScript);
         }
 
+        // Inject custom <head> HTML (fonts, CDN CSS, meta) into the preview.
+        // insertAdjacentHTML applies <link>/<meta>/<style> so fonts/CSS show in
+        // the editor; external <script src> does not execute in the preview (by design).
+        if (config.customHeadHtml && config.customHeadHtml.trim()) {
+          frame.contentDocument.head.insertAdjacentHTML('beforeend', config.customHeadHtml);
+        }
+
         // Inject page-specific JS
         if (config.contentJs && config.contentJs.trim()) {
           const script = frame.contentDocument.createElement('script');

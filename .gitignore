@@ -13,3 +13,5 @@
 *.md
 
 lc-ai-assistant-addon
+
+*.gem

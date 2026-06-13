@@ -7,6 +7,7 @@ module ActiveCanvas
         @css_framework = Setting.css_framework
         @global_css = Setting.global_css
         @global_js = Setting.global_js
+        @custom_head_html = Setting.custom_head_html
         @pages = Page.published.order(:title)
 
         # Tailwind settings
@@ -68,6 +69,15 @@ module ActiveCanvas
         respond_to do |format|
           format.html { redirect_to admin_settings_path(tab: "scripts"), notice: "Global JavaScript saved." }
           format.json { render json: { success: true, message: "Global JavaScript saved." } }
+        end
+      end
+
+      def update_custom_head
+        Setting.custom_head_html = params[:custom_head_html]
+
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "scripts"), notice: "Custom head HTML saved." }
+          format.json { render json: { success: true, message: "Custom head HTML saved." } }
         end
       end
 

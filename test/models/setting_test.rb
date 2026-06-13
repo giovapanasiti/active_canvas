@@ -82,6 +82,16 @@ module ActiveCanvas
       Setting.where(key: "stuck_key").delete_all
     end
 
+    test "custom_head_html defaults to empty string" do
+      Current.reset
+      assert_equal "", Setting.custom_head_html
+    end
+
+    test "custom_head_html round-trips via set/get" do
+      Setting.custom_head_html = '<meta name="x" content="y">'
+      assert_equal '<meta name="x" content="y">', Setting.custom_head_html
+    end
+
     private
 
     def assert_sql_count(expected, &block)

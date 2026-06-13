@@ -25,7 +25,8 @@ module ActiveCanvas
     end
 
     def rendered_content
-      ActiveCanvas::TemplateRenderer.new(self, mode: :public).render.html_safe
+      rendered = ActiveCanvas::TemplateRenderer.new(self, mode: :public).render
+      ActiveCanvas::ContentRenderer.resolve(rendered).to_s.html_safe
     end
 
     def current_version_number

@@ -5,6 +5,11 @@ module ActiveCanvas
 
       desc "Interactive setup wizard for ActiveCanvas"
 
+      class_option :defaults, type: :boolean, default: false,
+        desc: "Run non-interactively using default answers (CI-safe)"
+      class_option :skip_route, type: :boolean, default: false,
+        desc: "Do not mount ActiveCanvas::Engine in config/routes.rb"
+
       def welcome
         say ""
         say "=" * 60, :cyan
@@ -45,8 +50,7 @@ module ActiveCanvas
         say "  3. none      - No framework"
         say ""
 
-        framework = ask("Enter choice [tailwind]:")
-        framework = "tailwind" if framework.blank?
+        framework = ask_value("Enter choice [tailwind]:", default: "tailwind")
         framework = framework.downcase.strip
 
         @css_framework = case framework
@@ -94,8 +98,7 @@ module ActiveCanvas
         say "Step 4: Configuration", :yellow
         say "-" * 40
 
-        @mount_path = ask("Mount path [/canvas]:")
-        @mount_path = "/canvas" if @mount_path.blank?
+        @mount_path = ask_value("Mount path [/canvas]:", default: "/canvas")
         @mount_path = "/#{@mount_path}" unless @mount_path.start_with?("/")
 
         template "initializer.rb", "config/initializers/active_canvas.rb"
@@ -104,6 +107,9 @@ module ActiveCanvas
       end
 
       def mount_engine
+        @mount_path ||= "/canvas"
+        return if options[:skip_route]
+
         say "Step 5: Routes", :yellow
         say "-" * 40
 
@@ -162,11 +168,24 @@ module ActiveCanvas
 
       private
 
+      def interactive?
+        !options[:defaults]
+      end
+
+      # Non-interactive: return the default instead of reading stdin.
+      def ask_value(question, default:)
+        return default unless interactive?
+        answer = ask(question)
+        answer.blank? ? default : answer
+      end
+
       # Helper for yes/no prompts with clear defaults
       # @param question [String] The question to ask
       # @param default [Boolean] The default answer (true = Y, false = N)
       # @return [Boolean]
       def yes_no?(question, default: true)
+        return default unless interactive?
+
         indicator = default ? "[Y/n]" : "[y/N]"
         answer = ask("#{question} #{indicator}")
 
@@ -176,7 +195,8 @@ module ActiveCanvas
       end
 
       def setup_tailwind
-        gemfile_content = File.read(Rails.root.join("Gemfile"))
+        gemfile_path = Rails.root.join("Gemfile")
+        gemfile_content = File.exist?(gemfile_path) ? File.read(gemfile_path) : ""
 
         if gemfile_content.include?("tailwindcss-rails")
           say "✓ tailwindcss-rails gem already installed", :green
@@ -202,6 +222,12 @@ module ActiveCanvas
       end
 
       def configure_ai_keys
+        unless interactive?
+          @openai_key = @anthropic_key = @openrouter_key = nil
+          say "→ Non-interactive: skipping AI key entry. Add keys later in Admin > Settings > AI", :yellow
+          return
+        end
+
         say ""
         @openai_key = ask("OpenAI API key (leave blank to skip):")
         @anthropic_key = ask("Anthropic API key (leave blank to skip):")
