@@ -613,6 +613,7 @@
       tailwindConfig: <%= raw ActiveCanvas::Setting.tailwind_config_js %>,
       globalCss: <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>,
       globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>,
+      customHeadHtml: <%= raw (ActiveCanvas::Setting.custom_head_html || '').to_json %>,
       aiEndpoints: {
         status: '<%= admin_ai_status_path %>',
         models: '<%= admin_ai_models_path %>',

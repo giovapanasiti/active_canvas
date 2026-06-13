@@ -181,6 +181,14 @@ module ActiveCanvas
         set("global_js", js)
       end
 
+      def custom_head_html
+        get("custom_head_html") || ""
+      end
+
+      def custom_head_html=(html)
+        set("custom_head_html", html)
+      end
+
       # AI API Keys
       def ai_openai_api_key
         get("ai_openai_api_key")

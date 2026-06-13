@@ -612,6 +612,7 @@
       tailwindConfig: <%= raw ActiveCanvas::Setting.tailwind_config_js %>,
       globalCss: <%= raw (ActiveCanvas::Setting.global_css || '').to_json %>,
       globalJs: <%= raw (ActiveCanvas::Setting.global_js || '').to_json %>,
+      customHeadHtml: <%= raw (ActiveCanvas::Setting.custom_head_html || '').to_json %>,
       aiConnectionMode: '<%= ActiveCanvas::Setting.ai_connection_mode %>',
       <% if ActiveCanvas::Setting.ai_connection_mode == "direct" %>
       aiApiKeys: {

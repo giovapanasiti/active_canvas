@@ -43,6 +43,10 @@
   <% if ActiveCanvas::Setting.global_css.present? %>
     <style><%= ActiveCanvas::Setting.global_css.html_safe %></style>
   <% end %>
+
+  <% if ActiveCanvas::Setting.custom_head_html.present? %>
+    <%= ActiveCanvas::Setting.custom_head_html.html_safe %>
+  <% end %>
 </head>
 <body>
 
