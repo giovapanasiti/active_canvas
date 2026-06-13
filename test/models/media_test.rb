@@ -36,5 +36,25 @@ module ActiveCanvas
         refute_includes ActiveCanvas::Media.images.pluck(:content_type), "text/html"
       end
     end
+
+    test "warns once when public_uploads is true but the service is not public" do
+      ActiveCanvas::Media.public_uploads_warned = false
+      with_config(public_uploads: true) do
+        media = build_saved_media
+        output = capture_log { media.url }
+        assert_match(/public_uploads is true but/, output)
+      end
+    ensure
+      ActiveCanvas::Media.public_uploads_warned = false
+    end
+
+    test "does not warn when public_uploads is false" do
+      ActiveCanvas::Media.public_uploads_warned = false
+      with_config(public_uploads: false) do
+        media = build_saved_media
+        output = capture_log { media.url }
+        refute_match(/public_uploads is true but/, output)
+      end
+    end
   end
 end
