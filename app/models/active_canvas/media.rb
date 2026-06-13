@@ -18,7 +18,7 @@ module ActiveCanvas
       if: -> { file.attached? && file.blob.present? }
     after_commit :make_blob_public, on: [:create, :update], if: :should_make_public?
 
-    scope :images, -> { where(content_type: ActiveCanvas.config.allowed_content_types) }
+    scope :images, -> { where(content_type: ActiveCanvas.config.effective_allowed_content_types) }
     scope :recent, -> { order(created_at: :desc) }
 
     def metadata
