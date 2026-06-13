@@ -8,6 +8,20 @@
   window.ActiveCanvasEditor = window.ActiveCanvasEditor || {};
 
   /**
+   * Warn when a src is a relative asset path the engine cannot resolve.
+   * Absolute URLs, root-relative paths, and data: URIs are fine.
+   */
+  function warnIfUnresolvableSrc(src) {
+    const { showToast } = window.ActiveCanvasEditor;
+    if (!src) return;
+    const ok = /^(https?:)?\/\//i.test(src) || src.startsWith('/') || src.startsWith('data:');
+    if (!ok) {
+      console.warn(`[ActiveCanvas] "${src}" is a relative path the engine will not serve at runtime. Use the media library instead.`);
+      if (showToast) showToast('Relative asset paths won\'t resolve on the published page', 'error');
+    }
+  }
+
+  /**
    * Setup the custom asset manager modal
    * @param {Object} editor - GrapeJS editor instance
    * @param {Object} config - Editor configuration
@@ -381,6 +395,7 @@
    */
   function insertImageToCanvas(editor, src, mediaId) {
     const { showToast } = window.ActiveCanvasEditor;
+    warnIfUnresolvableSrc(src);
     const selected = editor.getSelected();
     const wrapper = editor.getWrapper();
 
