@@ -22,7 +22,7 @@ module ActiveCanvas
     end
 
     def rendered_content
-      content.to_s.html_safe
+      ActiveCanvas::ContentRenderer.resolve(content).to_s.html_safe
     end
 
     def current_version_number
