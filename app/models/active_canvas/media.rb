@@ -14,7 +14,8 @@ module ActiveCanvas
 
     validate :acceptable_file, on: :create
 
-    before_save :set_file_attributes, if: -> { file.attached? && file.blob.present? }
+    before_validation :set_file_attributes, on: :create,
+      if: -> { file.attached? && file.blob.present? }
     after_commit :make_blob_public, on: [:create, :update], if: :should_make_public?
 
     scope :images, -> { where(content_type: ActiveCanvas.config.allowed_content_types) }
