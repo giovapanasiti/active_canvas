@@ -1,6 +1,7 @@
 <%# app/views/active_canvas/admin/pages/_data_panel.html.erb %>
 <div id="data-panel-container" class="data-panel" style="display: none;"
      data-page-id="<%= @page.id %>"
+     data-template-enabled="<%= @page.template_enabled? %>"
      data-data-sources-url="<%= data_sources_admin_pages_path(format: :json) %>"
      data-render-preview-url="<%= render_preview_admin_page_path(@page) %>">
 

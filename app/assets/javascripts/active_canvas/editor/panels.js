@@ -200,7 +200,9 @@
 
       if (saveBtn) saveBtn.disabled = true;
 
-      const html = editor.getHtml();
+      // The canvas may hold rendered data chips; persist their Liquid source.
+      const rawHtml = editor.getHtml();
+      const html = window.ActiveCanvasChips ? window.ActiveCanvasChips.restoreSourceTags(rawHtml) : rawHtml;
       const css = editor.getCss();
       const js = window.ActiveCanvasEditor.getJs ? window.ActiveCanvasEditor.getJs() : '';
       const components = JSON.stringify(editor.getComponents());

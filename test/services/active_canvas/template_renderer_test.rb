@@ -181,4 +181,49 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     refute_match(/data-ac-var/, output)
     assert_match(/Hello World/, output)
   end
+
+  test "public render heals var chip markup saved back from the editor" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ name }}!", template_enabled: true,
+      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
+    )
+    # Simulate the editor round-trip: the preview (chip markup) gets saved as content.
+    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    page.update!(content: corrupted)
+
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_includes output, "Hello World!"
+    refute_includes output, "data-ac-"
+  end
+
+  test "public render heals block chip markup saved back from the editor" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{% for item in items %}<p>{{ item }}</p>{% endfor %}",
+      template_enabled: true,
+      bindings: { "items" => { "source" => "_literal", "value" => %w[alpha beta] } }
+    )
+    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    page.update!(content: corrupted)
+
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_includes output, "<p>alpha</p>"
+    assert_includes output, "<p>beta</p>"
+    refute_includes output, "data-ac-"
+  end
+
+  test "preview render round-trips its own chip output" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ name }}!", template_enabled: true,
+      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
+    )
+    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    page.update!(content: corrupted)
+
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    assert_includes output, "World"
+    assert_match(/data-ac-var/, output) # re-injected markers, not doubled-up corruption
+  end
 end

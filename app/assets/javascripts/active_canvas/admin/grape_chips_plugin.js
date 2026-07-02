@@ -6,11 +6,17 @@
 
   const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
 
-  // Hook into GrapesJS once it's available on window.editor.
+  // Hook into GrapesJS once it's available on window.ActiveCanvasEditor.instance.
   function waitForEditor(cb) {
-    if (window.editor && window.editor.DomComponents) return cb(window.editor);
+    const editor = window.ActiveCanvasEditor && window.ActiveCanvasEditor.instance;
+    if (editor && editor.DomComponents) return cb(editor);
     setTimeout(() => waitForEditor(cb), 100);
   }
+
+  // The editor saves via a plain fetch with storageManager disabled, so chips
+  // must be restored to their Liquid source in that save path (panels.js) —
+  // GrapesJS storage events never fire.
+  window.ActiveCanvasChips = { restoreSourceTags };
 
   waitForEditor((editor) => {
     // Register chip components (variables) as atomic, non-editable.
@@ -25,16 +31,15 @@
       model: { defaults: { editable: false, droppable: false, copyable: true, removable: true } }
     });
 
+    // Only dynamic pages get their canvas swapped for the rendered preview;
+    // static pages keep the components GrapesJS loaded.
+    if (container.dataset.templateEnabled !== 'true') return;
+
     // 1) Initial load: fetch rendered preview and load into canvas.
     refreshPreview(editor);
 
     // 2) Refresh on binding change.
     document.addEventListener('ac:bindings-changed', () => refreshPreview(editor));
-
-    // 3) Round-trip on save: walk chips and restore data-ac-source as innerHTML.
-    editor.on('storage:store', (data) => {
-      data['gjs-html'] = restoreSourceTags(data['gjs-html']);
-    });
   });
 
   function refreshPreview(editor) {

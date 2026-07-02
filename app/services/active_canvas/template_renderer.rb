@@ -21,7 +21,7 @@ module ActiveCanvas
     private
 
     def render_dynamic
-      source = @page.content.to_s
+      source = restore_chip_sources(@page.content.to_s)
       source = decode_entities_in_liquid_tags(source)
       source = MarkerInjector.new(source).inject if @mode == :preview
 
@@ -32,6 +32,21 @@ module ActiveCanvas
       template.resource_limits.assign_score_limit  = ActiveCanvas.config.template_assign_score_limit
       rendered = template.render!(assigns, strict_variables: true, strict_filters: true)
       ContentSanitizer.sanitize_html(rendered)
+    end
+
+    # The editor canvas holds a *rendered* preview: chip <span>s carrying the
+    # original Liquid source in their data-ac-source attribute. If that markup
+    # reaches us as content (a save that skipped client-side restoration, or a
+    # page corrupted by one), swap every chip back to its source before parsing.
+    # Outermost first, so block chips take their nested var chips with them.
+    def restore_chip_sources(source)
+      return source unless source.include?("data-ac-source")
+
+      fragment = Nokogiri::HTML5.fragment(source)
+      while (chip = fragment.at_css("[data-ac-source]"))
+        chip.replace(Nokogiri::HTML5.fragment(chip["data-ac-source"]))
+      end
+      fragment.to_html
     end
 
     # WYSIWYG editors (GrapeJS) encode `<`, `>`, `&`, `"` as HTML entities when
