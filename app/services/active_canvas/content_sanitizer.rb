@@ -70,6 +70,16 @@ module ActiveCanvas
         true
       end
 
+      # PermitScrubber only honors an explicit attribute list when
+      # `self.attributes` is set; otherwise it defers to Loofah's built-in
+      # safelist, which drops attributes we explicitly allow (e.g. `required`).
+      # Keep Loofah's security scrubbing, then restore what our config permits.
+      def scrub_attributes(node)
+        restorable = node.attribute_nodes.select { |attr| explicitly_allowed?(attr) }.to_h { |attr| [ attr.name, attr.value ] }
+        super
+        restorable.each { |name, value| node[name] = value unless node.attributes.key?(name) }
+      end
+
       def scrub_attribute(node, attr_node)
         attr_name = attr_node.name.downcase
 
@@ -93,6 +103,13 @@ module ActiveCanvas
       end
 
       private
+
+      def explicitly_allowed?(attr_node)
+        name = attr_node.name.downcase
+        return false if dangerous_attribute?(name, attr_node.value)
+
+        @allowed_attributes.include?(name) || name.start_with?("data-", "aria-")
+      end
 
       def dangerous_attribute?(name, value)
         # Event handlers

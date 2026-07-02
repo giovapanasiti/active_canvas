@@ -68,6 +68,7 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
   end
 
   test "sanitizes output AFTER rendering (script injected via data is stripped)" do
+    original_sanitize = ActiveCanvas.config.sanitize_content
     ActiveCanvas.config.sanitize_content = true  # ensure sanitizer is active
     page = ActiveCanvas::Page.create!(
       title: "Dyn", page_type: @page_type,
@@ -79,7 +80,7 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     output = renderer.render
     refute_includes output, "<script>"
   ensure
-    ActiveCanvas.config.sanitize_content = false
+    ActiveCanvas.config.sanitize_content = original_sanitize
   end
 
   test "renders a query data source via auto_drop" do

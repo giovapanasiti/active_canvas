@@ -190,7 +190,7 @@ module ActiveCanvas
       @allowed_html_attributes = %w[
         class id style href src alt title target rel
         width height loading name type value placeholder
-        disabled readonly checked selected multiple
+        disabled readonly checked selected multiple required
         action method enctype
         controls autoplay loop muted poster
         frameborder allowfullscreen allow
