@@ -21,4 +21,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", ">= 8.0.0"
   spec.add_dependency "ruby_llm", ">= 1.0"
   spec.add_dependency "liquid", ">= 5.4"
+  spec.add_dependency "csv", ">= 3.0"
 end

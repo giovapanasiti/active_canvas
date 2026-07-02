@@ -1,0 +1,99 @@
+<% content_for :page_title, "#{@submission.form_key} — #{@submission.page.title}" %>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2><%= @submission.form_key %> — <%= @submission.page.title %></h2>
+    <p class="page-header-subtitle">Received <%= time_ago_in_words(@submission.created_at) %> ago</p>
+  </div>
+  <div class="page-header-actions">
+    <%= link_to admin_form_submissions_path, class: "btn btn-ghost" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to Submissions
+    <% end %>
+  </div>
+</div>
+
+<!-- Submitted Fields -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Submitted Fields</span>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <% if @submission.data.any? %>
+      <% @submission.data.each do |key, value| %>
+        <div class="detail-row">
+          <div class="detail-label"><%= key %></div>
+          <div class="detail-value" style="white-space: pre-wrap;"><%= value %></div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="detail-row">
+        <div class="detail-value" style="color: var(--text-muted);">No fields were submitted.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Metadata -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Details</span>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="detail-row">
+      <div class="detail-label">Received</div>
+      <div class="detail-value"><%= @submission.created_at.strftime("%B %d, %Y at %l:%M %p") %></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">IP Address</div>
+      <div class="detail-value"><code><%= @submission.ip %></code></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">User Agent</div>
+      <div class="detail-value" style="word-break: break-all;"><%= @submission.user_agent %></div>
+    </div>
+  </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="card" style="border-color: #fecaca;">
+  <div class="card-header" style="background: var(--danger-light);">
+    <span class="card-title" style="color: var(--danger);">Danger Zone</span>
+  </div>
+  <div class="card-body">
+    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+      Deleting this submission removes it permanently.
+    </p>
+    <%= button_to "Delete Submission", admin_form_submission_path(@submission), method: :delete,
+          class: "btn btn-danger", data: { turbo_confirm: "Delete this submission?" } %>
+  </div>
+</div>
+
+<style>
+  .detail-row {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-row .detail-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .detail-row .detail-value {
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+</style>

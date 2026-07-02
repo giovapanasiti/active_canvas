@@ -23,6 +23,7 @@ ActiveCanvas::Engine.routes.draw do
       end
     end
     resources :media, only: [:index, :show, :create, :destroy]
+    resources :form_submissions, only: [ :index, :show, :destroy ]
     resource :settings, only: [:show, :update] do
       patch :update_global_css
       patch :update_global_js

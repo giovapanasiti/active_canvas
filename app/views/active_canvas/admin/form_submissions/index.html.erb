@@ -1,0 +1,80 @@
+<% content_for :page_title, "Form Submissions" %>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Form Submissions</h2>
+    <p class="page-header-subtitle">Browse and export submissions from your page forms</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-body">
+    <%= form_with url: admin_form_submissions_path, method: :get, local: true do %>
+      <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+        <label style="display: flex; flex-direction: column; gap: 0.375rem;">
+          <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Page</span>
+          <%= select_tag :page_id,
+                options_from_collection_for_select(ActiveCanvas::Page.order(:title), :id, :title, params[:page_id]),
+                include_blank: "All pages", class: "form-control" %>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 0.375rem;">
+          <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Form</span>
+          <% form_key_scope = params[:page_id].present? ? ActiveCanvas::FormSubmission.where(page_id: params[:page_id]) : ActiveCanvas::FormSubmission %>
+          <%= select_tag :form_key,
+                options_for_select(form_key_scope.distinct.pluck(:form_key).sort, params[:form_key]),
+                include_blank: "All forms", class: "form-control" %>
+        </label>
+        <%= submit_tag "Filter", class: "btn btn-secondary" %>
+        <%= link_to "Export CSV", admin_form_submissions_path(format: :csv, page_id: params[:page_id], form_key: params[:form_key]), class: "btn btn-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Submissions Table -->
+<% if @submissions.any? %>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Page</th>
+          <th>Form</th>
+          <th>Data</th>
+          <th>IP</th>
+          <th>Received</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @submissions.each do |submission| %>
+          <tr>
+            <td><%= submission.page.title %></td>
+            <td><span class="badge badge-gray"><%= submission.form_key %></span></td>
+            <td><%= truncate(submission.data.map { |k, v| "#{k}: #{v}" }.join(" · "), length: 80) %></td>
+            <td><code><%= submission.ip %></code></td>
+            <td><span style="color: var(--text-muted);"><%= submission.created_at.strftime("%b %d, %Y at %l:%M %p") %></span></td>
+            <td class="actions">
+              <%= link_to "View", admin_form_submission_path(submission), class: "btn btn-secondary btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @submissions.size == ActiveCanvas::Admin::FormSubmissionsController::MAX_ROWS %>
+    <p class="help-text" style="margin-top: 0.75rem;">Showing the most recent <%= ActiveCanvas::Admin::FormSubmissionsController::MAX_ROWS %> submissions.</p>
+  <% end %>
+<% else %>
+  <div class="card">
+    <div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <polyline points="22,6 12,13 2,6"/>
+      </svg>
+      <h3>No submissions yet</h3>
+      <p>Submissions from your published page forms will appear here</p>
+    </div>
+  </div>
+<% end %>
