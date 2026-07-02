@@ -153,11 +153,21 @@ module ActiveCanvas
       end
 
       def data_sources
-        sources = ActiveCanvas::DataSources.registered_names.map do |name|
+        registered = ActiveCanvas::DataSources.registered_names.map do |name|
           source = ActiveCanvas::DataSources.lookup(name)
-          { name: name, params: source.param_schema }
+          { name: name, kind: "source", params: source.param_schema }
         end
-        render json: sources
+
+        collections = ActiveCanvas::Collection.order(:name).map do |collection|
+          {
+            name: collection.slug,
+            kind: "collection",
+            fields: collection.fields.map { |f| f.slice("id", "label", "type", "options") },
+            params: { limit: nil, sort_field: nil, sort_dir: "desc", filter_field: nil, filter_value: nil }
+          }
+        end
+
+        render json: registered + collections
       end
 
       private

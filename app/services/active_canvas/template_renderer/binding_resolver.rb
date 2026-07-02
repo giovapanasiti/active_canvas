@@ -11,14 +11,22 @@ module ActiveCanvas
         @bindings.each_with_object({}) do |(name, spec), acc|
           source_name = spec["source"] || spec[:source]
 
+          raise DataSources::UnknownSource.new(source_name.to_s) if source_name.blank?
+
           if source_name.to_sym == :_literal
             value = spec.key?("value") ? spec["value"] : spec[:value]
             acc[name.to_s] = value
-          else
+          elsif DataSources.registered?(source_name)
             source = DataSources.lookup(source_name)
             raw_params = symbolize(spec["params"] || spec[:params] || {})
             result = source.call(raw_params)
             acc[name.to_s] = wrap(result, source)
+          elsif (collection = Collection.find_by(slug: source_name.to_s))
+            raw_params = spec["params"] || spec[:params] || {}
+            acc[name.to_s] = CollectionSource.new(collection).resolve(raw_params)
+          else
+            # Not registered and not a collection: unknown source.
+            raise DataSources::UnknownSource.new(source_name)
           end
         end
       end

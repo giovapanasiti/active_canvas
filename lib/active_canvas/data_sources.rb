@@ -18,6 +18,10 @@ module ActiveCanvas
         @registry[name.to_sym] || raise(UnknownSource.new(name))
       end
 
+      def registered?(name)
+        @registry.key?(name.to_sym)
+      end
+
       def registered_names
         @registry.keys.sort
       end
