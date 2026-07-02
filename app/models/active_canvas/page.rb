@@ -2,6 +2,7 @@ module ActiveCanvas
   class Page < ApplicationRecord
     belongs_to :page_type
     has_many :versions, class_name: "ActiveCanvas::PageVersion", dependent: :destroy
+    has_many :redirects, class_name: "ActiveCanvas::PageRedirect", dependent: :destroy
 
     # bindings column is JSON; ensure default and not-null at the model level too.
     attribute :bindings, default: {}

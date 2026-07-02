@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_13_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_02_103709) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -42,6 +42,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000001) do
     t.datetime "updated_at", null: false
     t.index ["content_type"], name: "index_active_canvas_media_on_content_type"
     t.index ["created_at"], name: "index_active_canvas_media_on_created_at"
+  end
+
+  create_table "active_canvas_page_redirects", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "from_slug", null: false
+    t.integer "page_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["from_slug"], name: "index_active_canvas_page_redirects_on_from_slug", unique: true
+    t.index ["page_id"], name: "index_active_canvas_page_redirects_on_page_id"
   end
 
   create_table "active_canvas_page_types", force: :cascade do |t|
@@ -168,6 +177,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_13_000001) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "active_canvas_page_redirects", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_versions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_pages", "active_canvas_page_types", column: "page_type_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
