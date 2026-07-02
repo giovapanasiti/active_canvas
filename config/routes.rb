@@ -51,4 +51,6 @@ ActiveCanvas::Engine.routes.draw do
   root to: "pages#home"
   get ":slug", to: "pages#show", as: :public_page,
     constraints: ->(req) { ActiveCanvas::Page.published.exists?(slug: req.params[:slug]) }
+  get ":slug", to: "redirects#show", as: :page_redirect,
+    constraints: ->(req) { ActiveCanvas::PageRedirect.exists?(from_slug: req.params[:slug]) }
 end
