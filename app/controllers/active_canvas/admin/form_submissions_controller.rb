@@ -33,11 +33,18 @@ module ActiveCanvas
         CSV.generate do |csv|
           csv << [ "id", "page", "form", "created_at", "ip", *data_keys ]
           submissions.each do |submission|
-            csv << [ submission.id, submission.page.title, submission.form_key,
+            csv << [ submission.id, csv_cell(submission.page.title), csv_cell(submission.form_key),
                      submission.created_at.iso8601, submission.ip,
-                     *data_keys.map { |key| submission.data[key] } ]
+                     *data_keys.map { |key| csv_cell(submission.data[key]) } ]
           end
         end
+      end
+
+      # Neutralize CSV formula injection: submitter-controlled values that begin
+      # with a formula trigger execute when the export is opened in a spreadsheet.
+      def csv_cell(value)
+        string = value.to_s
+        string.match?(/\A[=+\-@\t\r]/) ? "'#{string}" : string
       end
     end
   end

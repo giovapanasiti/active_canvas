@@ -55,4 +55,12 @@ class ActiveCanvas::AdminFormSubmissionsTest < ActionDispatch::IntegrationTest
     assert_includes row, "ada@example.com"
     refute_includes response.body, "x@y.z"
   end
+
+  test "csv neutralizes formula injection in submitter data" do
+    ActiveCanvas::FormSubmission.create!(page: @page, form_key: "contact", data: { "email" => "=HYPERLINK(\"http://evil\",\"x\")" })
+    get "/canvas/admin/form_submissions.csv", params: { form_key: "contact" }
+    assert_response :success
+    assert_includes response.body, "'=HYPERLINK"
+    refute_match(/(?<!')=HYPERLINK/, response.body)
+  end
 end
