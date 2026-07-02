@@ -116,6 +116,16 @@ module ActiveCanvas
     # Default on_error for data sources: :raise or :silent
     attr_accessor :template_default_on_error
 
+    # ==> Forms
+    # Host hook called with each stored FormSubmission
+    attr_accessor :on_form_submission
+
+    # Reject submissions arriving faster than this many seconds after render
+    attr_accessor :form_min_submit_seconds
+
+    # Per-IP submissions allowed per minute
+    attr_accessor :form_rate_limit_per_minute
+
     # Dangerous content types that are always blocked
     DANGEROUS_CONTENT_TYPES = %w[
       application/x-executable
@@ -202,6 +212,11 @@ module ActiveCanvas
       @template_render_score_limit  = 100_000
       @template_assign_score_limit  = 10_000
       @template_default_on_error    = :raise
+
+      # Forms
+      @on_form_submission = nil
+      @form_min_submit_seconds = 3
+      @form_rate_limit_per_minute = 5
     end
 
     # Get effective allowed content types (includes SVG if enabled, excludes dangerous types)

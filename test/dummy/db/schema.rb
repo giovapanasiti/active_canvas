@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_02_103709) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_02_125138) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -31,6 +31,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_103709) do
     t.index ["model_id"], name: "index_active_canvas_ai_models_on_model_id", unique: true
     t.index ["model_type"], name: "index_active_canvas_ai_models_on_model_type"
     t.index ["provider"], name: "index_active_canvas_ai_models_on_provider"
+  end
+
+  create_table "active_canvas_form_submissions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.json "data", default: {}, null: false
+    t.string "form_key", null: false
+    t.string "ip"
+    t.integer "page_id", null: false
+    t.datetime "updated_at", null: false
+    t.string "user_agent"
+    t.index ["page_id", "form_key"], name: "index_active_canvas_form_submissions_on_page_id_and_form_key"
   end
 
   create_table "active_canvas_media", force: :cascade do |t|
@@ -177,6 +188,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_103709) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "active_canvas_form_submissions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_redirects", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_versions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_pages", "active_canvas_page_types", column: "page_type_id"
