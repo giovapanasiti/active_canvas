@@ -43,7 +43,7 @@ module ActiveCanvas
       end
     end
 
-    def coerce_for_liquid(field_id, value)
+    def coerce_for_liquid(field_id, value, media_urls: nil)
       spec = field(field_id)
       return nil unless spec
 
@@ -51,7 +51,7 @@ module ActiveCanvas
       when "number", "boolean" then value
       when "date"      then (Date.iso8601(value.to_s) rescue nil)
       when "rich_text" then value.to_s.html_safe
-      when "media"     then ActiveCanvas::Media.find_by(id: value)&.url.to_s
+      when "media"     then resolve_media_url(value, media_urls)
       else value.to_s
       end
     end
@@ -74,6 +74,11 @@ module ActiveCanvas
       Date.parse(value.to_s).iso8601
     rescue ArgumentError, TypeError
       nil
+    end
+
+    def resolve_media_url(value, media_urls)
+      return media_urls[value].to_s if media_urls
+      ActiveCanvas::Media.find_by(id: value)&.url.to_s
     end
   end
 end
