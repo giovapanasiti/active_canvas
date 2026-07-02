@@ -12,6 +12,7 @@ module ActiveCanvas
     validates :name, presence: true
     validates :slug, presence: true, uniqueness: true
     validate :slug_not_reserved
+    validate :fields_well_formed
 
     private
 
@@ -34,6 +35,16 @@ module ActiveCanvas
 
       if RESERVED_SLUGS.include?(slug) || ActiveCanvas::DataSources.registered_names.map(&:to_s).include?(slug)
         errors.add(:slug, "is reserved by a registered data source")
+      end
+    end
+
+    def fields_well_formed
+      seen = []
+      Array(fields).each do |field|
+        errors.add(:fields, "must each have a label") if field["label"].blank?
+        errors.add(:fields, "have an unknown type: #{field["type"]}") unless CollectionSchema::VALID_FIELD_TYPES.include?(field["type"])
+        errors.add(:fields, "have duplicate ids: #{field["id"]}") if seen.include?(field["id"])
+        seen << field["id"]
       end
     end
   end

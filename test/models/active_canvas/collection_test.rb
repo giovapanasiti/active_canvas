@@ -53,6 +53,37 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert_equal %w[custom_key], collection.fields.map { |f| f["id"] }
   end
 
+  test "a field missing its label is invalid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "name", "label" => "", "type" => "text" } ])
+    assert_not collection.valid?
+  end
+
+  test "a field with an unknown type is invalid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "bogus" } ])
+    assert_not collection.valid?
+  end
+
+  test "two fields sharing an explicit id are invalid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "dupe", "label" => "One", "type" => "text" },
+                { "id" => "dupe", "label" => "Two", "type" => "text" } ])
+    assert_not collection.valid?
+  end
+
+  test "a well-formed multi-field schema is valid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" },
+                { "id" => "bio", "label" => "Bio", "type" => "rich_text" },
+                { "id" => "joined", "label" => "Joined", "type" => "date" } ])
+    assert collection.valid?
+  end
+
+  test "an empty fields array is valid" do
+    assert ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: []).valid?
+  end
+
   test "destroying a collection destroys its items" do
     collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team")
     collection.items.create!(status: "draft")

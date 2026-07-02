@@ -5,6 +5,8 @@ module ActiveCanvas
   # JSON storage and stored values for Liquid. The single source of truth for
   # per-type conversion, shared by CollectionItem (write) and CollectionSource (read).
   class CollectionSchema
+    VALID_FIELD_TYPES = %w[text textarea rich_text number boolean date select media].freeze
+
     def self.generate_field_id(label, taken)
       base = label.to_s.parameterize(separator: "_").presence || "field"
       candidate = base
