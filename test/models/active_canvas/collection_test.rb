@@ -52,4 +52,11 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
       fields: [ { "id" => "custom_key", "label" => "Renamed", "type" => "text" } ])
     assert_equal %w[custom_key], collection.fields.map { |f| f["id"] }
   end
+
+  test "destroying a collection destroys its items" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team")
+    collection.items.create!(status: "draft")
+    collection.destroy
+    assert_equal 0, ActiveCanvas::CollectionItem.count
+  end
 end

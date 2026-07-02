@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_02_222401) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_02_223304) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -31,6 +31,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_222401) do
     t.index ["model_id"], name: "index_active_canvas_ai_models_on_model_id", unique: true
     t.index ["model_type"], name: "index_active_canvas_ai_models_on_model_type"
     t.index ["provider"], name: "index_active_canvas_ai_models_on_provider"
+  end
+
+  create_table "active_canvas_collection_item_versions", force: :cascade do |t|
+    t.string "change_summary"
+    t.string "changed_by"
+    t.integer "collection_item_id", null: false
+    t.datetime "created_at", null: false
+    t.json "data", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.integer "version_number", null: false
+    t.index ["collection_item_id", "version_number"], name: "idx_ac_collection_item_versions_on_item_and_number", unique: true
   end
 
   create_table "active_canvas_collection_items", force: :cascade do |t|
@@ -209,6 +220,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_222401) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "active_canvas_collection_item_versions", "active_canvas_collection_items", column: "collection_item_id"
   add_foreign_key "active_canvas_collection_items", "active_canvas_collections", column: "collection_id"
   add_foreign_key "active_canvas_form_submissions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_redirects", "active_canvas_pages", column: "page_id"
