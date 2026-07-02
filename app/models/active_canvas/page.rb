@@ -14,6 +14,7 @@ module ActiveCanvas
     before_save :normalize_slug
     before_save :sanitize_content_if_enabled
     after_update :create_version_if_content_changed
+    after_save :manage_slug_redirects, if: :saved_change_to_slug?
 
     scope :published, -> { where(published: true) }
     scope :draft, -> { where(published: false) }
@@ -91,6 +92,18 @@ module ActiveCanvas
       changes << "CSS updated"      if saved_change_to_content_css?
       changes << "bindings updated" if saved_change_to_bindings?
       changes.join(", ").presence || "Updated"
+    end
+
+    def manage_slug_redirects
+      old_slug, new_slug = saved_change_to_slug
+
+      # A slug now owned by a real page must not redirect elsewhere.
+      PageRedirect.where(from_slug: new_slug).delete_all if new_slug.present?
+
+      return unless published? && old_slug.present?
+
+      redirect = PageRedirect.find_or_initialize_by(from_slug: old_slug)
+      redirect.update!(page: self)
     end
   end
 end
