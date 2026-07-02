@@ -49,6 +49,7 @@ ActiveCanvas::Engine.routes.draw do
   end
 
   root to: "pages#home"
+  post "forms", to: "form_submissions#create", as: :public_form_submissions
   get ":slug", to: "pages#show", as: :public_page,
     constraints: ->(req) { ActiveCanvas::Page.published.exists?(slug: req.params[:slug]) }
   get ":slug", to: "redirects#show", as: :page_redirect,

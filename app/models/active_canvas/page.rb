@@ -27,9 +27,10 @@ module ActiveCanvas
       id&.to_s
     end
 
-    def rendered_content
+    def rendered_content(form_feedback: nil, form_action: nil)
       rendered = ActiveCanvas::TemplateRenderer.new(self, mode: :public).render
-      ActiveCanvas::ContentRenderer.resolve(rendered).to_s.html_safe
+      rendered = ActiveCanvas::ContentRenderer.resolve(rendered).to_s
+      ActiveCanvas::FormStamper.new(rendered, page: self, feedback: form_feedback, action: form_action).stamp.html_safe
     end
 
     def current_version_number

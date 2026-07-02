@@ -93,7 +93,10 @@
 <% end %>
 
 <%# Main Page Content %>
-<%= @page.rendered_content %>
+<%= @page.rendered_content(
+      form_feedback: { submitted: params[:ac_submitted], error: params[:ac_form_error], form_key: params[:ac_form] },
+      form_action: public_form_submissions_path
+    ) %>
 
 <%# Footer %>
 <% if footer_partial&.content.present? %>
