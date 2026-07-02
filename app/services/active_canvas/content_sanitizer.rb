@@ -59,6 +59,11 @@ module ActiveCanvas
 
     # Custom scrubber that allows data-* and aria-* attributes
     class PermissiveAttributeScrubber < Rails::HTML::PermitScrubber
+      # Never restored after Loofah's scrub: browsers tolerate whitespace and
+      # control characters inside URL schemes, so any check of our own would
+      # be weaker than Loofah's. Loofah is the sole authority on URLs.
+      URL_ATTRIBUTES = %w[href src action formaction xlink:href poster].freeze
+
       def initialize(allowed_tags:, allowed_attributes:)
         super()
         self.tags = allowed_tags
@@ -80,32 +85,11 @@ module ActiveCanvas
         restorable.each { |name, value| node[name] = value unless node.attributes.key?(name) }
       end
 
-      def scrub_attribute(node, attr_node)
-        attr_name = attr_node.name.downcase
-
-        # Allow explicitly listed attributes
-        return if @allowed_attributes.include?(attr_name)
-
-        # Allow data-* attributes
-        return if attr_name.start_with?("data-")
-
-        # Allow aria-* attributes
-        return if attr_name.start_with?("aria-")
-
-        # Check for dangerous attribute values (javascript: URLs, event handlers)
-        if dangerous_attribute?(attr_name, attr_node.value)
-          attr_node.remove
-          return
-        end
-
-        # Remove unlisted attributes
-        attr_node.remove
-      end
-
       private
 
       def explicitly_allowed?(attr_node)
         name = attr_node.name.downcase
+        return false if URL_ATTRIBUTES.include?(name)
         return false if dangerous_attribute?(name, attr_node.value)
 
         @allowed_attributes.include?(name) || name.start_with?("data-", "aria-")
