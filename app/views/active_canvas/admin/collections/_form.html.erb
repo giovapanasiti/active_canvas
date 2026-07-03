@@ -1,0 +1,31 @@
+<%= form_with model: [ :admin, @collection ] do |form| %>
+  <% if @collection.errors.any? %>
+    <div class="error-messages">
+      <ul>
+        <% @collection.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :name %>
+    <%= form.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :slug %>
+    <%= form.text_field :slug, class: "form-control" %>
+    <small>The Liquid source name used in <code>{% for x in slug %}</code>. Leave blank to derive from the name.</small>
+  </div>
+
+  <%= render "field_builder", form: form %>
+
+  <div class="form-actions">
+    <%= form.submit "Save collection", class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_collections_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>
+
+<%= javascript_include_tag "active_canvas/admin/field_builder" %>

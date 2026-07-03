@@ -15,6 +15,7 @@ module ActiveCanvas
         active_canvas/editor.css
         active_canvas/admin/data_panel.js
         active_canvas/admin/grape_chips_plugin.js
+        active_canvas/admin/field_builder.js
       ]
     end
 
