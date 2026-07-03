@@ -104,4 +104,35 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items"
   end
+
+  test "publish copies draft to data, sets published_at and writes a version" do
+    item = add_item(name: "Ada", active: true)
+    assert_difference "ActiveCanvas::CollectionItemVersion.count", 1 do
+      patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish"
+    end
+    item.reload
+    assert_equal "published", item.status
+    assert_equal "Ada", item.data["name"]
+    assert_not_nil item.published_at
+    assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+  end
+
+  test "publish records the current editor on the version" do
+    controller = ActiveCanvas::Admin::CollectionItemsController
+    controller.class_eval { define_method(:active_canvas_current_user) { "editor@example.com" } }
+    begin
+      item = add_item(name: "Ada")
+      patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish"
+      assert_equal "editor@example.com", item.reload.versions.last.changed_by
+    ensure
+      controller.class_eval { remove_method(:active_canvas_current_user) }
+    end
+  end
+
+  test "unpublish returns the item to draft" do
+    item = add_item(name: "Ada", publish: true)
+    patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/unpublish"
+    assert_equal "draft", item.reload.status
+    assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+  end
 end
