@@ -1,0 +1,33 @@
+<% content_for :page_title, "Item history" %>
+
+<div class="page-header">
+  <h2>History</h2>
+  <%= link_to "Back to item", edit_admin_collection_item_path(@collection, @item), class: "btn btn-secondary" %>
+</div>
+
+<div class="card">
+  <% if @versions.any? %>
+    <% @versions.each do |version| %>
+      <div style="padding:1rem;border-bottom:1px solid var(--border,#eee);">
+        <h3>Version <%= version.version_number %></h3>
+        <p>
+          <small>
+            <%= version.created_at.strftime("%Y-%m-%d %H:%M") %>
+            <% if version.changed_by.present? %> &middot; by <%= version.changed_by %><% end %>
+          </small>
+        </p>
+        <dl>
+          <% @collection.fields.each do |field| %>
+            <dt><%= field["label"] %></dt>
+            <dd><%= truncate((version.data || {})[field["id"]].to_s, length: 120) %></dd>
+          <% end %>
+        </dl>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <h3>No versions yet</h3>
+      <p>Publishing this item will record a snapshot here.</p>
+    </div>
+  <% end %>
+</div>

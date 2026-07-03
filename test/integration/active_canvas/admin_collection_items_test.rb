@@ -135,4 +135,20 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_equal "draft", item.reload.status
     assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
   end
+
+  test "history lists versions newest first with snapshot content and no restore control" do
+    item = add_item(name: "Ada")
+    item.publish!
+    item.assign_fields("name" => "Grace Hopper"); item.save!
+    item.publish!
+
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/history"
+
+    assert_response :success
+    body = response.body
+    assert_operator body.index("Version 2"), :<, body.index("Version 1")   # newest first
+    assert_includes body, "Grace Hopper"   # newer snapshot
+    assert_includes body, "Ada"            # older snapshot (distinct, not a substring)
+    refute_match(/restore/i, body)
+  end
 end

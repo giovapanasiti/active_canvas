@@ -4,7 +4,7 @@ module ActiveCanvas
       MAX_ROWS = 1000
 
       before_action :set_collection
-      before_action :set_item, only: %i[edit update destroy publish unpublish]
+      before_action :set_item, only: %i[edit update destroy publish unpublish history]
 
       def index
         @items = @collection.items.order(updated_at: :desc)
@@ -56,6 +56,10 @@ module ActiveCanvas
       def unpublish
         @item.unpublish!
         redirect_to edit_admin_collection_item_path(@collection, @item), notice: "Item moved back to draft."
+      end
+
+      def history
+        @versions = @item.versions.order(version_number: :desc)
       end
 
       private
