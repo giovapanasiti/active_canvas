@@ -16,6 +16,7 @@ module ActiveCanvas
         active_canvas/admin/data_panel.js
         active_canvas/admin/grape_chips_plugin.js
         active_canvas/admin/field_builder.js
+        active_canvas/admin/media_select_preview.js
       ]
     end
 

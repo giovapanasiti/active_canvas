@@ -1,0 +1,40 @@
+<div class="form-group">
+  <label for="item_data_<%= field["id"] %>">
+    <%= field["label"] %><% if field["required"] %> <span style="color:var(--danger,#c00);">*</span><% end %>
+  </label>
+
+  <% name = "item[data][#{field["id"]}]" %>
+  <% dom_id = "item_data_#{field["id"]}" %>
+
+  <% case field["type"] %>
+  <% when "textarea" %>
+    <%= text_area_tag name, value, id: dom_id, class: "form-control", rows: 4 %>
+  <% when "rich_text" %>
+    <%= text_area_tag name, value, id: dom_id, class: "form-control", rows: 8 %>
+    <small>Raw HTML. Sanitized on save.</small>
+  <% when "number" %>
+    <%= number_field_tag name, value, id: dom_id, class: "form-control", step: "any" %>
+  <% when "boolean" %>
+    <%= hidden_field_tag name, "0" %>
+    <%= check_box_tag name, "1", ActiveModel::Type::Boolean.new.cast(value), id: dom_id %>
+  <% when "date" %>
+    <%= date_field_tag name, value, id: dom_id, class: "form-control" %>
+  <% when "select" %>
+    <%= select_tag name, options_for_select(Array(field["options"]), value), id: dom_id, class: "form-control", include_blank: true %>
+  <% when "media" %>
+    <% selected_media = value.present? ? ActiveCanvas::Media.find_by(id: value) : nil %>
+    <select name="<%= name %>" id="<%= dom_id %>" class="form-control" data-media-select>
+      <option value="">&mdash; none &mdash;</option>
+      <% ActiveCanvas::Media.recent.each do |media| %>
+        <option value="<%= media.id %>" data-url="<%= media.url %>" <%= "selected" if value.to_s == media.id.to_s %>><%= media.filename %></option>
+      <% end %>
+    </select>
+    <% if selected_media&.url.present? %>
+      <%= image_tag selected_media.url, class: "ac-media-preview", alt: "", style: "max-height:80px;margin-top:.5rem;" %>
+    <% else %>
+      <img class="ac-media-preview" alt="" style="max-height:80px;margin-top:.5rem;display:none;">
+    <% end %>
+  <% else %>
+    <%= text_field_tag name, value, id: dom_id, class: "form-control" %>
+  <% end %>
+</div>

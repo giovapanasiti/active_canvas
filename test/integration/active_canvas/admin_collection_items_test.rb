@@ -43,4 +43,40 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".empty-state"
   end
+
+  test "new renders one input per schema field with the right names" do
+    get "/canvas/admin/collections/#{@collection.id}/items/new"
+    assert_response :success
+    assert_select "input[name=?]", "item[data][name]"          # text field
+    assert_select "input[type=checkbox][name=?]", "item[data][active]"
+  end
+
+  test "create coerces submitted values into draft_data per type" do
+    assert_difference "ActiveCanvas::CollectionItem.count", 1 do
+      post "/canvas/admin/collections/#{@collection.id}/items",
+        params: { item: { slug: "ada", data: { "name" => "Ada", "active" => "1" } } }
+    end
+    item = ActiveCanvas::CollectionItem.last
+    assert_equal "Ada", item.draft_data["name"]
+    assert_equal true, item.draft_data["active"]
+    assert_equal "draft", item.status
+    assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+  end
+
+  test "create renders every widget type without error" do
+    rich = ActiveCanvas::Collection.create!(name: "Rich", slug: "rich", fields: [
+      { "label" => "Body", "type" => "rich_text" },
+      { "label" => "Count", "type" => "number" },
+      { "label" => "When", "type" => "date" },
+      { "label" => "Pick", "type" => "select", "options" => %w[a b] },
+      { "label" => "Photo", "type" => "media" }
+    ])
+    get "/canvas/admin/collections/#{rich.id}/items/new"
+    assert_response :success
+    assert_select "textarea[name=?]", "item[data][body]"
+    assert_select "input[type=number][name=?]", "item[data][count]"
+    assert_select "input[type=date][name=?]", "item[data][when]"
+    assert_select "select[name=?]", "item[data][pick]"
+    assert_select "select[name=?]", "item[data][photo]"
+  end
 end
