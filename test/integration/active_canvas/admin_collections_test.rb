@@ -75,4 +75,35 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_select ".error-messages"
   end
+
+  test "edit pre-populates the fields data script for the JS to render" do
+    collection = create_collection(fields: [ { "label" => "Name", "type" => "text" } ])
+    get "/canvas/admin/collections/#{collection.id}/edit"
+    assert_response :success
+    data = css_select("script#ac-fields-data").first.content
+    assert_includes data, "\"id\":\"name\""
+  end
+
+  test "update renames a label without changing the field id" do
+    collection = create_collection(fields: [ { "label" => "Name", "type" => "text" } ])
+    original_id = collection.fields.first["id"]
+    fields = [ { "id" => original_id, "label" => "Full Name", "type" => "text", "required" => false, "options" => [] } ].to_json
+
+    patch "/canvas/admin/collections/#{collection.id}",
+      params: { collection: { name: "Team", slug: "team", fields: fields } }
+
+    collection.reload
+    assert_equal original_id, collection.fields.first["id"]
+    assert_equal "Full Name", collection.fields.first["label"]
+    assert_redirected_to "/canvas/admin/collections/#{collection.id}/edit"
+  end
+
+  test "destroy removes the collection and its items" do
+    collection = create_collection
+    collection.items.create!(status: "draft")
+    assert_difference "ActiveCanvas::Collection.count", -1 do
+      delete "/canvas/admin/collections/#{collection.id}"
+    end
+    assert_redirected_to "/canvas/admin/collections"
+  end
 end

@@ -1,6 +1,8 @@
 module ActiveCanvas
   module Admin
     class CollectionsController < ApplicationController
+      before_action :set_collection, only: %i[edit update destroy]
+
       def index
         @collections = ActiveCanvas::Collection.order(:name)
       end
@@ -20,7 +22,30 @@ module ActiveCanvas
         end
       end
 
+      def edit
+      end
+
+      def update
+        @collection.assign_attributes(collection_params)
+        return render(:edit, status: :unprocessable_entity) unless assign_fields_json(@collection)
+
+        if @collection.save
+          redirect_to edit_admin_collection_path(@collection), notice: "Collection was successfully updated."
+        else
+          render :edit, status: :unprocessable_entity
+        end
+      end
+
+      def destroy
+        @collection.destroy
+        redirect_to admin_collections_path, notice: "Collection was successfully deleted."
+      end
+
       private
+
+      def set_collection
+        @collection = ActiveCanvas::Collection.find(params[:id])
+      end
 
       def collection_params
         params.require(:collection).permit(:name, :slug)
