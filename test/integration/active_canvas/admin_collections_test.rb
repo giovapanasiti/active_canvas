@@ -106,4 +106,9 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to "/canvas/admin/collections"
   end
+
+  test "the admin chrome shows a Collections nav link" do
+    get "/canvas/admin/collections"
+    assert_select "nav a[href=?]", "/canvas/admin/collections"
+  end
 end
