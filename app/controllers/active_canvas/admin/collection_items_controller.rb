@@ -4,6 +4,7 @@ module ActiveCanvas
       MAX_ROWS = 1000
 
       before_action :set_collection
+      before_action :set_item, only: %i[edit update destroy]
 
       def index
         @items = @collection.items.order(updated_at: :desc)
@@ -26,10 +27,32 @@ module ActiveCanvas
         end
       end
 
+      def edit
+      end
+
+      def update
+        @item.assign_attributes(item_params)
+        @item.assign_fields(data_params)
+        if @item.save
+          redirect_to edit_admin_collection_item_path(@collection, @item), notice: "Item updated."
+        else
+          render :edit, status: :unprocessable_entity
+        end
+      end
+
+      def destroy
+        @item.destroy
+        redirect_to admin_collection_items_path(@collection), notice: "Item deleted."
+      end
+
       private
 
       def set_collection
         @collection = ActiveCanvas::Collection.find(params[:collection_id])
+      end
+
+      def set_item
+        @item = @collection.items.find(params[:id])
       end
 
       def item_params

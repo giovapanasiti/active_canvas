@@ -1,0 +1,17 @@
+<% content_for :page_title, "Edit #{@collection.name} item" %>
+
+<div class="page-header">
+  <h2>Edit item</h2>
+  <div>
+    <%= link_to "History", history_admin_collection_item_path(@collection, @item), class: "btn btn-secondary" %>
+    <% if @item.status == "published" %>
+      <%= button_to "Unpublish", unpublish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-secondary" %>
+    <% else %>
+      <%= button_to "Publish", publish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-primary" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <%= render "form" %>
+</div>

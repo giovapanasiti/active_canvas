@@ -79,4 +79,29 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_select "select[name=?]", "item[data][pick]"
     assert_select "select[name=?]", "item[data][photo]"
   end
+
+  test "edit pre-fills widgets from draft_data" do
+    item = add_item(name: "Ada", active: true)
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+    assert_response :success
+    assert_select "input[name=?][value=?]", "item[data][name]", "Ada"
+  end
+
+  test "update merges new values into draft_data non-destructively" do
+    item = add_item(name: "Ada", active: true)
+    patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}",
+      params: { item: { data: { "name" => "Ada Lovelace" } } }
+    item.reload
+    assert_equal "Ada Lovelace", item.draft_data["name"]
+    assert_equal true, item.draft_data["active"]   # untouched key preserved
+    assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+  end
+
+  test "destroy removes the item" do
+    item = add_item(name: "Ada")
+    assert_difference "ActiveCanvas::CollectionItem.count", -1 do
+      delete "/canvas/admin/collections/#{@collection.id}/items/#{item.id}"
+    end
+    assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items"
+  end
 end
