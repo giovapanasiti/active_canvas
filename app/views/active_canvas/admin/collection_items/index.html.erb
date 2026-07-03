@@ -1,0 +1,51 @@
+<% content_for :page_title, "#{@collection.name} items" %>
+
+<div class="page-header">
+  <h2><%= @collection.name %> &middot; Items</h2>
+  <%= link_to "New item", new_admin_collection_item_path(@collection), class: "btn btn-primary" %>
+</div>
+
+<div class="card">
+  <%= form_with url: admin_collection_items_path(@collection), method: :get, local: true, style: "padding:1rem;" do %>
+    <%= label_tag :status, "Status" %>
+    <%= select_tag :status,
+          options_for_select([ [ "All", "" ], [ "Draft", "draft" ], [ "Published", "published" ] ], params[:status]),
+          class: "form-control", style: "display:inline-block;width:auto;", onchange: "this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" %>
+    <%= submit_tag "Filter", class: "btn btn-sm btn-secondary" %>
+  <% end %>
+
+  <% if @items.any? %>
+    <table>
+      <thead>
+        <tr>
+          <% @leading_fields.each do |field| %>
+            <th><%= field["label"] %></th>
+          <% end %>
+          <th>Status</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @items.each do |item| %>
+          <tr>
+            <% @leading_fields.each do |field| %>
+              <td><%= collection_cell(item, field) %></td>
+            <% end %>
+            <td><%= collection_status_badge(item) %></td>
+            <td><%= item.updated_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="actions">
+              <%= link_to "Edit", edit_admin_collection_item_path(@collection, item), class: "btn btn-sm btn-secondary" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <h3>No items yet</h3>
+      <p>Add an item to populate this collection.</p>
+      <%= link_to "New item", new_admin_collection_item_path(@collection), class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
