@@ -24,6 +24,15 @@ ActiveCanvas::Engine.routes.draw do
     end
     resources :media, only: [:index, :show, :create, :destroy]
     resources :form_submissions, only: [ :index, :show, :destroy ]
+    resources :collections do
+      resources :items, controller: "collection_items", only: %i[index new create edit update destroy] do
+        member do
+          patch :publish
+          patch :unpublish
+          get :history
+        end
+      end
+    end
     resource :settings, only: [:show, :update] do
       patch :update_global_css
       patch :update_global_js

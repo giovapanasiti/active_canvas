@@ -1,0 +1,45 @@
+<% content_for :page_title, "Collections" %>
+
+<div class="page-header">
+  <h2>Collections</h2>
+  <%= link_to "New collection", new_admin_collection_path, class: "btn btn-primary" %>
+</div>
+
+<div class="card">
+  <% if @collections.any? %>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Slug</th>
+          <th>Fields</th>
+          <th>Items</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @collections.each do |collection| %>
+          <tr>
+            <td><%= collection.name %></td>
+            <td><code><%= collection.slug %></code></td>
+            <td><%= collection.fields.size %></td>
+            <td><%= collection.items.count %></td>
+            <td class="actions">
+              <%= link_to "Items", admin_collection_items_path(collection), class: "btn btn-sm btn-secondary" %>
+              <%= link_to "Edit", edit_admin_collection_path(collection), class: "btn btn-sm btn-secondary" %>
+              <%= button_to "Delete", admin_collection_path(collection), method: :delete,
+                    class: "btn btn-sm btn-danger", form: { style: "display:inline" },
+                    onclick: "return confirm('Delete this collection and all its items?')" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <h3>No collections yet</h3>
+      <p>Create a collection to manage typed content you can loop over in pages.</p>
+      <%= link_to "New collection", new_admin_collection_path, class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
