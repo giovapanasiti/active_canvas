@@ -97,6 +97,13 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
   end
 
+  test "create with a scalar item data param does not 500" do
+    assert_nothing_raised do
+      post "/canvas/admin/collections/#{@collection.id}/items", params: { item: { data: "oops" } }
+    end
+    assert_not_equal 500, response.status
+  end
+
   test "destroy removes the item" do
     item = add_item(name: "Ada")
     assert_difference "ActiveCanvas::CollectionItem.count", -1 do

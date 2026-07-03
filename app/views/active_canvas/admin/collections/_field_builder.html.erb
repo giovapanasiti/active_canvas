@@ -2,7 +2,7 @@
   <label>Fields</label>
   <p><small>Define the typed columns of this collection. Field IDs are generated from labels and never change once created.</small></p>
 
-  <script type="application/json" id="ac-fields-data"><%= raw((@collection.fields || []).to_json) %></script>
+  <script type="application/json" id="ac-fields-data"><%= raw json_escape((@collection.fields || []).to_json) %></script>
   <ul id="ac-fields-list" style="list-style:none;padding:0;margin:0;"></ul>
   <button type="button" id="ac-add-field-btn" class="btn btn-sm btn-secondary">Add field</button>
 

@@ -52,10 +52,18 @@ module ActiveCanvas
       end
 
       # Parse the field-builder's JSON payload into the fields array. Returns
-      # false (and flags an error) on malformed JSON so the caller can re-render.
+      # false (and flags an error) on malformed input so the caller re-renders.
       def assign_fields_json(collection)
         raw = params.dig(:collection, :fields)
-        parsed = raw.blank? ? [] : JSON.parse(raw)
+        if raw.blank?
+          collection.fields = []
+          return true
+        end
+        unless raw.is_a?(String)
+          collection.errors.add(:fields, "could not be read")
+          return false
+        end
+        parsed = JSON.parse(raw)
         unless parsed.is_a?(Array) && parsed.all?(Hash)
           collection.errors.add(:fields, "could not be read")
           return false

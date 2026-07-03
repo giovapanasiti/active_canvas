@@ -76,6 +76,28 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     assert_select ".error-messages"
   end
 
+  test "create with an array fields param re-renders 422 instead of 500" do
+    assert_no_difference "ActiveCanvas::Collection.count" do
+      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: [ "1" ] } }
+    end
+    assert_response :unprocessable_entity
+  end
+
+  test "update with an array fields param re-renders 422 instead of 500" do
+    collection = create_collection
+    patch "/canvas/admin/collections/#{collection.id}",
+      params: { collection: { name: "X", slug: "x", fields: [ "1" ] } }
+    assert_response :unprocessable_entity
+  end
+
+  test "a field label that tries to break out of the data script is escaped" do
+    collection = create_collection(fields: [ { "label" => "</script><img src=x onerror=alert(1)>", "type" => "text" } ])
+    get "/canvas/admin/collections/#{collection.id}/edit"
+    assert_response :success
+    refute_includes response.body, "</script><img src=x onerror=alert(1)>"
+    assert_includes response.body, "\\u003c/script\\u003e"
+  end
+
   test "edit pre-populates the fields data script for the JS to render" do
     collection = create_collection(fields: [ { "label" => "Name", "type" => "text" } ])
     get "/canvas/admin/collections/#{collection.id}/edit"

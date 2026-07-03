@@ -79,7 +79,8 @@ module ActiveCanvas
       # Field ids are dynamic; assign_fields is a schema allowlist, so reading
       # the raw hash here is safe (unknown keys are dropped by the schema).
       def data_params
-        params.dig(:item, :data)&.to_unsafe_h || {}
+        data = params.dig(:item, :data)
+        data.respond_to?(:to_unsafe_h) ? data.to_unsafe_h : {}
       end
 
       # A display label for the audit trail. Uses the host app's current user
