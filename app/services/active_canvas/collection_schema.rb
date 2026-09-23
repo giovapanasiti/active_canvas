@@ -8,7 +8,7 @@ module ActiveCanvas
     VALID_FIELD_TYPES = %w[text textarea rich_text number boolean date select media].freeze
 
     def self.generate_field_id(label, taken)
-      base = label.to_s.parameterize(separator: "_").presence || "field"
+      base = label.to_s.parameterize(separator: "_").tr("-", "_").squeeze("_").gsub(/\A_+|_+\z/, "").presence || "field"
       base = "f_#{base}" unless base.match?(/\A[a-z]/)
       candidate = base
       counter = 1

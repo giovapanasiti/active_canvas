@@ -54,7 +54,7 @@ module ActiveCanvas
       fields.each do |field|
         errors.add(:fields, "must each have a label") if field["label"].blank?
         errors.add(:fields, "have an unknown type: #{field["type"]}") unless CollectionSchema::VALID_FIELD_TYPES.include?(field["type"])
-        errors.add(:fields, "have an invalid id: #{field["id"]}") unless field["id"].to_s.match?(FIELD_ID_FORMAT)
+        errors.add(:fields, "have an invalid id: #{field["id"]} (ids are lower_snake_case; remove the field and add it again)") unless field["id"].to_s.match?(FIELD_ID_FORMAT)
         errors.add(:fields, "use a reserved id: #{field["id"]}") if RESERVED_FIELD_IDS.include?(field["id"])
         errors.add(:fields, "have duplicate ids: #{field["id"]}") if seen.include?(field["id"])
         seen << field["id"]

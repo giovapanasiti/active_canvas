@@ -122,6 +122,11 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert_equal %w[f_2nd_line], collection.fields.map { |f| f["id"] }
   end
 
+  test "a dashed label produces a valid id" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: [ { "label" => "E-mail", "type" => "text" } ])
+    assert_equal %w[e_mail], collection.fields.map { |f| f["id"] }
+  end
+
   test "fields that are not an array of hashes are invalid" do
     [ "junk", [ "junk" ], { "a" => 1 } ].each do |bad|
       collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: bad)

@@ -21,6 +21,9 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
     assert_equal "field", ActiveCanvas::CollectionSchema.generate_field_id("", [])
     assert_equal "f_2nd", ActiveCanvas::CollectionSchema.generate_field_id("2nd", [])
     assert_equal "f_1", ActiveCanvas::CollectionSchema.generate_field_id("1", [])
+    assert_equal "e_mail", ActiveCanvas::CollectionSchema.generate_field_id("E-mail", [])
+    assert_equal "foo_bar_baz", ActiveCanvas::CollectionSchema.generate_field_id("Foo-Bar--baz", [])
+    assert_equal "foo", ActiveCanvas::CollectionSchema.generate_field_id("-foo", [])
   end
 
   test "field_ids lists ids in order" do
