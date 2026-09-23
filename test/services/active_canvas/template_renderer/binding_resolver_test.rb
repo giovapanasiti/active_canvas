@@ -245,6 +245,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     assert_equal "base1", row["base_field"]
     assert_equal "child", row["child_field"]
     refute row.key?("with_arg")
+    refute row.key?("to_liquid")
     assert_kind_of Hash, row["me"]            # recursion is capped, not infinite
   end
 

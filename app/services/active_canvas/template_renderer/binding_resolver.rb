@@ -106,7 +106,7 @@ module ActiveCanvas
           depth > 2 ? value.to_s : plain(value.to_h, depth + 1)
         when ::Liquid::Drop
           return value.to_s if depth > 2
-          value.class.invokable_methods.sort
+          (value.class.invokable_methods.to_a - [ "to_liquid" ]).sort
             .select { |m| value.method(m).arity.zero? }
             .each_with_object({}) { |m, acc| acc[m.to_s] = plain(value.invoke_drop(m), depth + 1) }
         when Hash   then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = plain(v, depth + 1) }
