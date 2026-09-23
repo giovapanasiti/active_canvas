@@ -7,6 +7,7 @@
 
 <div class="card">
   <% if @versions.any? %>
+    <% labels = @collection.fields.each_with_object({}) { |f, acc| acc[f["id"]] = f["label"] } %>
     <% @versions.each do |version| %>
       <div style="padding:1rem;border-bottom:1px solid var(--border,#eee);">
         <h3>Version <%= version.version_number %></h3>
@@ -16,7 +17,6 @@
             <% if version.changed_by.present? %> &middot; by <%= version.changed_by %><% end %>
           </small>
         </p>
-        <% labels = @collection.fields.each_with_object({}) { |f, acc| acc[f["id"]] = f["label"] } %>
         <dl>
           <% (version.data || {}).each do |field_id, value| %>
             <dt><%= labels[field_id] || field_id %><% unless labels.key?(field_id) %> <small>(removed field)</small><% end %></dt>
