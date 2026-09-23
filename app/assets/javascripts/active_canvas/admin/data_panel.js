@@ -2,7 +2,6 @@
   const container = document.getElementById('data-panel-container');
   if (!container) return;
   const pageId      = container.dataset.pageId;
-  const bindingsKey = `ac:bindings:${pageId}`;
 
   let registry = []; // [{ name, params: { limit: { type, default, ... } } }]
   let bindings = {}; // { localName: { source, params } | { source: '_literal', value } }
@@ -30,22 +29,19 @@
   }
 
   function loadBindings() {
-    bindings = JSON.parse(localStorage.getItem(bindingsKey) || '{}');
-    const pre = document.getElementById('ac-server-bindings');
-    if (pre) {
-      bindings = JSON.parse(pre.textContent);
-      localStorage.setItem(bindingsKey, JSON.stringify(bindings));
-    }
+    bindings = window.ActiveCanvasBindings.read();
   }
 
   function persistBindings() {
-    localStorage.setItem(bindingsKey, JSON.stringify(bindings));
-    document.dispatchEvent(new CustomEvent('ac:bindings-changed', { detail: { bindings } }));
+    window.ActiveCanvasBindings.write(bindings);
   }
 
   function loadRegistry() {
     const url = container.dataset.dataSourcesUrl;
-    return get(url).then(json => { registry = json; });
+    return get(url).then(json => {
+      registry = json;
+      window.ActiveCanvasBindings.setRegistry(json);
+    });
   }
 
   function renderBindings() {

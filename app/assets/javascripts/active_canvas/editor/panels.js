@@ -209,7 +209,7 @@
 
       // Use entityType from config (defaults to 'page' for backwards compatibility)
       const entityType = config.entityType || 'page';
-      const bindingsJson = localStorage.getItem('ac:bindings:' + config.pageId) || '{}';
+      const bindingsJson = window.ActiveCanvasBindings ? window.ActiveCanvasBindings.readJson() : '{}';
       const payload = {};
       payload[entityType] = {
         content: html,

@@ -115,10 +115,7 @@
     }
 
     function readBindings() {
-      const container = document.getElementById('data-panel-container');
-      if (!container) return '{}';
-      const pageId = container.dataset.pageId;
-      return localStorage.getItem('ac:bindings:' + pageId) || '{}';
+      return window.ActiveCanvasBindings ? window.ActiveCanvasBindings.readJson() : '{}';
     }
   }
 
