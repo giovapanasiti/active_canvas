@@ -294,6 +294,9 @@
     // Setup RTE toolbar visibility
     AC.setupRteToolbar(editor);
 
+    // Loop / condition traits for dynamic pages
+    if (AC.setupDirectiveTraits) AC.setupDirectiveTraits(editor, config);
+
     // Setup assets panel
     AC.setupAssetsPanel(editor, config, csrfToken);
 
