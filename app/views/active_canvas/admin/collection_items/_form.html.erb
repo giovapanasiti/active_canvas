@@ -16,7 +16,7 @@
   </div>
 
   <% @collection.fields.each do |field| %>
-    <%= render "field_input", field: field, value: (@item.draft_data || {})[field["id"]] %>
+    <%= render "field_input", field: field, value: (@item.draft_data || {})[field["id"]], media: @media %>
   <% end %>
 
   <div class="form-actions">

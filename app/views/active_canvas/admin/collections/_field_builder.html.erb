@@ -11,7 +11,10 @@
   <template id="ac-field-row-template">
     <li class="ac-field-row card" style="display:flex;gap:.5rem;align-items:center;padding:.5rem;margin-bottom:.5rem;">
       <input type="hidden" data-field="id">
-      <input type="text" data-field="label" class="form-control" placeholder="Label" style="flex:2;">
+      <span style="flex:2;display:flex;flex-direction:column;gap:2px;">
+        <input type="text" data-field="label" class="form-control" placeholder="Label">
+        <code data-field-id-display class="ac-field-id" style="font-size:.7rem;opacity:.7;" title="Use this in the page: {{ item.<id> }}"></code>
+      </span>
       <select data-field="type" class="form-control" style="flex:1;">
         <option value="text">Text</option>
         <option value="textarea">Textarea</option>

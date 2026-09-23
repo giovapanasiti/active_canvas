@@ -41,4 +41,15 @@ class ActiveCanvas::CollectionItemTest < ActiveSupport::TestCase
     assert_equal "Ada", item.draft_data["name"] # not clobbered by the second call
     assert_equal 36, item.draft_data["age"]
   end
+
+  test "effective_data is the published snapshot for published items and the draft otherwise" do
+    item = @collection.items.new
+    item.assign_fields("name" => "Ada"); item.save!
+    assert_equal "Ada", item.effective_data["name"]
+    item.publish!
+    item.assign_fields("name" => "Grace"); item.save!
+    assert_equal "Ada", item.effective_data["name"]
+    item.unpublish!
+    assert_equal "Grace", item.effective_data["name"]
+  end
 end

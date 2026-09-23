@@ -17,12 +17,14 @@
       row.querySelector('[data-field="options"]').value = (field.options || []).join(', ');
     }
     toggleOptions(row);
+    showId(row);
     wireRow(row);
     list.appendChild(row);
     return row;
   }
 
   function wireRow(row) {
+    row.querySelector('[data-field="label"]').addEventListener('input', () => showId(row));
     row.querySelector('[data-field="type"]').addEventListener('change', () => toggleOptions(row));
     row.querySelector('[data-remove]').addEventListener('click', () => {
       const existing = row.querySelector('[data-field="id"]').value.trim() !== '';
@@ -40,6 +42,18 @@
   function toggleOptions(row) {
     const isSelect = row.querySelector('[data-field="type"]').value === 'select';
     row.querySelector('[data-field="options"]').hidden = !isSelect;
+  }
+
+  // Existing rows show their stable id; new rows preview the id the server
+  // will derive from the label (same rules as CollectionSchema.generate_field_id).
+  function showId(row) {
+    const idEl = row.querySelector('[data-field-id-display]');
+    const existing = row.querySelector('[data-field="id"]').value.trim();
+    if (existing) { idEl.textContent = existing; return; }
+    const label = row.querySelector('[data-field="label"]').value;
+    let id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    if (id && !/^[a-z]/.test(id)) id = 'f_' + id;
+    idEl.textContent = id ? `${id} (assigned on save)` : '';
   }
 
   function serialize() {

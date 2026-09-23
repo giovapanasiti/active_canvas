@@ -12,8 +12,11 @@ module ActiveCanvas
 
       private
 
+      # A readable label for version history: a name or email when the host's
+      # user object has one, otherwise its to_s.
       def set_current_editor
-        ActiveCanvas::Current.editor = active_canvas_current_user&.to_s.presence
+        user = active_canvas_current_user
+        ActiveCanvas::Current.editor = user && [ user.try(:name), user.try(:email), user.to_s ].map(&:presence).compact.first
       end
 
       def enforce_authentication_configured

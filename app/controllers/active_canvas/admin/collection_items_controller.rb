@@ -5,6 +5,7 @@ module ActiveCanvas
 
       before_action :set_collection
       before_action :set_item, only: %i[edit update destroy publish unpublish history]
+      before_action :load_media, only: %i[new create edit update]
 
       def index
         @items = @collection.items.order(updated_at: :desc)
@@ -70,6 +71,11 @@ module ActiveCanvas
 
       def set_item
         @item = @collection.items.find(params[:id])
+      end
+
+      # One query for the media picker instead of one per option.
+      def load_media
+        @media = ActiveCanvas::Media.with_attached_file.recent
       end
 
       def item_params

@@ -22,6 +22,12 @@ module ActiveCanvas
       draft_data.slice(*ids) != data.slice(*ids)
     end
 
+    # What the admin grid shows: the public snapshot for published items,
+    # the draft for everything else.
+    def effective_data
+      status == "published" ? data : draft_data
+    end
+
     # Copies the draft into the public snapshot and records a version. The row
     # lock serializes concurrent publishes so version numbers stay monotonic.
     # Call on a saved record: with_lock reloads it. Returns false with an error

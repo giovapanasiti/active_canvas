@@ -156,4 +156,47 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_match(/Name/, flash[:alert])
     assert_equal "draft", item.reload.status
   end
+
+  test "edit prefills every widget type from draft_data" do
+    media = ActiveCanvas::Media.new
+    media.file.attach(io: StringIO.new("x"), filename: "pic.png", content_type: "image/png")
+    media.save!
+    rich = ActiveCanvas::Collection.create!(name: "Rich", slug: "rich", fields: [
+      { "label" => "Body", "type" => "rich_text" },
+      { "label" => "Count", "type" => "number" },
+      { "label" => "When", "type" => "date" },
+      { "label" => "Pick", "type" => "select", "options" => %w[a b] },
+      { "label" => "Photo", "type" => "media" },
+      { "label" => "On", "type" => "boolean" }
+    ])
+    item = rich.items.new
+    item.assign_fields("body" => "<p>hi</p>", "count" => "7", "when" => "2026-07-02", "pick" => "b", "photo" => media.id, "on" => "1")
+    item.save!
+
+    get "/canvas/admin/collections/#{rich.id}/items/#{item.id}/edit"
+    assert_response :success
+    assert_select "textarea[name=?]", "item[data][body]", text: /<p>hi<\/p>/
+    assert_select "input[type=number][name=?][value=?]", "item[data][count]", "7"
+    assert_select "input[type=date][name=?][value=?]", "item[data][when]", "2026-07-02"
+    assert_select "select[name=?] option[selected][value=?]", "item[data][pick]", "b"
+    assert_select "select[name=?] option[selected][value=?]", "item[data][photo]", media.id.to_s
+    assert_select "input[type=checkbox][name=?][checked]", "item[data][on]"
+  end
+
+  test "the grid shows the published value for published rows and the draft for drafts" do
+    published = add_item(name: "Ada", publish: true)
+    published.assign_fields("name" => "Ada (edited)"); published.save!
+    add_item(name: "Grace", publish: false)
+
+    get "/canvas/admin/collections/#{@collection.id}/items"
+    assert_includes response.body, "Ada"
+    refute_includes response.body, "Ada (edited)"
+    assert_includes response.body, "Grace"
+  end
+
+  test "the field builder shows each field id" do
+    get "/canvas/admin/collections/#{@collection.id}/edit"
+    assert_select "template#ac-field-row-template code[data-field-id-display]"
+    assert_includes css_select("script#ac-fields-data").first.content, "\"id\":\"name\""
+  end
 end

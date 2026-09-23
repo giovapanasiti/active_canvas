@@ -27,4 +27,12 @@ class ActiveCanvas::AdminCurrentEditorTest < ActionDispatch::IntegrationTest
     patch "/canvas/admin/collections/#{collection.id}/items/#{item.id}/publish"
     assert_equal "editor@example.com", item.reload.versions.last.changed_by
   end
+
+  test "an object with a name or email is labelled by it, not by to_s" do
+    user = Struct.new(:name, :email).new("", "ann@example.com")
+    ActiveCanvas::Admin::ApplicationController.class_eval { define_method(:active_canvas_current_user) { user } }
+    patch "/canvas/admin/pages/#{@page.id}/save_editor",
+      params: { page: { content: "c" } }, headers: { "Accept" => "application/json" }
+    assert_equal "ann@example.com", @page.versions.last.changed_by
+  end
 end
