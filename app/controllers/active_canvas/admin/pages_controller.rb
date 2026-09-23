@@ -3,7 +3,7 @@ module ActiveCanvas
     class PagesController < ApplicationController
       include ActiveCanvas::TailwindCompilation
 
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions render_preview preview_iframe]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template preview_iframe]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -112,16 +112,19 @@ module ActiveCanvas
         @versions = @page.versions.recent.limit(50)
       end
 
-      def render_preview
+      # Runs the editor's current source through the strict preview renderer
+      # and reports the first error with its position. Never returns HTML.
+      def validate_template
         preview = @page.preview_with(content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}, template_enabled: true)
 
         if (message = invalid_bindings_message(preview))
-          return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
+          return render json: { ok: false, error: { message: message } }, status: :unprocessable_entity
         end
 
-        render json: { html: TemplateRenderer.new(preview, mode: :preview).render, error: nil }
+        TemplateRenderer.new(preview, mode: :preview).render
+        render json: { ok: true, error: nil }
       rescue ActiveCanvas::DataSources::TemplateRenderError => e
-        render json: { html: nil, error: { message: e.message, line: e.line, column: e.column } },
+        render json: { ok: false, error: { message: e.message, line: e.line, column: e.column } },
                status: :unprocessable_entity
       end
 

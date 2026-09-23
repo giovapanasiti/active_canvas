@@ -221,17 +221,6 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     assert_raises(ActiveCanvas::DataSources::TemplateRenderError) { renderer.render }
   end
 
-  test "preview mode wraps output in chip markers" do
-    page = ActiveCanvas::Page.create!(
-      title: "Dyn", page_type: @page_type,
-      content: "Hello {{ name }}!", template_enabled: true,
-      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
-    )
-    output = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
-    assert_match(/data-ac-var="name"/, output)
-    assert_match(/World/, output)
-  end
-
   test "decodes HTML entities inside Liquid tags (WYSIWYG editor encoding)" do
     page = ActiveCanvas::Page.create!(
       title: "Dyn", page_type: @page_type,
@@ -250,62 +239,6 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
       bindings: { "name" => { "source" => "_literal", "value" => "hi" } }
     )
     assert_includes ActiveCanvas::TemplateRenderer.new(page, mode: :public).render, "hi!"
-  end
-
-  test "public mode does NOT include chip markers" do
-    page = ActiveCanvas::Page.create!(
-      title: "Dyn", page_type: @page_type,
-      content: "Hello {{ name }}!", template_enabled: true,
-      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
-    )
-    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
-    refute_match(/data-ac-var/, output)
-    assert_match(/Hello World/, output)
-  end
-
-  test "public render heals var chip markup saved back from the editor" do
-    page = ActiveCanvas::Page.create!(
-      title: "Dyn", page_type: @page_type,
-      content: "Hello {{ name }}!", template_enabled: true,
-      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
-    )
-    # Simulate the editor round-trip: the preview (chip markup) gets saved as content.
-    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
-    page.update!(content: corrupted)
-
-    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
-    assert_includes output, "Hello World!"
-    refute_includes output, "data-ac-"
-  end
-
-  test "public render heals block chip markup saved back from the editor" do
-    page = ActiveCanvas::Page.create!(
-      title: "Dyn", page_type: @page_type,
-      content: "{% for item in items %}<p>{{ item }}</p>{% endfor %}",
-      template_enabled: true,
-      bindings: { "items" => { "source" => "_literal", "value" => %w[alpha beta] } }
-    )
-    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
-    page.update!(content: corrupted)
-
-    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
-    assert_includes output, "<p>alpha</p>"
-    assert_includes output, "<p>beta</p>"
-    refute_includes output, "data-ac-"
-  end
-
-  test "preview render round-trips its own chip output" do
-    page = ActiveCanvas::Page.create!(
-      title: "Dyn", page_type: @page_type,
-      content: "Hello {{ name }}!", template_enabled: true,
-      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
-    )
-    corrupted = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
-    page.update!(content: corrupted)
-
-    output = ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
-    assert_includes output, "World"
-    assert_match(/data-ac-var/, output) # re-injected markers, not doubled-up corruption
   end
 
   test "public mode renders a node that raises as empty and keeps the page" do
@@ -357,5 +290,22 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
       ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
     end
     assert_match(/data-ac-for/, err.message)
+  end
+
+  test "preview mode returns plain rendered HTML without markers" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ name }}!", template_enabled: true,
+      bindings: { "name" => { "source" => "_literal", "value" => "World" } }
+    )
+    assert_equal "Hello World!", ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+  end
+
+  test "public mode falls back on a malformed directive" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: %(<li data-ac-for="nope">x</li>)
+    )
+    assert_equal "<!-- dynamic block unavailable -->", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
   end
 end

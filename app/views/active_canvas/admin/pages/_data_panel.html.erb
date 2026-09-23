@@ -3,7 +3,8 @@
      data-page-id="<%= @page.id %>"
      data-template-enabled="<%= @page.template_enabled? %>"
      data-data-sources-url="<%= data_sources_admin_pages_path(format: :json) %>"
-     data-render-preview-url="<%= render_preview_admin_page_path(@page) %>">
+     data-validate-url="<%= validate_template_admin_page_path(@page) %>"
+     data-sample-data-url="<%= sample_data_admin_page_path(@page) %>">
 
   <div class="data-panel-header">
     <span class="data-panel-title">Bindings</span>

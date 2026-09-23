@@ -27,6 +27,10 @@ module ActiveCanvas
         loop_expr = element.remove_attribute("data-ac-for")&.value
         cond_expr = element.remove_attribute("data-ac-if")&.value
 
+        [ loop_expr, cond_expr ].compact.each do |expr|
+          raise Liquid::SyntaxError, "Invalid directive #{expr.inspect}: \"%}\" is not allowed" if expr.include?("%}")
+        end
+
         # Siblings are inserted adjacent to the element, so the outer tag
         # (for) goes in first on the left and last on the right.
         if loop_expr

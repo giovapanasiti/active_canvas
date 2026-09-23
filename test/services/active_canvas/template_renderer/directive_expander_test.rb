@@ -49,4 +49,9 @@ class ActiveCanvas::TemplateRenderer::DirectiveExpanderTest < ActiveSupport::Tes
   test "rejects a blank condition" do
     assert_raises(Liquid::SyntaxError) { expand(%(<p data-ac-if="  ">x</p>)) }
   end
+
+  test "rejects expressions that try to close the tag early" do
+    assert_raises(Liquid::SyntaxError) { expand(%(<li data-ac-for="x in rows %}{% raw %}">x</li>)) }
+    assert_raises(Liquid::SyntaxError) { expand(%(<li data-ac-if="a %}{% raw %}">x</li>)) }
+  end
 end
