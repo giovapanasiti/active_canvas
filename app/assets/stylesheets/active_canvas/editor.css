@@ -3442,3 +3442,24 @@
   font-size: 0.8125rem;
   color: var(--editor-text-muted);
 }
+
+/* ==================== Template error banner ==================== */
+.ac-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #dc2626;
+  color: #fff;
+  padding: 8px 12px;
+  font: 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ac-error-banner-close {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}

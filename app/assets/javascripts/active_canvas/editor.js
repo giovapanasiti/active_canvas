@@ -297,6 +297,9 @@
     // Loop / condition traits for dynamic pages
     if (AC.setupDirectiveTraits) AC.setupDirectiveTraits(editor, config);
 
+    // Server-side template check with an error banner
+    if (AC.setupTemplateValidator) AC.setupTemplateValidator(editor, config);
+
     // Setup assets panel
     AC.setupAssetsPanel(editor, config, csrfToken);
 

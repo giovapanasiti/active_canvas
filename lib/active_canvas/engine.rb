@@ -16,6 +16,7 @@ module ActiveCanvas
         active_canvas/editor/ac_bindings.js
         active_canvas/editor/ac_chips.js
         active_canvas/editor/directive_traits.js
+        active_canvas/editor/template_validator.js
         active_canvas/admin/data_panel.js
         active_canvas/admin/field_builder.js
         active_canvas/admin/media_select_preview.js
