@@ -60,13 +60,13 @@ class ActiveCanvas::CollectionItemPublishTest < ActiveSupport::TestCase
     assert_not item.valid?
   end
 
-  test "publish records the current editor on the version" do
-    ActiveCanvas::CollectionItem.current_editor = "alice@example.com"
+  test "publish records Current.editor on the version" do
+    ActiveCanvas::Current.editor = "alice@example.com"
     item = @collection.items.new
     item.assign_fields("name" => "Ada"); item.save!; item.publish!
     assert_equal "alice@example.com", item.versions.last.changed_by
   ensure
-    ActiveCanvas::CollectionItem.current_editor = nil
+    ActiveCanvas::Current.reset
   end
 
   test "publish re-sanitizes rich_text that was written around assign_fields" do

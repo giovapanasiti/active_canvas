@@ -11,8 +11,6 @@ module ActiveCanvas
     scope :published, -> { where(status: "published") }
     scope :draft, -> { where(status: "draft") }
 
-    thread_cattr_accessor :current_editor
-
     # Coerce raw form input (string keys = field ids) into draft_data using the
     # collection schema. Unknown fields are dropped; each value is type-coerced.
     def assign_fields(raw)
@@ -38,7 +36,7 @@ module ActiveCanvas
           errors.add(:base, "Fill in the required fields before publishing: #{missing.join(", ")}")
         else
           update!(data: snapshot, draft_data: snapshot, status: "published", published_at: Time.current)
-          versions.create!(data: data, changed_by: self.class.current_editor)
+          versions.create!(data: data, changed_by: Current.editor)
           published = true
         end
       end

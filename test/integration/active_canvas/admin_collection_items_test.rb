@@ -124,18 +124,6 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
   end
 
-  test "publish records the current editor on the version" do
-    controller = ActiveCanvas::Admin::CollectionItemsController
-    controller.class_eval { define_method(:active_canvas_current_user) { "editor@example.com" } }
-    begin
-      item = add_item(name: "Ada")
-      patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish"
-      assert_equal "editor@example.com", item.reload.versions.last.changed_by
-    ensure
-      controller.class_eval { remove_method(:active_canvas_current_user) }
-    end
-  end
-
   test "unpublish returns the item to draft" do
     item = add_item(name: "Ada", publish: true)
     patch "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/unpublish"

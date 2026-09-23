@@ -21,9 +21,6 @@ module ActiveCanvas
     scope :published, -> { where(published: true) }
     scope :draft, -> { where(published: false) }
 
-    # Thread-local storage for tracking who made the change
-    thread_cattr_accessor :current_editor
-
     def to_param
       id&.to_s
     end
@@ -121,7 +118,7 @@ module ActiveCanvas
         css_after:       content_css,
         bindings_before: bindings_before_last_save,
         bindings_after:  bindings,
-        changed_by:      self.class.current_editor,
+        changed_by:      Current.editor,
         change_summary:  generate_change_summary
       )
     end

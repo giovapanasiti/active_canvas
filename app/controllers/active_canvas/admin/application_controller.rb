@@ -8,8 +8,13 @@ module ActiveCanvas
 
       before_action :enforce_authentication_configured
       before_action :active_canvas_authenticate_admin
+      before_action :set_current_editor
 
       private
+
+      def set_current_editor
+        ActiveCanvas::Current.editor = active_canvas_current_user&.to_s.presence
+      end
 
       def enforce_authentication_configured
         # Skip if inheriting from a custom parent controller (assumes parent handles auth)

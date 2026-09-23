@@ -46,14 +46,11 @@ module ActiveCanvas
       end
 
       def publish
-        ActiveCanvas::CollectionItem.current_editor = collection_item_editor_label
         if @item.publish
           redirect_to edit_admin_collection_item_path(@collection, @item), notice: "Item published."
         else
           redirect_to edit_admin_collection_item_path(@collection, @item), alert: @item.errors.full_messages.to_sentence
         end
-      ensure
-        ActiveCanvas::CollectionItem.current_editor = nil
       end
 
       def unpublish
@@ -84,12 +81,6 @@ module ActiveCanvas
       def data_params
         data = params.dig(:item, :data)
         data.respond_to?(:to_unsafe_h) ? data.to_unsafe_h : {}
-      end
-
-      # A display label for the audit trail. Uses the host app's current user
-      # (via the CurrentUser concern) when one is wired; nil otherwise.
-      def collection_item_editor_label
-        active_canvas_current_user&.to_s
       end
     end
   end

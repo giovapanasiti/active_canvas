@@ -117,4 +117,13 @@ class ActiveCanvas::PageDynamicTest < ActiveSupport::TestCase
     source = "<table><tbody>{% for r in rows %}<tr><td>{{ r }}</td></tr>{% endfor %}</tbody></table>"
     assert_equal source, page.preview_with(content: source).content
   end
+
+  test "page versions record Current.editor" do
+    ActiveCanvas::Current.editor = "bob@example.com"
+    page = ActiveCanvas::Page.create!(title: "V", page_type: @page_type, content: "a")
+    page.update!(content: "b")
+    assert_equal "bob@example.com", page.versions.last.changed_by
+  ensure
+    ActiveCanvas::Current.reset
+  end
 end
