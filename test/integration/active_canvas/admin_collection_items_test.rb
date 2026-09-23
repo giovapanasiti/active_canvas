@@ -158,4 +158,14 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_includes body, "Ada"            # older snapshot (distinct, not a substring)
     refute_match(/restore/i, body)
   end
+
+  test "publish with a blank required field redirects back with an alert" do
+    strict = ActiveCanvas::Collection.create!(name: "Strict", slug: "strict",
+      fields: [ { "label" => "Name", "type" => "text", "required" => true } ])
+    item = strict.items.create!(draft_data: {})
+    patch "/canvas/admin/collections/#{strict.id}/items/#{item.id}/publish"
+    assert_redirected_to "/canvas/admin/collections/#{strict.id}/items/#{item.id}/edit"
+    assert_match(/Name/, flash[:alert])
+    assert_equal "draft", item.reload.status
+  end
 end

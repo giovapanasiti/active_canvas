@@ -16,24 +16,46 @@ module ActiveCanvas
     # Coerce raw form input (string keys = field ids) into draft_data using the
     # collection schema. Unknown fields are dropped; each value is type-coerced.
     def assign_fields(raw)
-      schema = CollectionSchema.new(collection.fields)
-      coerced = {}
-      schema.field_ids.each do |field_id|
-        next unless raw.key?(field_id)
-        coerced[field_id] = schema.coerce_for_storage(field_id, raw[field_id])
+      self.draft_data = draft_data.merge(schema.coerce_all_for_storage(raw))
+    end
+
+    def pending_changes?
+      ids = schema.field_ids
+      draft_data.slice(*ids) != data.slice(*ids)
+    end
+
+    # Copies the draft into the public snapshot and records a version. The row
+    # lock serializes concurrent publishes so version numbers stay monotonic.
+    # Call on a saved record: with_lock reloads it. Returns false with an error
+    # when a required field is blank.
+    def publish
+      published = false
+      with_lock do
+        snapshot = schema.coerce_all_for_storage(draft_data)
+        missing = schema.missing_required_labels(snapshot)
+        if missing.any?
+          errors.add(:base, "Fill in the required fields before publishing: #{missing.join(", ")}")
+        else
+          update!(data: snapshot, status: "published", published_at: Time.current)
+          versions.create!(data: data, changed_by: self.class.current_editor)
+          published = true
+        end
       end
-      self.draft_data = draft_data.merge(coerced)
+      published
     end
 
     def publish!
-      transaction do
-        update!(data: draft_data, status: "published", published_at: Time.current)
-        versions.create!(data: data, changed_by: self.class.current_editor)
-      end
+      publish || raise(ActiveRecord::RecordInvalid.new(self))
     end
 
     def unpublish!
-      update!(status: "draft")
+      with_lock { update!(status: "draft") }
+    end
+
+    private
+
+    def schema
+      CollectionSchema.new(collection.fields)
     end
   end
 end

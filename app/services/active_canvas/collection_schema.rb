@@ -46,6 +46,23 @@ module ActiveCanvas
       end
     end
 
+    # Coerces every schema field present in `raw`; unknown keys are dropped.
+    # Used both for form input and to rebuild the published snapshot, so data
+    # written around assign_fields (console, seeds) is still sanitized.
+    def coerce_all_for_storage(raw)
+      raw = (raw || {}).transform_keys(&:to_s)
+      field_ids.each_with_object({}) do |id, acc|
+        acc[id] = coerce_for_storage(id, raw[id]) if raw.key?(id)
+      end
+    end
+
+    # Labels of required fields with no value. Booleans are never "missing":
+    # false is a value.
+    def missing_required_labels(data)
+      data = (data || {}).transform_keys(&:to_s)
+      @fields.select { |f| f["required"] && f["type"] != "boolean" && data[f["id"]].blank? }.map { |f| f["label"] }
+    end
+
     # Values handed to Liquid. Text is HTML-escaped here; rich_text was
     # sanitized on write and is marked html_safe so the resolver leaves it alone.
     def coerce_for_liquid(field_id, value, media_urls: nil)

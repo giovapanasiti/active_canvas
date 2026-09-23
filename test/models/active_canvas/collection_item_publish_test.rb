@@ -68,4 +68,47 @@ class ActiveCanvas::CollectionItemPublishTest < ActiveSupport::TestCase
   ensure
     ActiveCanvas::CollectionItem.current_editor = nil
   end
+
+  test "publish re-sanitizes rich_text that was written around assign_fields" do
+    rich = ActiveCanvas::Collection.create!(name: "Rich", slug: "rich", fields: [ { "label" => "Body", "type" => "rich_text" } ])
+    item = rich.items.create!(draft_data: { "body" => "<p>ok</p><script>alert(1)</script>" })
+    item.publish!
+    assert_includes item.reload.data["body"], "<p>ok</p>"
+    refute_includes item.data["body"], "<script>"
+  end
+
+  test "publish drops keys that are not in the schema" do
+    item = @collection.items.create!(draft_data: { "name" => "Ada", "ghost" => "x" })
+    item.publish!
+    assert_equal({ "name" => "Ada" }, item.reload.data)
+  end
+
+  test "publish refuses when a required field is blank" do
+    strict = ActiveCanvas::Collection.create!(name: "Strict", slug: "strict",
+      fields: [ { "label" => "Name", "type" => "text", "required" => true }, { "label" => "Bio", "type" => "text" } ])
+    item = strict.items.create!(draft_data: { "bio" => "x" })
+
+    assert_not item.publish
+    assert_includes item.errors.full_messages.join, "Name"
+    assert_equal "draft", item.reload.status
+    assert_equal 0, item.versions.count
+    assert_raises(ActiveRecord::RecordInvalid) { item.publish! }
+  end
+
+  test "a required boolean never blocks publishing" do
+    strict = ActiveCanvas::Collection.create!(name: "Strict", slug: "strict",
+      fields: [ { "label" => "Active", "type" => "boolean", "required" => true } ])
+    item = strict.items.create!(draft_data: { "active" => false })
+    assert item.publish
+  end
+
+  test "pending_changes? compares draft and published data on schema fields only" do
+    item = @collection.items.new
+    item.assign_fields("name" => "Ada"); item.save!
+    assert item.pending_changes?
+    item.publish!
+    assert_not item.reload.pending_changes?
+    item.assign_fields("name" => "Grace"); item.save!
+    assert item.pending_changes?
+  end
 end

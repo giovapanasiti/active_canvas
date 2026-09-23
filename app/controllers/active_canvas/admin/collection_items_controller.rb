@@ -47,8 +47,11 @@ module ActiveCanvas
 
       def publish
         ActiveCanvas::CollectionItem.current_editor = collection_item_editor_label
-        @item.publish!
-        redirect_to edit_admin_collection_item_path(@collection, @item), notice: "Item published."
+        if @item.publish
+          redirect_to edit_admin_collection_item_path(@collection, @item), notice: "Item published."
+        else
+          redirect_to edit_admin_collection_item_path(@collection, @item), alert: @item.errors.full_messages.to_sentence
+        end
       ensure
         ActiveCanvas::CollectionItem.current_editor = nil
       end

@@ -86,4 +86,22 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
   test "coerce_for_liquid media returns empty string for missing media" do
     assert_equal "", schema.coerce_for_liquid("photo", 999999)
   end
+
+  test "coerce_all_for_storage coerces only the keys present" do
+    out = schema.coerce_all_for_storage("title" => "a", "count" => "3", "unknown" => "x")
+    assert_equal({ "title" => "a", "count" => 3 }, out)
+  end
+
+  test "missing_required_labels lists blank required non-boolean fields" do
+    fields = [
+      { "id" => "name", "label" => "Name", "type" => "text", "required" => true },
+      { "id" => "age", "label" => "Age", "type" => "number", "required" => true },
+      { "id" => "ok", "label" => "Ok", "type" => "boolean", "required" => true },
+      { "id" => "note", "label" => "Note", "type" => "text" }
+    ]
+    s = ActiveCanvas::CollectionSchema.new(fields)
+    assert_equal %w[Name Age], s.missing_required_labels({})
+    assert_equal %w[Age], s.missing_required_labels("name" => "x", "ok" => false)
+    assert_equal [], s.missing_required_labels("name" => "x", "age" => 0)
+  end
 end
