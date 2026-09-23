@@ -104,4 +104,17 @@ class ActiveCanvas::PageDynamicTest < ActiveSupport::TestCase
     assert_equal "p{}", preview.content_css
     assert preview.template_enabled?
   end
+
+  test "preview_with sanitizes a static page like a save would" do
+    page = ActiveCanvas::Page.create!(title: "S", page_type: @page_type, content: "", template_enabled: false)
+    preview = page.preview_with(content: "<p>ok</p><script>alert(1)</script>")
+    assert_includes preview.content, "<p>ok</p>"
+    refute_includes preview.content, "<script>"
+  end
+
+  test "preview_with leaves a dynamic page's source untouched" do
+    page = ActiveCanvas::Page.create!(title: "D", page_type: @page_type, content: "", template_enabled: true)
+    source = "<table><tbody>{% for r in rows %}<tr><td>{{ r }}</td></tr>{% endfor %}</tbody></table>"
+    assert_equal source, page.preview_with(content: source).content
+  end
 end

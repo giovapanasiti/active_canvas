@@ -40,6 +40,8 @@ module ActiveCanvas
 
     # An unsaved copy carrying the editor's current state, for previews. Same
     # id, so form tokens and media references resolve like the real page.
+    # Sanitized the way a save would be, so a static preview never shows raw
+    # markup that saving would have stripped.
     def preview_with(content: nil, bindings: nil, content_css: nil, content_js: nil, template_enabled: nil)
       dup.tap do |preview|
         preview.id = id
@@ -48,6 +50,7 @@ module ActiveCanvas
         preview.content_css = content_css unless content_css.nil?
         preview.content_js = content_js unless content_js.nil?
         preview.template_enabled = template_enabled unless template_enabled.nil?
+        preview.sanitize_content_if_enabled
       end
     end
 
@@ -83,10 +86,13 @@ module ActiveCanvas
       end
     end
 
+    protected
+
     # Dynamic pages are sanitized after Liquid renders (see TemplateRenderer):
     # sanitizing the source would move tags out of tables and mangle `<`.
     # When dynamic rendering is switched off, the stored content is sanitized
-    # on that save so nothing unsanitized is ever served raw.
+    # on that save so nothing unsanitized is ever served raw. Also called by
+    # `preview_with` on another instance, so it must be protected, not private.
     def sanitize_content_if_enabled
       return unless ActiveCanvas.config.sanitize_content
 
@@ -98,6 +104,8 @@ module ActiveCanvas
         self.content_css = ContentSanitizer.sanitize_css(content_css)
       end
     end
+
+    private
 
     def create_version_if_content_changed
       content_changed_now  = saved_change_to_content?

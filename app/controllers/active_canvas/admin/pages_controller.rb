@@ -130,9 +130,9 @@ module ActiveCanvas
       # page's own template_enabled flag so a static page previews as static.
       def preview_iframe
         preview = @page.preview_with(
-          content: params[:content],
-          content_css: params[:content_css],
-          content_js: params[:content_js],
+          content: params[:content]&.to_s,
+          content_css: params[:content_css]&.to_s,
+          content_js: params[:content_js]&.to_s,
           bindings: parse_bindings(params[:bindings])
         )
 

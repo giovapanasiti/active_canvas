@@ -28,4 +28,22 @@ class ActiveCanvas::AdminPreviewIframeTest < ActionDispatch::IntegrationTest
     post "/canvas/admin/pages/#{page.id}/preview_iframe", params: { content: "x", bindings: "[1]" }
     assert_response :unprocessable_entity
   end
+
+  test "a static page preview is sanitized like a save" do
+    page = ActiveCanvas::Page.create!(title: "p", page_type: @page_type, content: "", template_enabled: false)
+    post "/canvas/admin/pages/#{page.id}/preview_iframe", params: { content: "<p>ok</p><script>alert(1)</script>" }
+    assert_response :success
+    html = JSON.parse(response.body)["html"]
+    assert_includes html, "<p>ok</p>"
+    refute_includes html, "<script>alert(1)</script>"
+  end
+
+  test "a dynamic page preview keeps Liquid inside tables" do
+    page = ActiveCanvas::Page.create!(title: "p", page_type: @page_type, content: "", template_enabled: true)
+    post "/canvas/admin/pages/#{page.id}/preview_iframe",
+      params: { content: "<table><tbody>{% for r in rows %}<tr><td>{{ r }}</td></tr>{% endfor %}</tbody></table>",
+                bindings: { rows: { source: "_literal", value: %w[a b] } }.to_json }
+    assert_response :success
+    assert_includes JSON.parse(response.body)["html"], "<tr><td>a</td></tr><tr><td>b</td></tr>"
+  end
 end
