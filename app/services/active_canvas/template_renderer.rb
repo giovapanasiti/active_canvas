@@ -14,23 +14,30 @@ module ActiveCanvas
     def render
       return @page.content.to_s unless @page.template_enabled?
       render_dynamic
-    rescue Liquid::Error, DataSources::Error => e
+    rescue StandardError => e
       handle_error(e)
     end
 
     private
 
+    def preview?
+      @mode == :preview
+    end
+
+    # Preview is strict so authors see every mistake. Public is forgiving: an
+    # undefined variable or filter renders empty and the rest of the page
+    # survives; only errors that stop the render fall back to the comment.
     def render_dynamic
       source = restore_chip_sources(@page.content.to_s)
       source = decode_entities_in_liquid_tags(source)
-      source = MarkerInjector.new(source).inject if @mode == :preview
+      source = MarkerInjector.new(source).inject if preview?
 
-      assigns  = BindingResolver.new(@page.bindings).resolve
-      template = Liquid::Template.parse(source, error_mode: :strict)
+      assigns  = BindingResolver.new(@page.bindings, silent_errors: !preview?).resolve
+      template = Liquid::Template.parse(source, error_mode: :strict, line_numbers: true)
       template.resource_limits.render_length_limit = ActiveCanvas.config.template_render_length_limit
       template.resource_limits.render_score_limit  = ActiveCanvas.config.template_render_score_limit
       template.resource_limits.assign_score_limit  = ActiveCanvas.config.template_assign_score_limit
-      rendered = template.render!(assigns, strict_variables: true, strict_filters: true)
+      rendered = template.render!(assigns, strict_variables: preview?, strict_filters: preview?)
       ContentSanitizer.sanitize_html(rendered)
     end
 
@@ -61,18 +68,17 @@ module ActiveCanvas
     end
 
     def handle_error(error)
-      case @mode
-      when :preview
+      if preview?
         raise DataSources::TemplateRenderError.new(
           error.message,
           line: error.try(:line_number),
           column: error.try(:column),
           original: error
         )
-      when :public
-        Rails.logger.warn("[ActiveCanvas] dynamic page #{@page.id} render failed: #{error.class}: #{error.message}")
-        PUBLIC_FALLBACK
       end
+
+      Rails.logger.warn("[ActiveCanvas] dynamic page #{@page.id} render failed: #{error.class}: #{error.message}")
+      PUBLIC_FALLBACK
     end
   end
 end

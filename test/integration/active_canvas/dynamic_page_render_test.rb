@@ -38,11 +38,24 @@ class ActiveCanvas::DynamicPageRenderTest < ActionDispatch::IntegrationTest
     refute_match(/no-store/, response.headers["Cache-Control"].to_s)
   end
 
-  test "missing data source soft-fails to fallback comment" do
+  test "an undefined variable renders empty on the public page" do
     page = ActiveCanvas::Page.create!(
       title: "Dynamic", slug: "broken", page_type: @page_type,
-      content: "Hello {{ missing_var }}!",
+      content: "<p>Hello {{ missing_var }}!</p>",
       published: true, template_enabled: true
+    )
+    get "/canvas/#{page.slug}"
+    assert_response :success
+    assert_includes response.body, "<p>Hello !</p>"
+    refute_includes response.body, "dynamic block unavailable"
+  end
+
+  test "an unknown data source soft-fails to the fallback comment" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dynamic", slug: "broken2", page_type: @page_type,
+      content: "Hello {{ x }}!",
+      published: true, template_enabled: true,
+      bindings: { "x" => { "source" => "does_not_exist" } }
     )
     get "/canvas/#{page.slug}"
     assert_response :success

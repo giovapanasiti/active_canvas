@@ -113,22 +113,102 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     assert_match(/undefined/i, err.message)
   end
 
-  test "public mode soft-fails on undefined variable" do
+  test "public mode renders an undefined variable as empty and keeps the page" do
     page = ActiveCanvas::Page.create!(
       title: "Dyn", page_type: @page_type,
-      content: "Hello {{ name }}!",
+      content: "<h1>Hello {{ name }}!</h1>",
       template_enabled: true
+    )
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_equal "<h1>Hello !</h1>", output
+  end
+
+  test "public mode renders a removed nested field as empty" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{% for m in team %}<li>{{ m.name }}|{{ m.rank }}</li>{% endfor %}",
+      template_enabled: true,
+      bindings: { "team" => { "source" => "_literal", "value" => [ { "name" => "Ada" } ] } }
+    )
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_equal "<li>Ada|</li>", output
+  end
+
+  test "public mode falls back on a syntax error and logs it" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{% for x in %}", template_enabled: true
     )
     original_logger = Rails.logger
     log = StringIO.new
     Rails.logger = Logger.new(log)
-    renderer = ActiveCanvas::TemplateRenderer.new(page, mode: :public)
-    output = renderer.render
-    assert_includes output, "<!-- dynamic block unavailable -->"
-    refute_includes output, "{{"
-    assert_match(/dynamic.*unavailable|undefined/i, log.string)
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_equal "<!-- dynamic block unavailable -->", output
+    assert_match(/Liquid::SyntaxError/, log.string)
   ensure
     Rails.logger = original_logger
+  end
+
+  test "public mode falls back when a fetch block raises a plain error" do
+    ActiveCanvas::DataSources.register(:boom) { fetch { raise ActiveRecord::StatementInvalid, "db gone" } }
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{{ x }}", template_enabled: true,
+      bindings: { "x" => { "source" => "boom" } }
+    )
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_equal "<!-- dynamic block unavailable -->", output
+  end
+
+  test "public mode renders a silent source as nil instead of failing" do
+    ActiveCanvas::DataSources.register(:flaky) do
+      on_error :silent
+      fetch { raise "db down" }
+    end
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{% if promo %}yes{% else %}no{% endif %}", template_enabled: true,
+      bindings: { "promo" => { "source" => "flaky" } }
+    )
+    assert_equal "no", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+  end
+
+  test "preview mode re-raises a fetch failure as TemplateRenderError" do
+    ActiveCanvas::DataSources.register(:boom) { fetch { raise "db gone" } }
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "{{ x }}", template_enabled: true,
+      bindings: { "x" => { "source" => "boom" } }
+    )
+    err = assert_raises(ActiveCanvas::DataSources::TemplateRenderError) do
+      ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    end
+    assert_equal "db gone", err.message
+    assert_kind_of RuntimeError, err.original
+  end
+
+  test "preview mode reports the line of a syntax error" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "ok\n{% for x in %}", template_enabled: true
+    )
+    err = assert_raises(ActiveCanvas::DataSources::TemplateRenderError) do
+      ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    end
+    assert_equal 2, err.line
+  end
+
+  test "public mode does not escape twice and keeps escaped data inert" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "<p>{{ c }}</p>", template_enabled: true,
+      bindings: { "c" => { "source" => "_literal", "value" => "<a href=\"https://evil\">x</a>" } }
+    )
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    # Nokogiri re-serializes &quot; as a bare quote in text; the point is that no <a> tag exists.
+    assert_includes output, "&lt;a href="
+    refute_includes output, "<a "
+    refute_includes output, "&amp;lt;"
   end
 
   test "preview mode raises on syntax error" do
