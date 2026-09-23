@@ -41,4 +41,29 @@ class ActiveCanvas::AutoDropTest < ActiveSupport::TestCase
     assert_equal 2, drops.size
     assert_equal "a", drops.first.invoke_drop("title")
   end
+
+  test "escapes string attributes" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, "<b>Hi</b> & bye", "shh", nil), attributes: %i[title])
+    assert_equal "&lt;b&gt;Hi&lt;/b&gt; &amp; bye", drop.invoke_drop("title")
+  end
+
+  test "html: attributes pass through raw" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, "<b>Hi</b>", "shh", nil), attributes: %i[title], html: %i[title])
+    assert_equal "<b>Hi</b>", drop.invoke_drop("title")
+  end
+
+  test "html_safe strings are not escaped twice" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, "<b>Hi</b>".html_safe, "shh", nil), attributes: %i[title])
+    assert_equal "<b>Hi</b>", drop.invoke_drop("title")
+  end
+
+  test "a whitelisted attribute the record lacks returns nil" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, "Hello", "shh", nil), attributes: %i[missing])
+    assert_nil drop.invoke_drop("missing")
+  end
+
+  test "non-string attributes are returned as they are" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(7, "Hello", "shh", nil), attributes: %i[id])
+    assert_equal 7, drop.invoke_drop("id")
+  end
 end

@@ -8,7 +8,7 @@ module ActiveCanvas
         @params = params
         @fetch_block = fetch_block
         @drop_class = drop_class
-        @auto_drop_config = auto_drop_config || { attributes: [], associations: {} }
+        @auto_drop_config = auto_drop_config || { attributes: [], associations: {}, html: [] }
         @on_error = on_error
       end
 

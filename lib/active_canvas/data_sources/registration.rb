@@ -25,8 +25,8 @@ module ActiveCanvas
         @drop_class = klass
       end
 
-      def auto_drop(attributes:, associations: {})
-        @auto_drop_config = { attributes: attributes, associations: associations }
+      def auto_drop(attributes:, associations: {}, html: [])
+        @auto_drop_config = { attributes: attributes, associations: associations, html: html }
       end
 
       def on_error(mode)

@@ -2,6 +2,9 @@ require "test_helper"
 require "liquid"
 
 class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
+  setup { ActiveCanvas::DataSources.reset_for_testing! }
+  teardown { ActiveCanvas::DataSources.reset_for_testing! }
+
   def build_source(&blk)
     builder = ActiveCanvas::DataSources::Registration.new(:fixtures)
     builder.instance_eval(&blk)
@@ -52,7 +55,15 @@ class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
       fetch { |limit:| [Struct.new(:id, :title).new(1, "x")] * limit }
       auto_drop attributes: %i[id title]
     end
-    assert_equal({ attributes: %i[id title], associations: {} }, source.auto_drop_config)
+    assert_equal({ attributes: %i[id title], associations: {}, html: [] }, source.auto_drop_config)
+  end
+
+  test "auto_drop stores the html opt-out list" do
+    ActiveCanvas::DataSources.register(:posts) do
+      fetch { [] }
+      auto_drop attributes: %i[id body], html: %i[body]
+    end
+    assert_equal %i[body], ActiveCanvas::DataSources.lookup(:posts).auto_drop_config[:html]
   end
 
   test "explicit drop class stored" do
