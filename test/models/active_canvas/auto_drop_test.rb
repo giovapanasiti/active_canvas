@@ -36,7 +36,7 @@ class ActiveCanvas::AutoDropTest < ActiveSupport::TestCase
   end
 
   test "wraps collections so each element is dropped" do
-    articles = [Article.new(1, "a", "x", nil), Article.new(2, "b", "y", nil)]
+    articles = [ Article.new(1, "a", "x", nil), Article.new(2, "b", "y", nil) ]
     drops = ActiveCanvas::AutoDrop.wrap_collection(articles, attributes: %i[id title])
     assert_equal 2, drops.size
     assert_equal "a", drops.first.invoke_drop("title")

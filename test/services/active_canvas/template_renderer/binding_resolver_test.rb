@@ -20,7 +20,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
   test "resolves data source binding with params" do
     bindings = { "items" => { "source" => "counts", "params" => { "n" => 4 } } }
     assigns = described_class.new(bindings).resolve
-    assert_equal [1, 2, 3, 4], assigns["items"]
+    assert_equal [ 1, 2, 3, 4 ], assigns["items"]
   end
 
   test "unknown source raises UnknownSource" do
@@ -40,7 +40,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
   test "wraps AR-like records via auto_drop when source declares it" do
     article_class = Struct.new(:id, :title)
     ActiveCanvas::DataSources.register(:posts) do
-      fetch { [article_class.new(1, "Post1"), article_class.new(2, "Post2")] }
+      fetch { [ article_class.new(1, "Post1"), article_class.new(2, "Post2") ] }
       auto_drop attributes: %i[id title]
     end
     bindings = { "posts" => { "source" => "posts" } }
@@ -57,7 +57,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
         { id: id }
       end
     end
-    ActiveCanvas::DataSources.register(:unsafe) { fetch { [ar_class.new(1)] } }
+    ActiveCanvas::DataSources.register(:unsafe) { fetch { [ ar_class.new(1) ] } }
     bindings = { "x" => { "source" => "unsafe" } }
     assert_raises(ActiveCanvas::DataSources::UnsafeData) { described_class.new(bindings).resolve }
   end

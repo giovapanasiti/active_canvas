@@ -6,7 +6,7 @@ class ActiveCanvas::DataSourcesTest < ActiveSupport::TestCase
 
   test "register stores a source by name" do
     ActiveCanvas::DataSources.register(:fixtures) do
-      fetch { [1, 2, 3] }
+      fetch { [ 1, 2, 3 ] }
     end
     assert_includes ActiveCanvas::DataSources.registered_names, :fixtures
   end

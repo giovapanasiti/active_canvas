@@ -10,10 +10,10 @@ class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
 
   test "stores name and fetch block" do
     source = build_source do
-      fetch { [1, 2, 3] }
+      fetch { [ 1, 2, 3 ] }
     end
     assert_equal :fixtures, source.name
-    assert_equal [1, 2, 3], source.call({})
+    assert_equal [ 1, 2, 3 ], source.call({})
   end
 
   test "validates params before calling fetch" do
@@ -21,7 +21,7 @@ class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
       param :limit, type: :integer, default: 5, range: 1..10
       fetch { |limit:| Array.new(limit, "x") }
     end
-    assert_equal ["x", "x"], source.call(limit: 2)
+    assert_equal [ "x", "x" ], source.call(limit: 2)
     assert_raises(ActiveCanvas::DataSources::InvalidParam) { source.call(limit: 99) }
   end
 
@@ -49,7 +49,7 @@ class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
   test "auto_drop stores attribute list" do
     source = build_source do
       param :limit, type: :integer, default: 1
-      fetch { |limit:| [Struct.new(:id, :title).new(1, "x")] * limit }
+      fetch { |limit:| [ Struct.new(:id, :title).new(1, "x") ] * limit }
       auto_drop attributes: %i[id title]
     end
     assert_equal({ attributes: %i[id title], associations: {}, html: [] }, source.auto_drop_config)
