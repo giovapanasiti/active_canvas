@@ -3,7 +3,7 @@ module ActiveCanvas
     class PagesController < ApplicationController
       include ActiveCanvas::TailwindCompilation
 
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template sample_data preview_iframe]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template sample_data chip_values preview_iframe]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -130,6 +130,18 @@ module ActiveCanvas
 
       # First rows of one binding, resolved from the editor's unsaved bindings,
       # so an author can see which field names exist before typing {{ }}.
+      # Live values for the editor's chips: what each {{ }} shows in its first
+      # occurrence and how many items each loop renders.
+      def chip_values
+        preview = @page.preview_with(bindings: parse_bindings(params[:bindings]) || {}, template_enabled: true)
+
+        if (message = invalid_bindings_message(preview))
+          return render json: { values: {}, loops: {}, error: message }, status: :unprocessable_entity
+        end
+
+        render json: TemplateRenderer.new(preview, mode: :preview).chip_values(params[:content].to_s)
+      end
+
       def sample_data
         preview = @page.preview_with(bindings: parse_bindings(params[:bindings]) || {})
 

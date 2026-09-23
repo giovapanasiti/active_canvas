@@ -12,6 +12,7 @@ ActiveCanvas::Engine.routes.draw do
         get :versions
         post :validate_template
         post :sample_data
+        post :chip_values
         post :preview_iframe
       end
       resources :versions, only: [:show], controller: "page_versions"

@@ -30,14 +30,14 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
   test "chips decorate {{ }} in the canvas and the loop row is badged" do
     visit "/canvas/admin/pages/#{@page.id}/editor"
     within_frame(find("iframe.gjs-frame")) do
-      assert_selector "span[data-ac-var]", text: "{{ name }}"
-      assert_selector "tr[data-ac-for='r in rows'] td span[data-ac-var]", text: "{{ r }}"
+      assert_selector "span[data-ac-var][data-ac-source='{{ name }}']"
+      assert_selector "tr[data-ac-for='r in rows'] td span[data-ac-var][data-ac-source='{{ r }}']"
     end
   end
 
   test "saving keeps every Liquid construct in the source and no chip markup" do
     visit "/canvas/admin/pages/#{@page.id}/editor"
-    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var]", text: "{{ name }}" }
+    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var][data-ac-source='{{ name }}']" }
 
     find("#btn-save").click
     assert_text "Page saved successfully", wait: 10
@@ -73,5 +73,24 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
     find(".data-panel-row", text: "name").hover
     find("[data-remove='name']").click
     assert_selector "#ac-error-banner", text: /undefined variable.*name.*line 1/i
+  end
+
+
+  test "live data shows values in the chips and saving still stores the source" do
+    visit "/canvas/admin/pages/#{@page.id}/editor"
+    within_frame(find("iframe.gjs-frame")) do
+      assert_selector "span[data-ac-var]", text: "World", wait: 10
+      assert_selector "tr[data-ac-for='r in rows'] span[data-ac-var]", text: "a"
+    end
+
+    find("#btn-save").click
+    assert_text "Page saved successfully", wait: 10
+    content = @page.reload.content
+    assert_includes content, "{{ name }}"
+    refute_includes content, "World"
+    refute_match(/data-ac-(var|source|id)/, content)
+
+    find("#btn-live-data").click
+    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var]", text: "{{ name }}" }
   end
 end

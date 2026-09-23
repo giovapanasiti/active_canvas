@@ -149,6 +149,14 @@
       </div>
     </div>
     <div class="header-separator"></div>
+    <button class="header-btn header-btn-secondary" id="btn-live-data" title="Show the real values inside the canvas" aria-pressed="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M3 5v14a9 3 0 0 0 18 0V5"/>
+        <path d="M3 12a9 3 0 0 0 18 0"/>
+      </svg>
+      Live data
+    </button>
     <button class="header-btn header-btn-secondary" id="btn-preview" title="Preview (Ctrl+Shift+P)" data-preview-url="<%= preview_iframe_admin_page_path(@page) %>">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
@@ -691,6 +699,7 @@
 <%= javascript_include_tag "active_canvas/editor/ac_chips" %>
 <%= javascript_include_tag "active_canvas/editor/directive_traits" %>
 <%= javascript_include_tag "active_canvas/editor/template_validator" %>
+<%= javascript_include_tag "active_canvas/editor/live_data" %>
 <%= javascript_include_tag "active_canvas/editor" %>
 <%= javascript_include_tag "active_canvas/admin/data_panel" %>
 

@@ -13,6 +13,17 @@
 
   const VAR_RE = /\{\{[\s\S]*?\}\}/g;
   const SKIP_PARENTS = ['SCRIPT', 'STYLE', 'TEXTAREA'];
+  let chipCounter = 0;
+
+  // Chip ids only need to be unique within one editor session; the server
+  // keys live values by them and they never reach the saved source.
+  function nextId() {
+    return `c${++chipCounter}`;
+  }
+
+  function sourceOf(el) {
+    return el.getAttribute('data-ac-source') || el.textContent;
+  }
 
   function parse(html) {
     return new DOMParser().parseFromString(`<!doctype html><body>${html}</body>`, 'text/html');
@@ -40,6 +51,8 @@
         if (match.index > last) frag.appendChild(doc.createTextNode(text.slice(last, match.index)));
         const span = doc.createElement('span');
         span.setAttribute('data-ac-var', '');
+        span.setAttribute('data-ac-source', match[0]);
+        span.setAttribute('data-ac-id', nextId());
         span.textContent = match[0];
         frag.appendChild(span);
         last = match.index + match[0].length;
@@ -57,7 +70,7 @@
     if (!html || html.indexOf('data-ac-var') === -1) return html;
     const doc = parse(html);
     doc.querySelectorAll('span[data-ac-var]').forEach(el => {
-      el.replaceWith(doc.createTextNode(el.textContent));
+      el.replaceWith(doc.createTextNode(sourceOf(el)));
     });
     return doc.body.innerHTML;
   }
@@ -73,6 +86,11 @@
       content: "\\21BB " attr(data-ac-for); display: inline-block; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
       background: #6366f1; color: #fff; padding: 0 5px; border-radius: 3px; margin-right: 4px; vertical-align: top;
     }
+    .ac-live-data span[data-ac-var] {
+      background: #dcfce7; color: #14532d; border-color: #86efac;
+      font-family: inherit; font-size: inherit; white-space: normal; cursor: help;
+    }
+    .ac-live-data span[data-ac-var].ac-chip-empty { opacity: 0.6; }
     [data-ac-if] { outline: 1px dotted #f59e0b; outline-offset: 2px; }
     [data-ac-if]::after {
       content: "if " attr(data-ac-if); display: inline-block; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -100,25 +118,52 @@
           // The view marks the element contenteditable=false so the RTE skips
           // it; that must never leak into the model (and so into the source).
           this.removeAttributes('contenteditable');
+          // The model's text is always the source, even when the canvas shows
+          // a live value and the RTE re-parsed the element around it.
+          const attrs = this.getAttributes();
+          if (!attrs['data-ac-source']) {
+            this.addAttributes({ 'data-ac-source': this.components().map(c => c.get('content') || '').join('') });
+          }
+          if (!attrs['data-ac-id']) this.addAttributes({ 'data-ac-id': nextId() });
+          const source = this.getAttributes()['data-ac-source'];
+          const text = this.components().map(c => c.get('content') || '').join('');
+          if (text !== source) this.components([{ type: 'textnode', content: source }]);
+        },
+        source() {
+          return this.getAttributes()['data-ac-source'] || '';
         }
       },
       view: {
         events: { dblclick: 'editExpression' },
         onRender() {
           this.el.setAttribute('contenteditable', 'false');
+          if (window.ActiveCanvasLiveData) window.ActiveCanvasLiveData.applyChip(this.el);
         },
         editExpression(e) {
           e.preventDefault();
           e.stopPropagation();
-          const current = this.el.textContent.trim();
-          const next = window.prompt('Liquid expression', current);
+          const next = window.prompt('Liquid expression', this.model.source());
           if (next === null) return;
           const expr = next.trim();
           if (!expr) return;
           const tag = expr.startsWith('{{') ? expr : `{{ ${expr} }}`;
+          this.model.addAttributes({ 'data-ac-source': tag });
           this.model.components([{ type: 'textnode', content: tag }]);
         }
       }
+    });
+
+    // Text typed into the canvas becomes chips once the author leaves the
+    // element, so new {{ }} tags get locked and can show live values.
+    editor.on('rte:disable', view => {
+      const component = view && view.model;
+      if (!component || !component.getInnerHTML) return;
+      setTimeout(() => {
+        const inner = component.getInnerHTML();
+        if (!/\{\{[\s\S]*?\}\}/.test(undecorate(inner))) return;
+        const decorated = decorate(inner);
+        if (decorated !== inner) component.components(decorated);
+      }, 0);
     });
 
     editor.on('load', () => {
@@ -131,5 +176,5 @@
     });
   }
 
-  window.ActiveCanvasChips = { decorate, undecorate, plugin };
+  window.ActiveCanvasChips = { decorate, undecorate, sourceOf, plugin };
 })();

@@ -300,6 +300,9 @@
     // Server-side template check with an error banner
     if (AC.setupTemplateValidator) AC.setupTemplateValidator(editor, config);
 
+    // Live values inside the canvas for dynamic pages
+    if (AC.setupLiveData) AC.setupLiveData(editor, config);
+
     // Setup assets panel
     AC.setupAssetsPanel(editor, config, csrfToken);
 
