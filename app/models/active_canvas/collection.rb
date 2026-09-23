@@ -35,6 +35,18 @@ module ActiveCanvas
       }
     end
 
+    # The field builder posts its rows as one JSON string.
+    def fields_json=(json)
+      @fields_unreadable = false
+      self.fields = json.blank? ? [] : JSON.parse(json)
+    rescue JSON::ParserError, TypeError
+      @fields_unreadable = true
+    end
+
+    def fields_json
+      (fields.is_a?(Array) ? fields : []).to_json
+    end
+
     private
 
     def normalize_slug
@@ -66,7 +78,7 @@ module ActiveCanvas
     end
 
     def fields_well_formed
-      return errors.add(:fields, "could not be read") unless fields_readable?
+      return errors.add(:fields, "could not be read") if @fields_unreadable || !fields_readable?
 
       seen = []
       fields.each do |field|

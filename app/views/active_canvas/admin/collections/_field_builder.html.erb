@@ -2,11 +2,11 @@
   <label>Fields</label>
   <p><small>Define the typed columns of this collection. Field IDs are generated from labels and never change once created.</small></p>
 
-  <script type="application/json" id="ac-fields-data"><%= raw json_escape((@collection.fields || []).to_json) %></script>
+  <script type="application/json" id="ac-fields-data"><%= raw json_escape(@collection.fields_json) %></script>
   <ul id="ac-fields-list" style="list-style:none;padding:0;margin:0;"></ul>
   <button type="button" id="ac-add-field-btn" class="btn btn-sm btn-secondary">Add field</button>
 
-  <%= form.hidden_field :fields, id: "ac-fields-json", value: (@collection.fields || []).to_json %>
+  <%= form.hidden_field :fields_json, id: "ac-fields-json" %>
 
   <template id="ac-field-row-template">
     <li class="ac-field-row card" style="display:flex;gap:.5rem;align-items:center;padding:.5rem;margin-bottom:.5rem;">

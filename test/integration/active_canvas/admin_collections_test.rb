@@ -29,7 +29,7 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     get "/canvas/admin/collections/new"
     assert_response :success
     assert_select "template#ac-field-row-template"
-    assert_select "input[name=?]", "collection[fields]"
+    assert_select "input[name=?]", "collection[fields_json]"
   end
 
   test "create parses the fields JSON, generates ids and redirects" do
@@ -37,7 +37,7 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
                { "label" => "Bio", "type" => "textarea", "required" => false, "options" => [] } ].to_json
 
     assert_difference "ActiveCanvas::Collection.count", 1 do
-      post "/canvas/admin/collections", params: { collection: { name: "Team", slug: "team", fields: fields } }
+      post "/canvas/admin/collections", params: { collection: { name: "Team", slug: "team", fields_json: fields } }
     end
 
     collection = ActiveCanvas::Collection.last
@@ -48,21 +48,21 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
 
   test "create with malformed fields JSON re-renders 422 without raising" do
     assert_no_difference "ActiveCanvas::Collection.count" do
-      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: "{not json" } }
+      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields_json: "{not json" } }
     end
     assert_response :unprocessable_entity
   end
 
   test "create with a non-array fields payload re-renders 422 without raising" do
     assert_no_difference "ActiveCanvas::Collection.count" do
-      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: '{"a":1}' } }
+      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields_json: '{"a":1}' } }
     end
     assert_response :unprocessable_entity
   end
 
   test "create with a scalar fields payload re-renders 422 without raising" do
     assert_no_difference "ActiveCanvas::Collection.count" do
-      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: "42" } }
+      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields_json: "42" } }
     end
     assert_response :unprocessable_entity
   end
@@ -70,24 +70,24 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
   test "create with an invalid schema surfaces a validation error" do
     bad = [ { "label" => "", "type" => "text", "options" => [] } ].to_json
     assert_no_difference "ActiveCanvas::Collection.count" do
-      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: bad } }
+      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields_json: bad } }
     end
     assert_response :unprocessable_entity
     assert_select ".error-messages"
   end
 
-  test "create with an array fields param re-renders 422 instead of 500" do
-    assert_no_difference "ActiveCanvas::Collection.count" do
-      post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields: [ "1" ] } }
-    end
-    assert_response :unprocessable_entity
+  test "create with an array fields param does not 500 and stores no fields" do
+    post "/canvas/admin/collections", params: { collection: { name: "X", slug: "x", fields_json: [ "1" ] } }
+    assert_not_equal 500, response.status
+    collection = ActiveCanvas::Collection.find_by(slug: "x")
+    assert_equal [], collection.fields if collection
   end
 
-  test "update with an array fields param re-renders 422 instead of 500" do
+  test "update with an array fields param does not 500 and keeps the existing fields" do
     collection = create_collection
-    patch "/canvas/admin/collections/#{collection.id}",
-      params: { collection: { name: "X", slug: "x", fields: [ "1" ] } }
-    assert_response :unprocessable_entity
+    patch "/canvas/admin/collections/#{collection.id}", params: { collection: { name: "X", slug: "x", fields_json: [ "1" ] } }
+    assert_not_equal 500, response.status
+    assert_equal %w[name], collection.reload.fields.map { |f| f["id"] }
   end
 
   test "a field label that tries to break out of the data script is escaped" do
@@ -112,7 +112,7 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     fields = [ { "id" => original_id, "label" => "Full Name", "type" => "text", "required" => false, "options" => [] } ].to_json
 
     patch "/canvas/admin/collections/#{collection.id}",
-      params: { collection: { name: "Team", slug: "team", fields: fields } }
+      params: { collection: { name: "Team", slug: "team", fields_json: fields } }
 
     collection.reload
     assert_equal original_id, collection.fields.first["id"]

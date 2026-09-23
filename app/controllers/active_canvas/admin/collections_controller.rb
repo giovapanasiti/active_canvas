@@ -13,7 +13,6 @@ module ActiveCanvas
 
       def create
         @collection = ActiveCanvas::Collection.new(collection_params)
-        return render(:new, status: :unprocessable_entity) unless assign_fields_json(@collection)
 
         if @collection.save
           redirect_to edit_admin_collection_path(@collection), notice: "Collection was successfully created."
@@ -26,10 +25,7 @@ module ActiveCanvas
       end
 
       def update
-        @collection.assign_attributes(collection_params)
-        return render(:edit, status: :unprocessable_entity) unless assign_fields_json(@collection)
-
-        if @collection.save
+        if @collection.update(collection_params)
           redirect_to edit_admin_collection_path(@collection), notice: "Collection was successfully updated."
         else
           render :edit, status: :unprocessable_entity
@@ -48,31 +44,7 @@ module ActiveCanvas
       end
 
       def collection_params
-        params.require(:collection).permit(:name, :slug)
-      end
-
-      # Parse the field-builder's JSON payload into the fields array. Returns
-      # false (and flags an error) on malformed input so the caller re-renders.
-      def assign_fields_json(collection)
-        raw = params.dig(:collection, :fields)
-        if raw.blank?
-          collection.fields = []
-          return true
-        end
-        unless raw.is_a?(String)
-          collection.errors.add(:fields, "could not be read")
-          return false
-        end
-        parsed = JSON.parse(raw)
-        unless parsed.is_a?(Array) && parsed.all?(Hash)
-          collection.errors.add(:fields, "could not be read")
-          return false
-        end
-        collection.fields = parsed
-        true
-      rescue JSON::ParserError
-        collection.errors.add(:fields, "could not be read")
-        false
+        params.require(:collection).permit(:name, :slug, :fields_json)
       end
     end
   end

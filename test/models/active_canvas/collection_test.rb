@@ -152,4 +152,31 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert_equal "member", ActiveCanvas::Collection.new(name: "Members", slug: "members").item_name
     assert_equal "item", ActiveCanvas::Collection.new(name: "Team", slug: "team").item_name
   end
+
+  test "fields_json= parses the field builder payload" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team")
+    collection.fields_json = [ { "label" => "Name", "type" => "text" } ].to_json
+    assert collection.valid?
+    assert_equal %w[name], collection.fields.map { |f| f["id"] }
+  end
+
+  test "fields_json= with a blank payload clears the fields" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: [ { "label" => "Name", "type" => "text" } ])
+    collection.fields_json = ""
+    assert_equal [], collection.fields
+  end
+
+  test "fields_json= with unreadable payloads adds a validation error instead of raising" do
+    [ "{not json", "42", '{"a":1}', [ "1" ] ].each do |bad|
+      collection = ActiveCanvas::Collection.new(name: "Team", slug: "team")
+      collection.fields_json = bad
+      assert_not collection.valid?, "expected #{bad.inspect} to be invalid"
+      assert_includes collection.errors[:fields].join, "could not be read"
+    end
+  end
+
+  test "fields_json serializes the fields for the builder" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    assert_equal [ { "id" => "name", "label" => "Name", "type" => "text" } ], JSON.parse(collection.fields_json)
+  end
 end
