@@ -35,4 +35,25 @@ class ActiveCanvas::ContentSanitizerTest < ActiveSupport::TestCase
   test "safe href survives sanitization" do
     assert_includes sanitize(%q(<a href="https://example.com">x</a>)), %(href="https://example.com")
   end
+
+
+  test "Liquid tags inside attributes survive sanitization untouched" do
+    assert_includes sanitize(%q(<a href="{{ url }}">x</a>)), %(href="{{ url }}")
+    assert_includes sanitize(%q(<img src="{{ item.photo }}" alt="{{ item.name }}">)), %(src="{{ item.photo }}")
+  end
+
+  test "Liquid tags with angle brackets survive sanitization untouched" do
+    assert_equal %q({% if a < b and c > d %}y{% endif %}), sanitize(%q({% if a < b and c > d %}y{% endif %}))
+  end
+
+  test "Liquid tags never unlock dangerous markup" do
+    out = sanitize(%q(<p onclick="{{ x }}">t</p><script>{{ y }}</script><a href="javascript:{{ z }}">l</a>))
+    refute_includes out, "onclick"
+    refute_includes out, "<script"
+    refute_includes out, "javascript:"
+  end
+
+  test "text that looks like a placeholder is left alone" do
+    assert_includes sanitize("<p>acliquid0z stays</p>"), "acliquid0z stays"
+  end
 end

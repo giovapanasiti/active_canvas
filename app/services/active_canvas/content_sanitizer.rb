@@ -1,7 +1,15 @@
+require "securerandom"
+
 module ActiveCanvas
   class ContentSanitizer
     class << self
-      # Sanitize HTML content using Rails' built-in sanitizer
+      LIQUID_TAG = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/
+
+      # Sanitize HTML content using Rails' built-in sanitizer. Liquid tags are
+      # masked first: the HTML parser would otherwise percent-encode `{{ url }}`
+      # inside an href and read `{% if a < b %}` as markup. A tag inside a
+      # dropped attribute or tag is dropped with it, so masking never unlocks
+      # anything the sanitizer would refuse.
       def sanitize_html(content)
         return content if content.blank?
         return content unless ActiveCanvas.config.sanitize_content
@@ -17,7 +25,10 @@ module ActiveCanvas
           allowed_attributes: config.allowed_html_attributes
         )
 
-        sanitizer.sanitize(content, scrubber: scrubber)
+        tags = []
+        nonce = SecureRandom.hex(4)
+        masked = content.gsub(LIQUID_TAG) { tags << $& ; "acliquid#{nonce}n#{tags.size - 1}z" }
+        sanitizer.sanitize(masked, scrubber: scrubber).gsub(/acliquid#{nonce}n(\d+)z/) { tags[$1.to_i] }
       end
 
       # Sanitize CSS content (basic XSS protection)
