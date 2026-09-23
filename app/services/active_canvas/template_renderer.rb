@@ -30,6 +30,7 @@ module ActiveCanvas
     # and failures before rendering fall back to the comment.
     def render_dynamic
       source = restore_chip_sources(@page.content.to_s)
+      source = DirectiveExpander.new(source).expand
       source = decode_entities_in_liquid_tags(source)
       source = MarkerInjector.new(source).inject if preview?
 

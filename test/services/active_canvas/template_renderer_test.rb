@@ -327,4 +327,35 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
   ensure
     ActiveCanvas.config.template_render_score_limit = original
   end
+
+  test "renders a data-ac-for table loop on the public page" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: %(<table><tbody><tr data-ac-for="r in rows"><td>{{ r }}</td></tr></tbody></table>),
+      bindings: { "rows" => { "source" => "_literal", "value" => %w[a b] } }
+    )
+    output = ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+    assert_includes output, "<tr><td>a</td></tr><tr><td>b</td></tr>"
+    refute_includes output, "data-ac-for"
+  end
+
+  test "decodes entities in a data-ac-if expression" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: %(<p data-ac-if="n &gt; 1">many</p>),
+      bindings: { "n" => { "source" => "_literal", "value" => 5 } }
+    )
+    assert_equal "<p>many</p>", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+  end
+
+  test "preview mode surfaces a malformed directive as a TemplateRenderError" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: %(<li data-ac-for="nope">x</li>)
+    )
+    err = assert_raises(ActiveCanvas::DataSources::TemplateRenderError) do
+      ActiveCanvas::TemplateRenderer.new(page, mode: :preview).render
+    end
+    assert_match(/data-ac-for/, err.message)
+  end
 end
