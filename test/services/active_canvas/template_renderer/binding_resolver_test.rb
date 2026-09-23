@@ -193,6 +193,20 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     assert_equal [ 1, 2, 3 ], described_class.new({ "x" => { "source" => "counts", "params" => "junk" } }).resolve["x"]
   end
 
+  test "nil and existing drops bypass drop_class" do
+    drop_class = Class.new(::Liquid::Drop) do
+      def initialize(item); super(); @item = item; end
+    end
+    inner = ActiveCanvas::AutoDrop.new(Struct.new(:id).new(1), attributes: %i[id])
+    ActiveCanvas::DataSources.register(:maybe) do
+      fetch { [ nil, inner ] }
+      drop drop_class
+    end
+    result = described_class.new({ "x" => { "source" => "maybe" } }).resolve["x"]
+    assert_nil result[0]
+    assert_same inner, result[1]
+  end
+
   private
 
   def described_class

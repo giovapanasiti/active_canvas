@@ -55,6 +55,7 @@ module ActiveCanvas
       end
 
       def wrap_one(item, source)
+        return item if item.nil? || item.is_a?(::Liquid::Drop)
         return to_liquid_value(source.drop_class.new(item), source: source) if source.drop_class
 
         case item
