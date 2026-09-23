@@ -16,4 +16,12 @@ class ActiveCanvas::AdminDataSourcesCollectionsTest < ActionDispatch::Integratio
     assert_equal %w[name dept], field_ids
     assert_equal %w[eng sales], collection["fields"].find { |f| f["id"] == "dept" }["options"]
   end
+
+  test "data_sources lists the literal pseudo source first with a value param" do
+    get "/canvas/admin/pages/data_sources.json"
+    body = JSON.parse(response.body)
+    assert_equal "_literal", body.first["name"]
+    assert_equal "literal", body.first["kind"]
+    assert_equal "string", body.first.dig("params", "value", "type")
+  end
 end

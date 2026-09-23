@@ -8,7 +8,7 @@ module ActiveCanvas
         @fetch_block = nil
         @drop_class = nil
         @auto_drop_config = nil
-        @on_error = ActiveCanvas.config.template_default_on_error
+        @on_error = nil
       end
 
       def param(name, type:, default: nil, range: nil, allowed: nil)
@@ -44,7 +44,7 @@ module ActiveCanvas
           fetch_block: @fetch_block,
           drop_class: @drop_class,
           auto_drop_config: @auto_drop_config,
-          on_error: @on_error
+          on_error: @on_error || ActiveCanvas.config.template_default_on_error
         )
       end
     end

@@ -153,6 +153,11 @@ module ActiveCanvas
       end
 
       def data_sources
+        literal = {
+          name: "_literal", kind: "literal",
+          params: { value: { type: :string, default: nil, range: nil, allowed: nil } }
+        }
+
         registered = ActiveCanvas::DataSources.registered_names.map do |name|
           source = ActiveCanvas::DataSources.lookup(name)
           { name: name, kind: "source", params: source.param_schema }
@@ -167,7 +172,7 @@ module ActiveCanvas
           }
         end
 
-        render json: registered + collections
+        render json: [ literal ] + registered + collections
       end
 
       private

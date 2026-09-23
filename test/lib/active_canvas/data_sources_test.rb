@@ -36,12 +36,17 @@ class ActiveCanvas::DataSourcesTest < ActiveSupport::TestCase
     end
   end
 
-  test "_literal pseudo source is registered automatically" do
-    assert_includes ActiveCanvas::DataSources.registered_names, :_literal
+  test "the registry has no _literal pseudo source" do
+    refute_includes ActiveCanvas::DataSources.registered_names, :_literal
+    assert_not ActiveCanvas::DataSources.registered?(:_literal)
   end
 
-  test "_literal returns its value param" do
-    source = ActiveCanvas::DataSources.lookup(:_literal)
-    assert_equal "hello", source.call(value: "hello")
+  test "on_error defaults to the configured value at registration time" do
+    original = ActiveCanvas.config.template_default_on_error
+    ActiveCanvas.config.template_default_on_error = :silent
+    ActiveCanvas::DataSources.register(:quiet) { fetch { [] } }
+    assert_equal :silent, ActiveCanvas::DataSources.lookup(:quiet).on_error
+  ensure
+    ActiveCanvas.config.template_default_on_error = original
   end
 end
