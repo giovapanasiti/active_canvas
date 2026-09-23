@@ -1,3 +1,10 @@
+/**
+ * ActiveCanvas Editor - Preview modal
+ *
+ * Renders the editor's unsaved state through the public view (preview_iframe)
+ * into a sandboxed iframe. Requests are sequenced so a stale response never
+ * replaces a newer one, and closing aborts the in-flight request.
+ */
 (function() {
   'use strict';
 
@@ -13,17 +20,19 @@
     const closeBtn = document.getElementById('btn-close-preview');
     const previewUrl = btn.dataset.previewUrl;
 
+    let seq = 0;
+    let controller = null;
+    let loadingTimer = null;
+
     btn.addEventListener('click', open);
     closeBtn.addEventListener('click', close);
     modal.addEventListener('click', e => { if (e.target === modal) close(); });
     document.addEventListener('keydown', e => {
-      if (!isOpen()) return;
-      if (e.key === 'Escape') close();
-    });
-    document.addEventListener('keydown', e => {
+      if (isOpen() && e.key === 'Escape') { close(); return; }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+        if (document.activeElement && document.activeElement.closest('.monaco-editor')) return;
         e.preventDefault();
-        open();
+        if (!isOpen()) open();
       }
     });
 
@@ -31,23 +40,26 @@
 
     function open() {
       const editor = window.ActiveCanvasEditor && window.ActiveCanvasEditor.instance;
+      modal.removeAttribute('hidden');
+      document.body.style.overflow = 'hidden';
+
       if (!editor) {
         showError('Editor not ready yet — try again in a second.');
-        modal.removeAttribute('hidden');
-        document.body.style.overflow = 'hidden';
         return;
       }
 
-      modal.removeAttribute('hidden');
-      document.body.style.overflow = 'hidden';
       showLoading();
+      const id = ++seq;
+      if (controller) controller.abort();
+      controller = new AbortController();
 
-      const bindingsJson = readBindings();
-      const content = window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(editor.getHtml()) : editor.getHtml();
-
+      const html = editor.getHtml();
+      const content = window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(html) : html;
       const csrf = document.querySelector('meta[name="csrf-token"]');
+
       fetch(previewUrl, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-CSRF-Token': csrf ? csrf.content : '',
@@ -57,53 +69,43 @@
           content: content,
           content_css: editor.getCss(),
           content_js: (window.ActiveCanvasEditor && window.ActiveCanvasEditor.getJs) ? window.ActiveCanvasEditor.getJs() : '',
-          bindings: bindingsJson
+          bindings: window.ActiveCanvasBindings ? window.ActiveCanvasBindings.readJson() : '{}'
         }).toString()
       })
         .then(r => r.json().then(body => ({ ok: r.ok, body })))
         .then(({ ok, body }) => {
+          if (id !== seq || !isOpen()) return;
           if (ok && body.html) {
-            iframe.srcdoc = body.html;
             iframe.onload = hideLoading;
-            // Fallback in case onload doesn't fire (some browsers + srcdoc).
-            setTimeout(hideLoading, 1500);
+            iframe.srcdoc = body.html;
+            clearTimeout(loadingTimer);
+            loadingTimer = setTimeout(hideLoading, 1500); // some browsers skip onload for srcdoc
           } else {
-            const msg = (body && body.error && body.error.message) || 'Render failed';
-            showError(msg);
+            showError((body && body.error && body.error.message) || 'Render failed');
           }
         })
-        .catch(err => showError(err.message || 'Network error'));
+        .catch(err => {
+          if (err.name === 'AbortError' || id !== seq) return;
+          showError(err.message || 'Network error');
+        });
     }
 
     function close() {
+      seq++; // any response still in flight is now stale
+      if (controller) { controller.abort(); controller = null; }
+      clearTimeout(loadingTimer);
       modal.setAttribute('hidden', '');
       document.body.style.overflow = '';
+      iframe.onload = null;
       iframe.srcdoc = '';
       hideError();
-    }
-
-    function showLoading() {
-      loading.removeAttribute('hidden');
-      hideError();
-    }
-
-    function hideLoading() {
-      loading.setAttribute('hidden', '');
-    }
-
-    function showError(message) {
       hideLoading();
-      errorMsg.textContent = message;
-      errorBox.removeAttribute('hidden');
     }
 
-    function hideError() {
-      errorBox.setAttribute('hidden', '');
-    }
-
-    function readBindings() {
-      return window.ActiveCanvasBindings ? window.ActiveCanvasBindings.readJson() : '{}';
-    }
+    function showLoading() { loading.removeAttribute('hidden'); hideError(); }
+    function hideLoading() { loading.setAttribute('hidden', ''); }
+    function showError(message) { hideLoading(); errorMsg.textContent = message; errorBox.removeAttribute('hidden'); }
+    function hideError() { errorBox.setAttribute('hidden', ''); }
   }
 
   document.addEventListener('DOMContentLoaded', init);
