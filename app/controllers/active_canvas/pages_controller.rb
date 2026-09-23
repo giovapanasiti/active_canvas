@@ -20,8 +20,7 @@ module ActiveCanvas
     private
 
     def set_dynamic_cache_headers
-      return unless @page.respond_to?(:template_enabled?) && @page&.template_enabled?
-      response.headers["Cache-Control"] = "no-store"
+      response.headers["Cache-Control"] = "no-store" if @page&.template_enabled?
     end
   end
 end

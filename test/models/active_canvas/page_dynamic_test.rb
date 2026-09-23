@@ -58,4 +58,50 @@ class ActiveCanvas::PageDynamicTest < ActiveSupport::TestCase
     page = ActiveCanvas::Page.new(title: "Dyn", page_type: @page_type, content: "", bindings: {})
     assert page.valid?
   end
+
+  test "dynamic page content is stored byte-for-byte, even Liquid inside a table" do
+    source = "<table><tbody>{% for r in rows %}<tr><td>{{ r }}</td></tr>{% endfor %}</tbody></table>{% if a <b %}x{% endif %}"
+    page = ActiveCanvas::Page.create!(title: "Dyn", page_type: @page_type, content: source, template_enabled: true)
+    assert_equal source, page.reload.content
+  end
+
+  test "static page content is still sanitized on save" do
+    page = ActiveCanvas::Page.create!(title: "S", page_type: @page_type,
+      content: "<p>ok</p><script>alert(1)</script>", template_enabled: false)
+    refute_includes page.reload.content, "<script>"
+  end
+
+  test "turning dynamic rendering off sanitizes the stored content" do
+    page = ActiveCanvas::Page.create!(title: "Dyn", page_type: @page_type,
+      content: "<p>ok</p><script>alert(1)</script>", template_enabled: true)
+    assert_includes page.reload.content, "<script>"
+    page.update!(template_enabled: false)
+    refute_includes page.reload.content, "<script>"
+  end
+
+  test "dynamic page output is sanitized after render" do
+    page = ActiveCanvas::Page.create!(title: "Dyn", page_type: @page_type,
+      content: "<p>ok</p><script>alert(1)</script>", template_enabled: true)
+    refute_includes page.rendered_content, "<script>"
+  end
+
+  test "preview_with returns an unsaved copy with the same id and the overrides" do
+    page = ActiveCanvas::Page.create!(title: "Dyn", page_type: @page_type, content: "old",
+      template_enabled: false, bindings: {})
+    preview = page.preview_with(content: "new {{ x }}", bindings: { "x" => { "source" => "_literal", "value" => 1 } }, template_enabled: true)
+    assert preview.new_record?
+    assert_equal page.id, preview.id
+    assert_equal "new {{ x }}", preview.content
+    assert preview.template_enabled?
+    assert_equal "old", page.reload.content
+    assert_not page.template_enabled?
+  end
+
+  test "preview_with keeps fields that are not overridden" do
+    page = ActiveCanvas::Page.create!(title: "Dyn", page_type: @page_type, content: "keep", content_css: "p{}", template_enabled: true)
+    preview = page.preview_with(bindings: {})
+    assert_equal "keep", preview.content
+    assert_equal "p{}", preview.content_css
+    assert preview.template_enabled?
+  end
 end

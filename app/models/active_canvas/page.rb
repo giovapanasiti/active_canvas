@@ -38,6 +38,19 @@ module ActiveCanvas
       versions.maximum(:version_number) || 0
     end
 
+    # An unsaved copy carrying the editor's current state, for previews. Same
+    # id, so form tokens and media references resolve like the real page.
+    def preview_with(content: nil, bindings: nil, content_css: nil, content_js: nil, template_enabled: nil)
+      dup.tap do |preview|
+        preview.id = id
+        preview.content = content unless content.nil?
+        preview.bindings = bindings unless bindings.nil?
+        preview.content_css = content_css unless content_css.nil?
+        preview.content_js = content_js unless content_js.nil?
+        preview.template_enabled = template_enabled unless template_enabled.nil?
+      end
+    end
+
     # Header/footer display (with fallback for when columns don't exist yet)
     def show_header?
       return true unless self.class.column_names.include?("show_header")
@@ -70,10 +83,14 @@ module ActiveCanvas
       end
     end
 
+    # Dynamic pages are sanitized after Liquid renders (see TemplateRenderer):
+    # sanitizing the source would move tags out of tables and mangle `<`.
+    # When dynamic rendering is switched off, the stored content is sanitized
+    # on that save so nothing unsanitized is ever served raw.
     def sanitize_content_if_enabled
       return unless ActiveCanvas.config.sanitize_content
 
-      if content_changed?
+      if !template_enabled? && (content_changed? || template_enabled_changed?)
         self.content = ContentSanitizer.sanitize_html(content)
       end
 

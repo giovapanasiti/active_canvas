@@ -3,7 +3,7 @@ module ActiveCanvas
     class PagesController < ApplicationController
       include ActiveCanvas::TailwindCompilation
 
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions preview_iframe]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions render_preview preview_iframe]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -113,51 +113,38 @@ module ActiveCanvas
       end
 
       def render_preview
-        page = Page.find(params[:id])
-        snapshot = page.dup
-        snapshot.content = params[:content].to_s
-        snapshot.template_enabled = true
-        snapshot.bindings = parse_bindings(params[:bindings])
+        preview = @page.preview_with(content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}, template_enabled: true)
 
-        if (message = invalid_bindings_message(snapshot))
+        if (message = invalid_bindings_message(preview))
           return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
         end
 
-        html = TemplateRenderer.new(snapshot, mode: :preview).render
-        render json: { html: html, error: nil }
+        render json: { html: TemplateRenderer.new(preview, mode: :preview).render, error: nil }
       rescue ActiveCanvas::DataSources::TemplateRenderError => e
         render json: { html: nil, error: { message: e.message, line: e.line, column: e.column } },
                status: :unprocessable_entity
-      rescue ActiveCanvas::DataSources::Error => e
-        render json: { html: nil, error: { message: e.message } }, status: :unprocessable_entity
       end
 
-      # Renders a complete HTML page (with layout, partials, CSS framework, etc.)
-      # using the editor's current unsaved state. The response is meant to be
-      # loaded directly into an iframe via srcdoc — what visitors would see.
+      # Renders a complete HTML page (layout, partials, CSS framework) from the
+      # editor's current unsaved state, for the preview modal's iframe. Uses the
+      # page's own template_enabled flag so a static page previews as static.
       def preview_iframe
-        snapshot = @page.dup
-        snapshot.id = @page.id
-        snapshot.content = params[:content].to_s if params.key?(:content)
-        snapshot.content_css = params[:content_css].to_s if params.key?(:content_css)
-        snapshot.content_js = params[:content_js].to_s if params.key?(:content_js)
-        snapshot.template_enabled = true
-        snapshot.bindings = parse_bindings(params[:bindings])
+        preview = @page.preview_with(
+          content: params[:content],
+          content_css: params[:content_css],
+          content_js: params[:content_js],
+          bindings: parse_bindings(params[:bindings])
+        )
 
-        if (message = invalid_bindings_message(snapshot))
+        if (message = invalid_bindings_message(preview))
           return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
         end
 
-        # Reuse the public show view + layout so the iframe matches what a
-        # visitor would actually see (SEO meta, Tailwind, partials, scripts).
-        @page = snapshot
+        @page = preview
         html = render_to_string(template: "active_canvas/pages/show",
                                 layout: "active_canvas/application",
-                                formats: [:html])
+                                formats: [ :html ])
         render json: { html: html, error: nil }
-      rescue ActiveCanvas::DataSources::Error => e
-        Rails.logger.warn("[ActiveCanvas] preview_iframe failed: #{e.class}: #{e.message}")
-        render json: { html: nil, error: { message: e.message } }, status: :unprocessable_entity
       end
 
       def data_sources
@@ -212,7 +199,7 @@ module ActiveCanvas
       # Returns whatever the client sent, parsed. Page#bindings_shape does the
       # checking, so a bad payload becomes a validation error, not a 500.
       def parse_bindings(raw)
-        return {} if raw.blank?
+        return nil if raw.blank?
         return JSON.parse(raw) if raw.is_a?(String)
         raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h : raw
       rescue JSON::ParserError
