@@ -66,9 +66,10 @@
         (document.querySelector('.editor-canvas') || document.body).prepend(banner);
       }
       const where = err.line ? ` (line ${err.line}${err.column ? `, column ${err.column}` : ''})` : '';
+      const message = String(err.message || '').replace(/^Liquid (?:syntax )?error \(line \d+\): /, '');
       banner.innerHTML = '';
       const text = document.createElement('span');
-      text.textContent = `Template error: ${err.message}${where}`;
+      text.textContent = `Template error: ${message}${where}`;
       const close = document.createElement('button');
       close.type = 'button';
       close.className = 'ac-error-banner-close';
