@@ -32,28 +32,35 @@ module ActiveCanvas
     end
 
     def sort(items, params)
-      field = params["sort_field"]
-      spec = @schema.field(field) if field.present?
+      spec = @schema.field(params["sort_field"]) if params["sort_field"].present?
+      return items.sort_by { |item| item.published_at || Time.at(0) }.reverse unless spec
 
-      if spec
-        sorted = items.sort_by { |item| sort_key(spec, item.data[field]) }
-        params["sort_dir"] == "asc" ? sorted : sorted.reverse
-      else
-        items.sort_by { |item| item.published_at || Time.at(0) }.reverse
+      sortable, unsortable = items.partition { |item| sortable?(spec, item.data[spec["id"]]) }
+      sorted = sortable.sort_by { |item| sort_key(spec, item.data[spec["id"]]) }
+      sorted.reverse! unless params["sort_dir"] == "asc"
+      sorted + unsortable # nils and unreadable values go last both ways
+    end
+
+    def sortable?(spec, value)
+      case spec["type"]
+      when "number"  then value.is_a?(Numeric)
+      when "boolean" then !value.nil?
+      else value.present?
       end
     end
 
     def sort_key(spec, value)
-      if spec["type"] == "number"
-        [ value.nil? ? 1 : 0, value || 0 ]  # numeric compare, nils last
-      else
-        [ value.to_s ]                       # date is ISO-8601 → lexical is correct
+      case spec["type"]
+      when "number"  then value
+      when "boolean" then value ? 1 : 0
+      else value.to_s # dates are ISO-8601, so lexical order is chronological
       end
     end
 
     def clamped_limit(params)
-      limit = params["limit"].presence&.to_i || DEFAULT_LIMIT
-      limit.clamp(1, MAX_LIMIT)
+      limit = Integer(params["limit"], exception: false) if params["limit"].present?
+      limit = DEFAULT_LIMIT if limit.nil? || limit <= 0
+      [ limit, MAX_LIMIT ].min
     end
 
     def preload_media_urls(items)

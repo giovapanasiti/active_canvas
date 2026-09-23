@@ -95,4 +95,46 @@ class ActiveCanvas::CollectionSourceTest < ActiveSupport::TestCase
     row = resolve.find { |r| r["rank"] == 9 }
     assert_equal "&lt;a href=&quot;https://evil&quot;&gt;login&lt;/a&gt;", row["name"]
   end
+
+  test "limit of zero, negative or non-numeric falls back to the default" do
+    assert_equal 3, resolve("limit" => "0").size
+    assert_equal 3, resolve("limit" => "-1").size
+    assert_equal 3, resolve("limit" => "abc").size
+    assert_equal 3, resolve("limit" => nil).size
+    assert_equal 2, resolve("limit" => "2").size
+    assert_equal 2, resolve("limit" => 2).size
+  end
+
+  test "number sort survives a legacy string value and puts it last both ways" do
+    legacy = @collection.items.create!
+    legacy.update_columns(data: { "name" => "Zed", "rank" => "abc" }, status: "published", published_at: Time.current)
+    asc = resolve("sort_field" => "rank", "sort_dir" => "asc").map { |r| r["name"] }
+    desc = resolve("sort_field" => "rank", "sort_dir" => "desc").map { |r| r["name"] }
+    assert_equal %w[Bob Ada Cy Zed], asc
+    assert_equal %w[Cy Ada Bob Zed], desc
+  end
+
+  test "nil values sort last in both directions" do
+    none = @collection.items.new
+    none.assign_fields("name" => "Nil", "dept" => "eng"); none.save!; none.publish!
+    asc = resolve("sort_field" => "rank", "sort_dir" => "asc").map { |r| r["name"] }
+    desc = resolve("sort_field" => "rank", "sort_dir" => "desc").map { |r| r["name"] }
+    assert_equal "Nil", asc.last
+    assert_equal "Nil", desc.last
+  end
+
+  test "any sort_dir other than asc is descending" do
+    assert_equal %w[Cy Ada Bob], resolve("sort_field" => "rank", "sort_dir" => "sideways").map { |r| r["name"] }
+    assert_equal %w[Cy Ada Bob], resolve("sort_field" => "rank").map { |r| r["name"] }
+  end
+
+  test "boolean fields sort false before true ascending" do
+    coll = ActiveCanvas::Collection.create!(name: "Flags", slug: "flags",
+      fields: [ { "label" => "Name", "type" => "text" }, { "label" => "On", "type" => "boolean" } ])
+    [ [ "t", true ], [ "f", false ] ].each do |name, on|
+      item = coll.items.new; item.assign_fields("name" => name, "on" => on); item.save!; item.publish!
+    end
+    names = ActiveCanvas::CollectionSource.new(coll).resolve("sort_field" => "on", "sort_dir" => "asc").map { |r| r["name"] }
+    assert_equal %w[f t], names
+  end
 end
