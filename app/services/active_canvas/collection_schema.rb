@@ -49,6 +49,9 @@ module ActiveCanvas
     # Coerces every schema field present in `raw`; unknown keys are dropped.
     # Used both for form input and to rebuild the published snapshot, so data
     # written around assign_fields (console, seeds) is still sanitized.
+    # A select value whose option was removed becomes nil, so a required
+    # select can stop a previously valid draft from publishing until it is
+    # edited.
     def coerce_all_for_storage(raw)
       raw = (raw || {}).transform_keys(&:to_s)
       field_ids.each_with_object({}) do |id, acc|
@@ -81,6 +84,7 @@ module ActiveCanvas
     private
 
     def coerce_number(value)
+      return value if value.is_a?(Numeric)
       return nil if value.to_s.strip.empty?
       Integer(value)
     rescue ArgumentError, TypeError

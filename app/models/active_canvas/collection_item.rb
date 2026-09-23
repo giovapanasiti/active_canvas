@@ -27,7 +27,8 @@ module ActiveCanvas
     # Copies the draft into the public snapshot and records a version. The row
     # lock serializes concurrent publishes so version numbers stay monotonic.
     # Call on a saved record: with_lock reloads it. Returns false with an error
-    # when a required field is blank.
+    # when a required field is blank. The draft is normalized to the same
+    # snapshot, so pending_changes? is false right after publishing.
     def publish
       published = false
       with_lock do
@@ -36,7 +37,7 @@ module ActiveCanvas
         if missing.any?
           errors.add(:base, "Fill in the required fields before publishing: #{missing.join(", ")}")
         else
-          update!(data: snapshot, status: "published", published_at: Time.current)
+          update!(data: snapshot, draft_data: snapshot, status: "published", published_at: Time.current)
           versions.create!(data: data, changed_by: self.class.current_editor)
           published = true
         end

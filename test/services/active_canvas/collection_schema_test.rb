@@ -43,6 +43,8 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
     assert_equal "news", schema.coerce_for_storage("cat", "news")
     assert_nil schema.coerce_for_storage("cat", "nope")
     assert_equal 42, schema.coerce_for_storage("photo", "42")
+    assert_equal 3.5, schema.coerce_for_storage("count", 3.5)
+    assert_equal 7, schema.coerce_for_storage("count", 7)
   end
 
   test "coerce_for_storage sanitizes rich_text" do

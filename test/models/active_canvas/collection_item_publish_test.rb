@@ -111,4 +111,14 @@ class ActiveCanvas::CollectionItemPublishTest < ActiveSupport::TestCase
     item.assign_fields("name" => "Grace"); item.save!
     assert item.pending_changes?
   end
+
+  test "publish normalizes the draft so nothing is pending afterwards" do
+    rich = ActiveCanvas::Collection.create!(name: "Rich", slug: "rich", fields: [ { "label" => "Body", "type" => "rich_text" }, { "label" => "N", "type" => "number" } ])
+    item = rich.items.create!(draft_data: { "body" => "<p>ok</p><script>x</script>", "n" => 3.5, "ghost" => 1 })
+    item.publish!
+    item.reload
+    assert_equal item.data, item.draft_data
+    assert_equal 3.5, item.data["n"]
+    assert_not item.pending_changes?
+  end
 end
