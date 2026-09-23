@@ -3463,3 +3463,18 @@
   cursor: pointer;
   padding: 0 4px;
 }
+
+/* ==================== Data panel: sample data ==================== */
+.data-panel-sample { margin-top: 6px; font-size: 12px; }
+.data-panel-sample summary { cursor: pointer; opacity: 0.8; }
+.data-panel-sample-body {
+  margin: 6px 0 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

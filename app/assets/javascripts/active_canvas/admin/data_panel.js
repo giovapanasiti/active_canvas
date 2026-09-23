@@ -53,7 +53,8 @@
 
   function bindingRowHTML(name, spec) {
     const snippet = `{{ ${name} }}`;
-    const loopSnippet = `{% for item in ${name} %}{{ item.title }}{% endfor %}`;
+    const item = window.ActiveCanvasBindings.itemName(name);
+    const loopSnippet = `<div data-ac-for="${item} in ${name}">{{ ${item}.title }}</div>`;
     return `
       <li class="data-panel-row">
         <div class="data-panel-row-header">
@@ -70,6 +71,10 @@
           <button type="button" class="data-panel-chip" data-snippet="${escape(snippet)}" title="Copy ${escape(snippet)}">{{ }}</button>
           <button type="button" class="data-panel-chip" data-snippet="${escape(loopSnippet)}" title="Copy loop">for&hellip;</button>
         </div>
+        <details class="data-panel-sample" data-sample-for="${escape(name)}">
+          <summary>Sample data</summary>
+          <pre class="data-panel-sample-body">Loading…</pre>
+        </details>
       </li>
     `;
   }
@@ -85,6 +90,23 @@
     list.querySelectorAll('.data-panel-chip').forEach(chip => {
       chip.addEventListener('click', () => copySnippet(chip));
     });
+    list.querySelectorAll('.data-panel-sample').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if (details.open && !details.dataset.loaded) loadSample(details);
+      });
+    });
+  }
+
+  function loadSample(details) {
+    const body = details.querySelector('.data-panel-sample-body');
+    const url = container.dataset.sampleDataUrl;
+    body.textContent = 'Loading…';
+    post(url, { binding: details.dataset.sampleFor, bindings: window.ActiveCanvasBindings.readJson() })
+      .then(({ ok, body: json }) => {
+        details.dataset.loaded = 'true';
+        body.textContent = ok ? JSON.stringify(json.rows, null, 2) : `Could not load: ${json.error || 'unknown error'}`;
+      })
+      .catch(() => { body.textContent = 'Could not reach the server.'; });
   }
 
   function copySnippet(chip) {
