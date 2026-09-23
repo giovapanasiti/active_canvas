@@ -33,6 +33,8 @@
       });
     addBtn.addEventListener('click', showForm);
     emptyAddBtn.addEventListener('click', showForm);
+    const toggle = document.getElementById('ac-template-toggle');
+    if (toggle) toggle.addEventListener('change', onTemplateToggle);
   }
 
   function showPanelMessage(text) {
@@ -40,6 +42,20 @@
     if (!el) return;
     el.textContent = text;
     el.hidden = !text;
+  }
+
+  // Saving with template_enabled flips how the editor loads the page, so a
+  // successful save is followed by a reload.
+  function onTemplateToggle(e) {
+    const toggle = e.target;
+    const save = window.ActiveCanvasEditor && window.ActiveCanvasEditor.saveContent;
+    if (!save) { toggle.checked = !toggle.checked; return; }
+    toggle.disabled = true;
+    save(false, { template_enabled: toggle.checked }).then(ok => {
+      if (ok) { window.location.reload(); return; }
+      toggle.checked = !toggle.checked;
+      toggle.disabled = false;
+    });
   }
 
   function loadBindings() {

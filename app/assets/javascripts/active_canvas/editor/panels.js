@@ -194,8 +194,8 @@
       saveContent(true);
     }, 60000);
 
-    function saveContent(isAutoSave) {
-      if (saveInProgress) return;
+    function saveContent(isAutoSave, extra) {
+      if (saveInProgress) return Promise.resolve(false);
       saveInProgress = true;
 
       if (saveBtn) saveBtn.disabled = true;
@@ -219,10 +219,12 @@
         content_js: js,
         content_components: components,
         bindings: bindingsJson
-        // template_enabled deliberately NOT sent here — page form is authoritative.
       };
+      // The Data tab's dynamic-rendering toggle passes template_enabled here;
+      // otherwise the page form remains the authority for that field.
+      Object.assign(payload[entityType], extra || {});
 
-      fetch(config.saveUrl, {
+      return fetch(config.saveUrl, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -243,24 +245,29 @@
               message += ` · Tailwind compiled (${sizeKb}KB in ${result.tailwind.elapsed_ms}ms)`;
             } else {
               showToast('Page saved, but Tailwind compilation failed: ' + result.tailwind.error, 'warning');
-              return;
+              return false;
             }
           }
 
           showToast(message, 'success');
+          return true;
         } else {
           showToast(result.errors ? result.errors.join(', ') : 'Save failed', 'error');
+          return false;
         }
       })
       .catch(error => {
         showToast('Save failed', 'error');
         console.error('Save error:', error);
+        return false;
       })
       .finally(() => {
         saveInProgress = false;
         if (saveBtn) saveBtn.disabled = false;
       });
     }
+
+    window.ActiveCanvasEditor.saveContent = saveContent;
   }
 
   /**

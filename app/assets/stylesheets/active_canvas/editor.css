@@ -3495,3 +3495,26 @@
   font-size: 0.6875rem;
   color: #fca5a5;
 }
+
+/* ==================== Data panel: dynamic toggle ==================== */
+.data-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--editor-text);
+  cursor: pointer;
+}
+.data-panel-notice {
+  margin: 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.data-panel-notice code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}

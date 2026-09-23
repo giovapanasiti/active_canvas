@@ -19,6 +19,14 @@
 
   <p class="data-panel-message" id="ac-panel-message" hidden></p>
 
+  <label class="data-panel-toggle">
+    <input type="checkbox" id="ac-template-toggle" <%= "checked" if @page.template_enabled? %>>
+    <span>Render dynamic content (Liquid)</span>
+  </label>
+  <p class="data-panel-notice" id="ac-template-notice" <%= "hidden" if @page.template_enabled? %>>
+    Dynamic rendering is off. Bindings and <code>{{ tags }}</code> are saved but visitors see them as plain text until you turn it on.
+  </p>
+
   <ul id="ac-bindings-list" class="data-panel-list" data-empty="true"></ul>
 
   <div class="data-panel-empty" id="ac-bindings-empty">

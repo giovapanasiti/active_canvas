@@ -11,4 +11,15 @@ class ActiveCanvas::AdminEditorPageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "iframe#preview-modal-iframe[sandbox=?]", "allow-scripts allow-forms"
   end
+
+  test "the Data tab shows the dynamic rendering toggle reflecting the page" do
+    get "/canvas/admin/pages/#{@page.id}/editor"
+    assert_select "input#ac-template-toggle:not([checked])"
+    assert_select "#ac-template-notice"
+
+    @page.update!(template_enabled: true)
+    get "/canvas/admin/pages/#{@page.id}/editor"
+    assert_select "input#ac-template-toggle[checked]"
+    assert_select "#ac-template-notice[hidden]"
+  end
 end
