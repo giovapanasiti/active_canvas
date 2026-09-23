@@ -4,6 +4,7 @@
 
   let registry = []; // [{ name, params: { limit: { type, default, ... } } }]
   let bindings = {}; // { localName: { source, params } | { source: '_literal', value } }
+  const NAME_RE = /^[a-z_][a-z0-9_]*$/;
 
   const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
   const post = (url, body) => fetch(url, {
@@ -163,10 +164,18 @@
     form.querySelector('[data-cancel]').addEventListener('click', hideForm);
     form.querySelector('select[name="source"]').addEventListener('change', () => renderParamInputs(form));
     form.querySelector('input[name="name"]').focus();
+    form.querySelector('input[name="name"]').addEventListener('input', () => showNameError(form, ''));
   }
 
   function hideForm() {
     renderBindings();
+  }
+
+  function showNameError(form, text) {
+    const el = form.querySelector('#ac-binding-name-error');
+    if (!el) return;
+    el.textContent = text;
+    el.hidden = !text;
   }
 
   function renderSources(form) {
@@ -237,7 +246,12 @@
     e.preventDefault();
     const form = e.target;
     const name = form.name.value.trim();
-    if (!name) { form.querySelector('input[name="name"]').focus(); return; }
+    if (!NAME_RE.test(name)) {
+      showNameError(form, 'Use lowercase letters, digits and underscores, starting with a letter.');
+      form.querySelector('input[name="name"]').focus();
+      return;
+    }
+    if (bindings[name] && !window.confirm(`A binding named "${name}" already exists. Replace it?`)) return;
     const sourceName = form.source.value;
     const source = registry.find(s => s.name === sourceName);
     if (!source) { showPanelMessage('Pick a source.'); return; }

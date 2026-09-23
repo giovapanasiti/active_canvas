@@ -3478,3 +3478,20 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ==================== Data panel: messages ==================== */
+.data-panel-message {
+  margin: 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #fecaca;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+}
+.data-panel-field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: #fca5a5;
+}
