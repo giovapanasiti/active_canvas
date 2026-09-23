@@ -4,16 +4,9 @@ module ActiveCanvas
     # string-keyed Liquid assigns hash. Nothing reaches Liquid unless it is a
     # Drop, an escaped scalar, or a Hash/Array made of those.
     class BindingResolver
-      # NOTE: silent_errors is a trailing positional hash, not a real keyword
-      # parameter. A method with actual keyword params forces every bare hash
-      # literal call site (e.g. `BindingResolver.new("x" => { ... })`, used
-      # throughout this class's tests) to be parsed as keyword arguments,
-      # which breaks with "wrong number of arguments". A plain optional
-      # positional hash sidesteps that Ruby 3+ parsing rule while still
-      # reading naturally as `BindingResolver.new(bindings, silent_errors: true)`.
-      def initialize(bindings, options = {})
+      def initialize(bindings, silent_errors: false)
         @bindings = bindings || {}
-        @silent_errors = options[:silent_errors] || false
+        @silent_errors = silent_errors
       end
 
       def resolve

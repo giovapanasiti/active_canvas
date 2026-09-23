@@ -69,7 +69,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
       fetch { [ row.new(1, "<p>keep me</p>") ] }
       auto_drop attributes: %i[id body], html: %i[body]
     end
-    drop = described_class.new("posts" => { "source" => "posts" }).resolve["posts"].first
+    drop = described_class.new({ "posts" => { "source" => "posts" } }).resolve["posts"].first
     assert_equal "<p>keep me</p>", drop.invoke_drop("body")
   end
 
@@ -88,12 +88,12 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
 
   test "html_safe strings pass through untouched" do
     ActiveCanvas::DataSources.register(:html) { fetch { "<b>ok</b>".html_safe } }
-    assert_equal "<b>ok</b>", described_class.new("x" => { "source" => "html" }).resolve["x"]
+    assert_equal "<b>ok</b>", described_class.new({ "x" => { "source" => "html" } }).resolve["x"]
   end
 
   test "stringifies hash keys so Liquid can reach them" do
     ActiveCanvas::DataSources.register(:site) { fetch { { name: "Acme", nested: { city: "Rome" } } } }
-    assigns = described_class.new("site" => { "source" => "site" }).resolve
+    assigns = described_class.new({ "site" => { "source" => "site" } }).resolve
     assert_equal "Acme", assigns["site"]["name"]
     assert_equal "Rome", assigns["site"]["nested"]["city"]
   end
@@ -102,7 +102,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     row = Struct.new(:id)
     ActiveCanvas::DataSources.register(:poro) { fetch { [ row.new(1) ] } }
     assert_raises(ActiveCanvas::DataSources::UnsafeData) do
-      described_class.new("x" => { "source" => "poro" }).resolve
+      described_class.new({ "x" => { "source" => "poro" } }).resolve
     end
   end
 
@@ -110,7 +110,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     row = Struct.new(:id)
     ActiveCanvas::DataSources.register(:nested) { fetch { { user: row.new(1) } } }
     assert_raises(ActiveCanvas::DataSources::UnsafeData) do
-      described_class.new("x" => { "source" => "nested" }).resolve
+      described_class.new({ "x" => { "source" => "nested" } }).resolve
     end
   end
 
@@ -120,7 +120,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
       fetch { [ row.new(1, "a"), 42 ] }
       auto_drop attributes: %i[id title]
     end
-    result = described_class.new("x" => { "source" => "mixed" }).resolve["x"]
+    result = described_class.new({ "x" => { "source" => "mixed" } }).resolve["x"]
     assert_kind_of ActiveCanvas::AutoDrop, result[0]
     assert_equal 42, result[1]
   end
@@ -139,7 +139,7 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
       on_error :silent
       fetch { raise "db down" }
     end
-    assert_raises(RuntimeError) { described_class.new("x" => { "source" => "flaky" }).resolve }
+    assert_raises(RuntimeError) { described_class.new({ "x" => { "source" => "flaky" } }).resolve }
   end
 
   test "a raising source without on_error :silent raises even with silent_errors on" do
