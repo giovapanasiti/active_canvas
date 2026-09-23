@@ -55,7 +55,18 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
     assert_equal 3, schema.coerce_for_liquid("count", 3)
     assert_equal true, schema.coerce_for_liquid("active", true)
     assert_equal Date.new(2026, 7, 2), schema.coerce_for_liquid("on", "2026-07-02")
-    assert schema.coerce_for_liquid("body", "<b>x</b>").html_safe?
+  end
+
+  test "coerce_for_liquid escapes text, textarea and select" do
+    assert_equal "&lt;img src=x onerror=alert(1)&gt; Ada", schema.coerce_for_liquid("title", "<img src=x onerror=alert(1)> Ada")
+    assert_equal "a &amp; b", schema.coerce_for_liquid("cat", "a & b")
+    assert schema.coerce_for_liquid("title", "x").html_safe?, "escaped output is marked safe so the resolver leaves it alone"
+  end
+
+  test "coerce_for_liquid keeps rich_text raw and marks it safe" do
+    out = schema.coerce_for_liquid("body", "<b>x</b>")
+    assert_equal "<b>x</b>", out
+    assert out.html_safe?
   end
 
   test "coerce_for_liquid media resolves to a url string" do

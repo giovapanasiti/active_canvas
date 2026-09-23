@@ -89,4 +89,10 @@ class ActiveCanvas::CollectionSourceTest < ActiveSupport::TestCase
     assert_equal 2, rows.size
     assert(rows.all? { |r| r["photo"].to_s.present? })
   end
+
+  test "text values reach Liquid escaped" do
+    publish("<a href=\"https://evil\">login</a>", 9, "eng")
+    row = resolve.find { |r| r["rank"] == 9 }
+    assert_equal "&lt;a href=&quot;https://evil&quot;&gt;login&lt;/a&gt;", row["name"]
+  end
 end

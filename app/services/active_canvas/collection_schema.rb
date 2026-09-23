@@ -45,6 +45,8 @@ module ActiveCanvas
       end
     end
 
+    # Values handed to Liquid. Text is HTML-escaped here; rich_text was
+    # sanitized on write and is marked html_safe so the resolver leaves it alone.
     def coerce_for_liquid(field_id, value, media_urls: nil)
       spec = field(field_id)
       return nil unless spec
@@ -53,8 +55,8 @@ module ActiveCanvas
       when "number", "boolean" then value
       when "date"      then (Date.iso8601(value.to_s) rescue nil)
       when "rich_text" then value.to_s.html_safe
-      when "media"     then resolve_media_url(value, media_urls)
-      else value.to_s
+      when "media"     then ERB::Util.html_escape(resolve_media_url(value, media_urls))
+      else ERB::Util.html_escape(value.to_s)
       end
     end
 
