@@ -45,7 +45,8 @@
   }
 
   // Existing rows show their stable id; new rows preview the id the server
-  // will derive from the label (same rules as CollectionSchema.generate_field_id).
+  // will derive from the label. Approximation: the server also transliterates
+  // accents and de-duplicates, so the saved id may differ.
   function showId(row) {
     const idEl = row.querySelector('[data-field-id-display]');
     const existing = row.querySelector('[data-field="id"]').value.trim();
