@@ -307,4 +307,24 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     assert_includes output, "World"
     assert_match(/data-ac-var/, output) # re-injected markers, not doubled-up corruption
   end
+
+  test "public mode renders a node that raises as empty and keeps the page" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: "<p>a</p>{{ 1 | divided_by: 0 }}<p>b</p>"
+    )
+    assert_equal "<p>a</p><p>b</p>", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+  end
+
+  test "public mode falls back on a resource limit" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type, template_enabled: true,
+      content: "{% for i in (1..10000) %}x{% endfor %}"
+    )
+    original = ActiveCanvas.config.template_render_score_limit
+    ActiveCanvas.config.template_render_score_limit = 100
+    assert_equal "<!-- dynamic block unavailable -->", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
+  ensure
+    ActiveCanvas.config.template_render_score_limit = original
+  end
 end

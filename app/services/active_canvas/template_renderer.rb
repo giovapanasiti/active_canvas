@@ -25,8 +25,9 @@ module ActiveCanvas
     end
 
     # Preview is strict so authors see every mistake. Public is forgiving: an
-    # undefined variable or filter renders empty and the rest of the page
-    # survives; only errors that stop the render fall back to the comment.
+    # undefined variable, an unknown filter or a node that raises renders empty
+    # and the rest of the page survives; only syntax errors, resource limits
+    # and failures before rendering fall back to the comment.
     def render_dynamic
       source = restore_chip_sources(@page.content.to_s)
       source = decode_entities_in_liquid_tags(source)
@@ -37,7 +38,11 @@ module ActiveCanvas
       template.resource_limits.render_length_limit = ActiveCanvas.config.template_render_length_limit
       template.resource_limits.render_score_limit  = ActiveCanvas.config.template_render_score_limit
       template.resource_limits.assign_score_limit  = ActiveCanvas.config.template_assign_score_limit
-      rendered = template.render!(assigns, strict_variables: preview?, strict_filters: preview?)
+      rendered = if preview?
+        template.render!(assigns, strict_variables: true, strict_filters: true)
+      else
+        template.render(assigns, exception_renderer: method(:render_node_error))
+      end
       ContentSanitizer.sanitize_html(rendered)
     end
 
@@ -72,13 +77,22 @@ module ActiveCanvas
         raise DataSources::TemplateRenderError.new(
           error.message,
           line: error.try(:line_number),
-          column: error.try(:column),
           original: error
         )
       end
 
+      Rails.error.report(error, handled: true, source: "active_canvas", context: { page_id: @page.id })
       Rails.logger.warn("[ActiveCanvas] dynamic page #{@page.id} render failed: #{error.class}: #{error.message}")
       PUBLIC_FALLBACK
+    end
+
+    # Public mode: a single broken node renders empty and is reported; only a
+    # resource limit stops the whole render (re-raised so `render` falls back).
+    def render_node_error(error)
+      raise error if error.is_a?(Liquid::MemoryError)
+      Rails.error.report(error, handled: true, source: "active_canvas", context: { page_id: @page.id })
+      Rails.logger.warn("[ActiveCanvas] dynamic page #{@page.id} node failed: #{error.class}: #{error.message}")
+      ""
     end
   end
 end
