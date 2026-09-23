@@ -21,4 +21,5 @@ gem "tailwindcss-ruby", "~> 4.0"
 group :test do
   gem "capybara"
   gem "benchmark"
+  gem "selenium-webdriver"
 end
