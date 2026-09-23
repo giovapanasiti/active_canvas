@@ -24,11 +24,27 @@ module ActiveCanvas
         spec = @bindings[name.to_s] || @bindings[name.to_sym]
         raise DataSources::UnknownSource.new(name) unless spec
 
-        value = resolve_one(spec)
+        value = resolve_one(sample_spec(spec, rows))
         value.is_a?(Array) ? value.first(rows).map { |v| plain(v) } : plain(value)
       end
 
       private
+
+      # Caps a collection or param-limited source's `limit` param to the row
+      # count so `sample` does not load 100 items to show 3.
+      def sample_spec(spec, rows)
+        return spec unless spec.is_a?(Hash)
+
+        params = spec["params"] || spec[:params]
+        return spec unless params
+
+        source_name = (spec["source"] || spec[:source]).to_s
+        cappable = Collection.exists?(slug: source_name) ||
+          (DataSources.registered?(source_name) && DataSources.lookup(source_name).params.key?(:limit))
+        return spec unless cappable
+
+        spec.merge("params" => params.to_h.merge("limit" => rows))
+      end
 
       def resolve_one(spec)
         raise DataSources::UnknownSource.new(spec.inspect) unless spec.is_a?(Hash)

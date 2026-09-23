@@ -143,7 +143,8 @@ module ActiveCanvas
         render json: { rows: TemplateRenderer::BindingResolver.new(preview.bindings).sample(name) }
       rescue StandardError => e
         Rails.logger.warn("[ActiveCanvas] sample_data for page #{@page.id} failed: #{e.class}: #{e.message}")
-        render json: { error: e.message }, status: :unprocessable_entity
+        message = Rails.env.development? ? e.message : "#{e.class}: the data source failed"
+        render json: { error: message }, status: :unprocessable_entity
       end
 
       # Renders a complete HTML page (layout, partials, CSS framework) from the

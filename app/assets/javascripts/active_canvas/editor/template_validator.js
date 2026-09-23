@@ -20,16 +20,22 @@
     let timer = null;
     let lastPayload = null;
 
+    // Only Liquid tags and directives can change the validation result.
+    function liquidFingerprint(content) {
+      return (content.match(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|data-ac-(?:for|if)="[^"]*"/g) || []).join('\n');
+    }
+
     function currentPayload() {
       const html = editor.getHtml();
       const content = window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(html) : html;
-      return JSON.stringify({ content, bindings: window.ActiveCanvasBindings.readJson() });
+      const bindingsJson = window.ActiveCanvasBindings.readJson();
+      return { payload: JSON.stringify({ content, bindings: bindingsJson }), fingerprint: liquidFingerprint(content) + '\n' + bindingsJson };
     }
 
     function validate(force) {
-      const payload = currentPayload();
-      if (!force && payload === lastPayload) return;
-      lastPayload = payload;
+      const { payload, fingerprint } = currentPayload();
+      if (!force && fingerprint === lastPayload) return;
+      lastPayload = fingerprint;
       const id = ++seq;
 
       fetch(url, {
@@ -50,7 +56,7 @@
 
     function schedule() {
       clearTimeout(timer);
-      timer = setTimeout(() => validate(false), 800);
+      timer = setTimeout(() => validate(false), 2000);
     }
 
     editor.on('load', () => validate(true));

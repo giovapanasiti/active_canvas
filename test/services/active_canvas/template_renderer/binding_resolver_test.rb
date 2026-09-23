@@ -263,6 +263,17 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     refute_includes row["record"], "secret"
   end
 
+  test "sample caps a registered source's limit param to the row count" do
+    seen = nil
+    ActiveCanvas::DataSources.register(:capped) do
+      param :limit, type: :integer, default: 50
+      fetch { |limit:| seen = limit; (1..limit).to_a }
+    end
+    rows = described_class.new({ "x" => { "source" => "capped", "params" => { "limit" => 40 } } }).sample("x")
+    assert_equal 3, seen
+    assert_equal [ 1, 2, 3 ], rows
+  end
+
   private
 
   def described_class

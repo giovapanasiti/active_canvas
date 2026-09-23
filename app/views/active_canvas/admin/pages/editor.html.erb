@@ -650,7 +650,7 @@
       content: <%= raw (@page.content || '').to_json %>,
       contentCss: <%= raw (@page.content_css || '').to_json %>,
       contentJs: <%= raw (@page.content_js || '').to_json %>,
-      contentComponents: <%= raw (@page.content_components || '').to_json %>,
+      contentComponents: <%= raw (@page.template_enabled? ? '' : (@page.content_components || '')).to_json %>,
       cssFramework: '<%= ActiveCanvas::Setting.css_framework %>',
       cssFrameworkUrl: <%= raw (ActiveCanvas::Setting.css_framework_url || '').to_json %>,
       cssFrameworkType: '<%= ActiveCanvas::Setting.css_framework_type %>',

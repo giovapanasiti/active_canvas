@@ -42,6 +42,6 @@ class ActiveCanvas::AdminSampleDataTest < ActionDispatch::IntegrationTest
     ActiveCanvas::DataSources.register(:boom) { fetch { raise "db gone" } }
     body = sample("x", { "x" => { "source" => "boom" } })
     assert_response :unprocessable_entity
-    assert_equal "db gone", body["error"]
+    assert_match(/RuntimeError/, body["error"])
   end
 end
