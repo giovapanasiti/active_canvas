@@ -18,10 +18,13 @@ module ActiveCanvas
       private
 
       def resolve_one(spec)
+        raise DataSources::UnknownSource.new(spec.inspect) unless spec.is_a?(Hash)
+
         source_name = (spec["source"] || spec[:source]).to_s
         raise DataSources::UnknownSource.new(source_name) if source_name.blank?
 
         params = spec["params"] || spec[:params] || {}
+        params = {} unless params.is_a?(Hash)
 
         if source_name == "_literal"
           to_liquid_value(spec.key?("value") ? spec["value"] : spec[:value])
@@ -34,6 +37,7 @@ module ActiveCanvas
         end
       end
 
+      # Silent sources swallow every StandardError, including InvalidParam and UnsafeData; preview mode still raises.
       def fetch(source, params)
         wrap(source.call(params.to_h.transform_keys(&:to_sym)), source)
       rescue StandardError => e
@@ -43,7 +47,7 @@ module ActiveCanvas
       end
 
       def wrap(result, source)
-        if result.is_a?(Enumerable) && !result.is_a?(String) && !result.is_a?(Hash)
+        if result.is_a?(Array) || result.is_a?(Set) || (result.respond_to?(:to_ary) && !result.is_a?(String))
           result.map { |item| wrap_one(item, source) }
         else
           wrap_one(result, source)
@@ -51,13 +55,13 @@ module ActiveCanvas
       end
 
       def wrap_one(item, source)
+        return to_liquid_value(source.drop_class.new(item), source: source) if source.drop_class
+
         case item
         when ::Liquid::Drop, String, Symbol, Numeric, true, false, nil, Date, Time, Hash, Array
           to_liquid_value(item, source: source)
         else
-          if source.drop_class
-            source.drop_class.new(item)
-          elsif source.auto_drop_config[:attributes].any?
+          if source.auto_drop_config[:attributes].any?
             AutoDrop.new(item, **source.auto_drop_config)
           else
             raise DataSources::UnsafeData.new(source.name, item.class.name)

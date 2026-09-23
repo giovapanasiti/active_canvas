@@ -50,9 +50,8 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
   end
 
   test "rejects raw AR-like records when no Drop declared" do
-    # Plain Ruby Struct does NOT respond to :attributes (that's AR/AM specific).
-    # We explicitly define attributes to simulate an AR-like object so the
-    # unsafe? check fires even without ActiveRecord::Base loaded.
+    # This object has neither a drop_class nor auto_drop attributes to wrap
+    # it with, so it lacks a Drop and to_liquid_value refuses it outright.
     ar_class = Struct.new(:id) do
       def attributes
         { id: id }
@@ -72,7 +71,6 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     drop = described_class.new({ "posts" => { "source" => "posts" } }).resolve["posts"].first
     assert_equal "<p>keep me</p>", drop.invoke_drop("body")
   end
-
 
   test "escapes literal strings" do
     bindings = { "title" => { "source" => "_literal", "value" => "<b>x</b> & y" } }
@@ -148,6 +146,53 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
       described_class.new({ "x" => { "source" => "loud" } }, silent_errors: true).resolve
     end
   end
+
+  test "a drop_class that is not a Liquid::Drop is refused" do
+    not_a_drop = Class.new { def initialize(item); end }
+    ActiveCanvas::DataSources.register(:bad_drop) do
+      fetch { [ 1 ] }
+      drop not_a_drop
+    end
+    assert_raises(ActiveCanvas::DataSources::UnsafeData) do
+      described_class.new({ "x" => { "source" => "bad_drop" } }).resolve
+    end
+  end
+
+  test "a real drop_class passes through" do
+    drop_class = Class.new(::Liquid::Drop) do
+      def initialize(item); super(); @item = item; end
+      def doubled; @item * 2; end
+    end
+    ActiveCanvas::DataSources.register(:good_drop) do
+      fetch { [ 21 ] }
+      drop drop_class
+    end
+    assert_equal 42, described_class.new({ "x" => { "source" => "good_drop" } }).resolve["x"].first.invoke_drop("doubled")
+  end
+
+  test "a bare Struct result is wrapped by auto_drop, not iterated" do
+    row = Struct.new(:id, :title)
+    ActiveCanvas::DataSources.register(:one_row) do
+      fetch { row.new(1, "<b>") }
+      auto_drop attributes: %i[id]
+    end
+    result = described_class.new({ "x" => { "source" => "one_row" } }).resolve["x"]
+    assert_kind_of ActiveCanvas::AutoDrop, result
+    assert_nil result.invoke_drop("title")
+  end
+
+  test "a relation-like result is still iterated" do
+    # [1, 2].each returns an Enumerator, which is neither an Array nor
+    # responds to :to_ary, so it would not exercise the Array/to_ary guard.
+    ActiveCanvas::DataSources.register(:rel) { fetch { [ 1, 2 ] } }
+    assert_equal [ 1, 2 ], described_class.new({ "x" => { "source" => "rel" } }).resolve["x"]
+  end
+
+  test "a non-hash binding spec or params does not crash" do
+    assert_raises(ActiveCanvas::DataSources::UnknownSource) { described_class.new({ "x" => "counts" }).resolve }
+    assert_equal [ 1, 2, 3 ], described_class.new({ "x" => { "source" => "counts", "params" => "junk" } }).resolve["x"]
+  end
+
   private
 
   def described_class
