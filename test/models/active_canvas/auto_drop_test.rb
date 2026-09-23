@@ -76,4 +76,16 @@ class ActiveCanvas::AutoDropTest < ActiveSupport::TestCase
     drop = ActiveCanvas::AutoDrop.new(Article.new(1, :"<s>", "shh", nil), attributes: %i[title])
     assert_equal "&lt;s&gt;", drop.invoke_drop("title")
   end
+
+  test "an attribute that returns an arbitrary object is refused" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, Author.new("x", "y"), "shh", nil), attributes: %i[title])
+    assert_raises(ActiveCanvas::DataSources::UnsafeData) { drop.invoke_drop("title") }
+  end
+
+  test "dates, times, numbers, booleans and nil pass through" do
+    [ Date.new(2026, 1, 1), Time.new(2026, 1, 1), 3, 2.5, true, false, nil ].each do |v|
+      drop = ActiveCanvas::AutoDrop.new(Article.new(1, v, "shh", nil), attributes: %i[title])
+      v.nil? ? assert_nil(drop.invoke_drop("title")) : assert_equal(v, drop.invoke_drop("title"))
+    end
+  end
 end

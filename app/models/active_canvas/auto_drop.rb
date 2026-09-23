@@ -43,7 +43,10 @@ module ActiveCanvas
       when Symbol then escape(value.to_s, attribute)
       when String
         value.html_safe? || @html.include?(attribute) ? value : ERB::Util.html_escape(value)
-      else value
+      when Numeric, true, false, nil, Date, Time, ::Liquid::Drop
+        value
+      else
+        raise DataSources::UnsafeData.new(:auto_drop, value.class.name)
       end
     end
 

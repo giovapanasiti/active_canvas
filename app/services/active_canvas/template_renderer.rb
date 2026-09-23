@@ -77,6 +77,7 @@ module ActiveCanvas
         raise DataSources::TemplateRenderError.new(
           error.message,
           line: error.try(:line_number),
+          column: error.try(:column),
           original: error
         )
       end

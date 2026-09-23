@@ -43,6 +43,7 @@ module ActiveCanvas
     # Sanitized the way a save would be, so a static preview never shows raw
     # markup that saving would have stripped.
     def preview_with(content: nil, bindings: nil, content_css: nil, content_js: nil, template_enabled: nil)
+      # dup marks every attribute dirty, so the sanitizer below re-runs on the copy; that is idempotent and intended.
       dup.tap do |preview|
         preview.id = id
         preview.content = content unless content.nil?
