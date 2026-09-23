@@ -30,6 +30,12 @@ module ActiveCanvas
       end
     end
 
+    # The exposed surface as a Hash (values still go through escaping and
+    # association wrapping). Used by the editor's sample-data endpoint.
+    def to_h
+      (@attributes + @associations.keys).each_with_object({}) { |name, acc| acc[name] = liquid_method_missing(name) }
+    end
+
     private
 
     def read(method_name)

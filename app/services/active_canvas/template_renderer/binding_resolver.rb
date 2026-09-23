@@ -1,3 +1,5 @@
+require "cgi"
+
 module ActiveCanvas
   class TemplateRenderer
     # Walks page.bindings JSON, calls each data source, and returns a
@@ -13,6 +15,17 @@ module ActiveCanvas
         @bindings.each_with_object({}) do |(name, spec), acc|
           acc[name.to_s] = resolve_one(spec)
         end
+      end
+
+      # A JSON-friendly peek at one binding for the editor's Data panel: up to
+      # `rows` entries, Drops flattened to hashes, escaping undone so the
+      # author sees the real text and the real field names.
+      def sample(name, rows: 3)
+        spec = @bindings[name.to_s] || @bindings[name.to_sym]
+        raise DataSources::UnknownSource.new(name) unless spec
+
+        value = resolve_one(spec)
+        value.is_a?(Array) ? value.first(rows).map { |v| plain(v) } : plain(value)
       end
 
       private
@@ -80,6 +93,18 @@ module ActiveCanvas
         when Hash   then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = to_liquid_value(v, source: source) }
         when Array  then value.map { |v| to_liquid_value(v, source: source) }
         else raise DataSources::UnsafeData.new(source&.name || :_literal, value.class.name)
+        end
+      end
+
+      def plain(value)
+        case value
+        when AutoDrop then plain(value.to_h)
+        when ::Liquid::Drop
+          value.class.public_instance_methods(false).sort.each_with_object({}) { |m, acc| acc[m.to_s] = plain(value.invoke_drop(m.to_s)) }
+        when Hash   then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = plain(v) }
+        when Array  then value.first(3).map { |v| plain(v) }
+        when String then CGI.unescapeHTML(value.to_s)
+        else value
         end
       end
     end

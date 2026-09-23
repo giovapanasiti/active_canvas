@@ -88,4 +88,14 @@ class ActiveCanvas::AutoDropTest < ActiveSupport::TestCase
       v.nil? ? assert_nil(drop.invoke_drop("title")) : assert_equal(v, drop.invoke_drop("title"))
     end
   end
+
+  test "to_h exposes the whitelisted attributes and associations" do
+    article = Article.new(1, "Hello", "shh", Author.new("Jane", "secret@x.com"))
+    drop = ActiveCanvas::AutoDrop.new(article, attributes: %i[id title], associations: { author: %i[name] })
+    h = drop.to_h
+    assert_equal 1, h["id"]
+    assert_equal "Hello", h["title"]
+    assert_kind_of ActiveCanvas::AutoDrop, h["author"]
+    refute h.key?("secret_field")
+  end
 end

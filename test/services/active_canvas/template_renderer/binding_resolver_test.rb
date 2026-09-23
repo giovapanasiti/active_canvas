@@ -207,6 +207,26 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     assert_same inner, result[1]
   end
 
+  test "sample returns up to three plain rows for a list binding" do
+    row = Struct.new(:id, :title, :author)
+    author = Struct.new(:name)
+    ActiveCanvas::DataSources.register(:posts) do
+      fetch { (1..5).map { |i| row.new(i, "<b>Post #{i}</b>", author.new("Ann")) } }
+      auto_drop attributes: %i[id title], associations: { author: %i[name] }
+    end
+    rows = described_class.new({ "posts" => { "source" => "posts" } }).sample("posts")
+    assert_equal 3, rows.size
+    assert_equal({ "id" => 1, "title" => "<b>Post 1</b>", "author" => { "name" => "Ann" } }, rows.first)
+  end
+
+  test "sample returns a scalar for a literal" do
+    assert_equal "Hi & bye", described_class.new({ "t" => { "source" => "_literal", "value" => "Hi & bye" } }).sample("t")
+  end
+
+  test "sample raises UnknownSource for a binding that does not exist" do
+    assert_raises(ActiveCanvas::DataSources::UnknownSource) { described_class.new({}).sample("nope") }
+  end
+
   private
 
   def described_class

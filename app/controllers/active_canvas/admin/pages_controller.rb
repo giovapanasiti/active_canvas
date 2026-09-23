@@ -3,7 +3,7 @@ module ActiveCanvas
     class PagesController < ApplicationController
       include ActiveCanvas::TailwindCompilation
 
-      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template preview_iframe]
+      before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template sample_data preview_iframe]
 
       def index
         @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
@@ -126,6 +126,24 @@ module ActiveCanvas
       rescue ActiveCanvas::DataSources::TemplateRenderError => e
         render json: { ok: false, error: { message: e.message, line: e.line, column: e.column } },
                status: :unprocessable_entity
+      end
+
+      # First rows of one binding, resolved from the editor's unsaved bindings,
+      # so an author can see which field names exist before typing {{ }}.
+      def sample_data
+        preview = @page.preview_with(bindings: parse_bindings(params[:bindings]) || {})
+
+        if (message = invalid_bindings_message(preview))
+          return render json: { error: message }, status: :unprocessable_entity
+        end
+
+        name = params[:binding].to_s
+        return render json: { error: "No binding named #{name.inspect}" }, status: :not_found unless preview.bindings.key?(name)
+
+        render json: { rows: TemplateRenderer::BindingResolver.new(preview.bindings).sample(name) }
+      rescue StandardError => e
+        Rails.logger.info("[ActiveCanvas] sample_data for page #{@page.id} failed: #{e.class}: #{e.message}")
+        render json: { error: e.message }, status: :unprocessable_entity
       end
 
       # Renders a complete HTML page (layout, partials, CSS framework) from the
