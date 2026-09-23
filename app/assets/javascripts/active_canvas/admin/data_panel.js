@@ -21,10 +21,24 @@
     addBtn.disabled = true;
     emptyAddBtn.disabled = true;
     loadRegistry()
-      .then(() => { addBtn.disabled = false; emptyAddBtn.disabled = false; })
-      .catch(err => { console.error('ActiveCanvas: data sources unavailable', err); });
+      .then(() => {
+        addBtn.disabled = false;
+        emptyAddBtn.disabled = false;
+        renderBindings(); // labels and snippets need the registry
+      })
+      .catch(err => {
+        console.error('ActiveCanvas: data sources unavailable', err);
+        showPanelMessage('Data sources could not be loaded. Reload the page to try again.');
+      });
     addBtn.addEventListener('click', showForm);
     emptyAddBtn.addEventListener('click', showForm);
+  }
+
+  function showPanelMessage(text) {
+    const el = document.getElementById('ac-panel-message');
+    if (!el) return;
+    el.textContent = text;
+    el.hidden = !text;
   }
 
   function loadBindings() {
@@ -52,14 +66,18 @@
   }
 
   function bindingRowHTML(name, spec) {
+    const B = window.ActiveCanvasBindings;
+    const src = B.source(spec.source);
+    const item = B.itemName(name);
+    const firstField = src && src.fields && src.fields[0] ? src.fields[0].id : 'title';
+    const sourceLabel = spec.source === '_literal' ? 'Literal' : ((src && src.label) || spec.source);
     const snippet = `{{ ${name} }}`;
-    const item = window.ActiveCanvasBindings.itemName(name);
-    const loopSnippet = `<div data-ac-for="${item} in ${name}">{{ ${item}.title }}</div>`;
+    const loopSnippet = `<div data-ac-for="${item} in ${name}">{{ ${item}.${firstField} }}</div>`;
     return `
       <li class="data-panel-row">
         <div class="data-panel-row-header">
           <strong class="data-panel-row-name">${escape(name)}</strong>
-          <span class="data-panel-row-source">${escape(spec.source)}</span>
+          <span class="data-panel-row-source">${escape(sourceLabel)}</span>
           <button type="button" class="data-panel-row-remove" data-remove="${escape(name)}" title="Remove binding">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -69,7 +87,7 @@
         </div>
         <div class="data-panel-row-chips">
           <button type="button" class="data-panel-chip" data-snippet="${escape(snippet)}" title="Copy ${escape(snippet)}">{{ }}</button>
-          <button type="button" class="data-panel-chip" data-snippet="${escape(loopSnippet)}" title="Copy loop">for&hellip;</button>
+          ${B.isList(name) ? `<button type="button" class="data-panel-chip" data-snippet="${escape(loopSnippet)}" title="Copy loop">for&hellip;</button>` : ''}
         </div>
         <details class="data-panel-sample" data-sample-for="${escape(name)}">
           <summary>Sample data</summary>
@@ -153,7 +171,18 @@
 
   function renderSources(form) {
     const sel = form.querySelector('select[name="source"]');
-    sel.innerHTML = registry.map(s => `<option value="${escape(s.name)}">${escape(s.name)}</option>`).join('');
+    const groups = [
+      ['Values', registry.filter(s => s.kind === 'literal')],
+      ['Data sources', registry.filter(s => s.kind === 'source')],
+      ['Collections', registry.filter(s => s.kind === 'collection')]
+    ];
+    sel.innerHTML = groups
+      .filter(([, list]) => list.length > 0)
+      .map(([label, list]) =>
+        `<optgroup label="${escape(label)}">` +
+        list.map(s => `<option value="${escape(s.name)}">${escape(s.label || s.name)}</option>`).join('') +
+        '</optgroup>')
+      .join('');
     renderParamInputs(form);
   }
 
@@ -162,15 +191,46 @@
     const source = registry.find(s => s.name === sel.value);
     const target = form.querySelector('#ac-binding-params');
     if (!source) { target.innerHTML = ''; return; }
-    target.innerHTML = Object.entries(source.params).map(([pname, spec]) => {
-      if (spec.allowed) {
-        const opts = spec.allowed.map(v => `<option value="${escape(v)}">${escape(v)}</option>`).join('');
-        return `<label class="data-panel-field"><span class="data-panel-field-label">${escape(pname)}</span><select name="param_${escape(pname)}">${opts}</select></label>`;
-      }
-      if (spec.type === 'integer') return `<label class="data-panel-field"><span class="data-panel-field-label">${escape(pname)}</span><input type="number" name="param_${escape(pname)}" value="${escape(String(spec.default ?? ''))}"></label>`;
-      if (spec.type === 'boolean') return `<label class="data-panel-field data-panel-field-inline"><input type="checkbox" name="param_${escape(pname)}" ${spec.default ? 'checked' : ''}><span class="data-panel-field-label">${escape(pname)}</span></label>`;
-      return `<label class="data-panel-field"><span class="data-panel-field-label">${escape(pname)}</span><input type="text" name="param_${escape(pname)}" value="${escape(String(spec.default ?? ''))}"></label>`;
-    }).join('');
+    target.innerHTML = Object.entries(source.params || {})
+      .map(([pname, spec]) => paramInputHTML(pname, spec || {}))
+      .join('');
+    if (source.kind === 'collection') wireFilterValue(form, source);
+  }
+
+  // One input per param spec: allowed -> select (with labels), integer ->
+  // number with min/max from range, boolean -> checkbox, else text.
+  function paramInputHTML(pname, spec, allowedOverride) {
+    const label = `<span class="data-panel-field-label">${escape(pname)}</span>`;
+    const allowed = allowedOverride || spec.allowed;
+    if (allowed) {
+      const labels = spec.labels || {};
+      const blank = spec.default == null ? '<option value="">— none —</option>' : '';
+      const opts = allowed.map(v =>
+        `<option value="${escape(v)}" ${String(spec.default) === String(v) ? 'selected' : ''}>${escape(labels[v] || v)}</option>`
+      ).join('');
+      return `<label class="data-panel-field">${label}<select name="param_${escape(pname)}">${blank}${opts}</select></label>`;
+    }
+    if (spec.type === 'integer') {
+      const range = Array.isArray(spec.range) ? `min="${escape(spec.range[0])}" max="${escape(spec.range[1])}"` : '';
+      return `<label class="data-panel-field">${label}<input type="number" name="param_${escape(pname)}" ${range} value="${escape(spec.default ?? '')}"></label>`;
+    }
+    if (spec.type === 'boolean') {
+      return `<label class="data-panel-field data-panel-field-inline"><input type="checkbox" name="param_${escape(pname)}" ${spec.default ? 'checked' : ''}>${label}</label>`;
+    }
+    return `<label class="data-panel-field">${label}<input type="text" name="param_${escape(pname)}" value="${escape(spec.default ?? '')}"></label>`;
+  }
+
+  // When the chosen filter field is a select field, offer its options.
+  function wireFilterValue(form, source) {
+    const fieldSel = form.querySelector('[name="param_filter_field"]');
+    if (!fieldSel) return;
+    fieldSel.addEventListener('change', () => {
+      const field = (source.fields || []).find(f => f.id === fieldSel.value);
+      const current = form.querySelector('[name="param_filter_value"]');
+      if (!current) return;
+      const options = field && field.type === 'select' ? field.options : null;
+      current.closest('label').outerHTML = paramInputHTML('filter_value', source.params.filter_value || {}, options);
+    });
   }
 
   function onSave(e) {
@@ -180,8 +240,9 @@
     if (!name) { form.querySelector('input[name="name"]').focus(); return; }
     const sourceName = form.source.value;
     const source = registry.find(s => s.name === sourceName);
+    if (!source) { showPanelMessage('Pick a source.'); return; }
     const params = {};
-    Object.keys(source.params).forEach(pname => {
+    Object.keys(source.params || {}).forEach(pname => {
       const el = form.querySelector(`[name="param_${pname}"]`);
       if (!el) return;
       if (el.type === 'checkbox') params[pname] = el.checked;

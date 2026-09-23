@@ -57,7 +57,7 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
     find("#ac-add-binding-btn").click
     within("#ac-binding-form") do
       fill_in "name", with: "title"
-      find("select[name='source']").select("_literal")
+      find("select[name='source']").select("Literal")
       fill_in "param_value", with: "Hi there"
       click_button "Save binding"
     end
