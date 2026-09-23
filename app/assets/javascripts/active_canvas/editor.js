@@ -38,9 +38,12 @@
   function initEditor(config) {
     const csrfToken = window.ActiveCanvasEditor.getCsrfToken();
 
-    // Parse components JSON if available, otherwise use HTML content
+    // Dynamic pages always load their Liquid SOURCE, decorated with chips;
+    // the components JSON is not used for them (it is not persisted either).
     let componentsToLoad = config.content || '';
-    if (config.contentComponents) {
+    if (config.templateEnabled && window.ActiveCanvasChips) {
+      componentsToLoad = window.ActiveCanvasChips.decorate(componentsToLoad);
+    } else if (config.contentComponents) {
       try {
         componentsToLoad = JSON.parse(config.contentComponents);
       } catch (e) {
@@ -147,7 +150,8 @@
         'grapesjs-touch',
         'grapesjs-parser-postcss',
         'grapesjs-tooltip',
-        'grapesjs-typed'
+        'grapesjs-typed',
+        window.ActiveCanvasChips ? window.ActiveCanvasChips.plugin : function() {}
       ],
 
       pluginsOpts: {

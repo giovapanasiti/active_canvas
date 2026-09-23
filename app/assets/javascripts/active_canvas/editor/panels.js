@@ -200,12 +200,14 @@
 
       if (saveBtn) saveBtn.disabled = true;
 
-      // The canvas may hold rendered data chips; persist their Liquid source.
+      // The canvas holds the Liquid source with chip wrappers; strip them.
       const rawHtml = editor.getHtml();
-      const html = window.ActiveCanvasChips ? window.ActiveCanvasChips.restoreSourceTags(rawHtml) : rawHtml;
+      const html = window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(rawHtml) : rawHtml;
       const css = editor.getCss();
       const js = window.ActiveCanvasEditor.getJs ? window.ActiveCanvasEditor.getJs() : '';
-      const components = JSON.stringify(editor.getComponents());
+      // Dynamic pages reload from `content`; their components JSON would only
+      // carry chip wrappers, so it is not persisted.
+      const components = config.templateEnabled ? null : JSON.stringify(editor.getComponents());
 
       // Use entityType from config (defaults to 'page' for backwards compatibility)
       const entityType = config.entityType || 'page';
@@ -217,7 +219,7 @@
         content_js: js,
         content_components: components,
         bindings: bindingsJson
-        // template_enabled deliberately NOT sent here — page form is authoritative.
+        // template_enabled is sent by the Data panel toggle only (see data_panel.js).
       };
 
       fetch(config.saveUrl, {

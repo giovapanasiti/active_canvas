@@ -1,7 +1,6 @@
 (function() {
   const container = document.getElementById('data-panel-container');
   if (!container) return;
-  const pageId      = container.dataset.pageId;
 
   let registry = []; // [{ name, params: { limit: { type, default, ... } } }]
   let bindings = {}; // { localName: { source, params } | { source: '_literal', value } }

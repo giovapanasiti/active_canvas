@@ -43,7 +43,7 @@
       showLoading();
 
       const bindingsJson = readBindings();
-      const content = stripChips(editor.getHtml());
+      const content = window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(editor.getHtml()) : editor.getHtml();
 
       const csrf = document.querySelector('meta[name="csrf-token"]');
       fetch(previewUrl, {
@@ -99,19 +99,6 @@
 
     function hideError() {
       errorBox.setAttribute('hidden', '');
-    }
-
-    // The canvas may contain chip wrappers from the live preview overlay
-    // (see grape_chips_plugin.js). For an accurate render we restore the
-    // original Liquid source from each chip's data-ac-source attribute.
-    function stripChips(html) {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      tmp.querySelectorAll('[data-ac-var], [data-ac-block]').forEach(el => {
-        const src = el.getAttribute('data-ac-source') || '';
-        el.outerHTML = src;
-      });
-      return tmp.innerHTML;
     }
 
     function readBindings() {

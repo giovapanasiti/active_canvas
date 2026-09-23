@@ -35,6 +35,9 @@
     let editingComponent = null;
     let isComponentMode = false;
 
+    const toSource = html => (window.ActiveCanvasChips ? window.ActiveCanvasChips.undecorate(html) : html);
+    const toCanvas = html => (window.ActiveCanvasChips && config.templateEnabled ? window.ActiveCanvasChips.decorate(html) : html);
+
     // Initialize Monaco editors
     function initMonacoEditors() {
       if (monacoInitialized) return;
@@ -91,7 +94,7 @@
 
         // Create HTML editor
         htmlMonacoEditor = monaco.editor.create(document.getElementById('monaco-html-container'), {
-          value: editor.getHtml(),
+          value: toSource(editor.getHtml()),
           language: 'html',
           ...editorOptions
         });
@@ -205,9 +208,9 @@
       isSyncing = true;
 
       if (isComponentMode && editingComponent) {
-        htmlMonacoEditor.setValue(editingComponent.toHTML());
+        htmlMonacoEditor.setValue(toSource(editingComponent.toHTML()));
       } else {
-        htmlMonacoEditor.setValue(editor.getHtml());
+        htmlMonacoEditor.setValue(toSource(editor.getHtml()));
       }
       cssMonacoEditor.setValue(editor.getCss());
       setTimeout(async () => {
@@ -226,11 +229,11 @@
       try {
         if (isComponentMode && editingComponent) {
           const newHtml = htmlMonacoEditor.getValue();
-          updateComponentFromHtml(editingComponent, newHtml);
+          updateComponentFromHtml(editingComponent, toCanvas(newHtml));
         } else {
           const newHtml = htmlMonacoEditor.getValue();
           const newCss = cssMonacoEditor.getValue();
-          editor.setComponents(newHtml);
+          editor.setComponents(toCanvas(newHtml));
           editor.setStyle(newCss);
         }
         if (statusEl) {
@@ -296,7 +299,7 @@
         initMonacoEditors();
         setTimeout(() => {
           isSyncing = true;
-          htmlMonacoEditor.setValue(component.toHTML());
+          htmlMonacoEditor.setValue(toSource(component.toHTML()));
           setTimeout(async () => {
             try {
               await htmlMonacoEditor.getAction('editor.action.formatDocument').run();
@@ -314,7 +317,7 @@
         }, 200);
       } else {
         isSyncing = true;
-        htmlMonacoEditor.setValue(component.toHTML());
+        htmlMonacoEditor.setValue(toSource(component.toHTML()));
         setTimeout(async () => {
           try {
             await htmlMonacoEditor.getAction('editor.action.formatDocument').run();

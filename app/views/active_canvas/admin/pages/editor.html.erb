@@ -643,6 +643,7 @@
   window.ActiveCanvasEditor = {
     config: {
       pageId: <%= @page.id %>,
+      templateEnabled: <%= @page.template_enabled? %>,
       saveUrl: '<%= save_editor_admin_page_path(@page) %>',
       mediaUrl: '<%= admin_media_path(format: :json) %>',
       uploadUrl: '<%= admin_media_path %>',
@@ -687,9 +688,9 @@
 <%= javascript_include_tag "active_canvas/editor/preview_modal" %>
 <script id="ac-server-bindings" type="application/json"><%= json_escape(@page.bindings.to_json).html_safe %></script>
 <%= javascript_include_tag "active_canvas/editor/ac_bindings" %>
+<%= javascript_include_tag "active_canvas/editor/ac_chips" %>
 <%= javascript_include_tag "active_canvas/editor" %>
 <%= javascript_include_tag "active_canvas/admin/data_panel" %>
-<%= javascript_include_tag "active_canvas/admin/grape_chips_plugin" %>
 
 <!-- Theme Switcher JavaScript -->
 <script>
