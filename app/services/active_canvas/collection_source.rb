@@ -33,12 +33,12 @@ module ActiveCanvas
 
     def sort(items, params)
       spec = @schema.field(params["sort_field"]) if params["sort_field"].present?
-      return items.sort_by { |item| item.published_at || Time.at(0) }.reverse unless spec
+      return items.sort_by { |item| [ item.published_at || Time.at(0), item.id ] }.reverse unless spec
 
       sortable, unsortable = items.partition { |item| sortable?(spec, item.data[spec["id"]]) }
-      sorted = sortable.sort_by { |item| sort_key(spec, item.data[spec["id"]]) }
+      sorted = sortable.sort_by { |item| [ sort_key(spec, item.data[spec["id"]]), item.id ] }
       sorted.reverse! unless params["sort_dir"] == "asc"
-      sorted + unsortable # nils and unreadable values go last both ways
+      sorted + unsortable.sort_by(&:id) # nils and unreadable values go last both ways
     end
 
     def sortable?(spec, value)
@@ -53,7 +53,7 @@ module ActiveCanvas
       case spec["type"]
       when "number"  then value
       when "boolean" then value ? 1 : 0
-      else value.to_s # dates are ISO-8601, so lexical order is chronological
+      else value.to_s.downcase # dates are ISO-8601, so lexical order is chronological
       end
     end
 

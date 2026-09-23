@@ -107,6 +107,7 @@ class ActiveCanvas::CollectionSourceTest < ActiveSupport::TestCase
 
   test "number sort survives a legacy string value and puts it last both ways" do
     legacy = @collection.items.create!
+    # update_columns bypasses coercion on purpose: publish! would turn "abc" into nil
     legacy.update_columns(data: { "name" => "Zed", "rank" => "abc" }, status: "published", published_at: Time.current)
     asc = resolve("sort_field" => "rank", "sort_dir" => "asc").map { |r| r["name"] }
     desc = resolve("sort_field" => "rank", "sort_dir" => "desc").map { |r| r["name"] }
@@ -136,5 +137,20 @@ class ActiveCanvas::CollectionSourceTest < ActiveSupport::TestCase
     end
     names = ActiveCanvas::CollectionSource.new(coll).resolve("sort_field" => "on", "sort_dir" => "asc").map { |r| r["name"] }
     assert_equal %w[f t], names
+  end
+
+  test "text sort ignores case" do
+    publish("zed", 4, "eng")
+    publish("Beth", 5, "eng")
+    names = resolve("sort_field" => "name", "sort_dir" => "asc").map { |r| r["name"] }
+    assert_equal %w[Ada Beth Bob Cy zed], names
+  end
+
+  test "ties are broken by id so the order is stable" do
+    publish("Ada2", 2, "eng")
+    twice = 2.times.map { resolve("sort_field" => "rank", "sort_dir" => "asc").map { |r| r["id"] } }
+    assert_equal twice[0], twice[1]
+    tied = resolve("sort_field" => "rank", "sort_dir" => "asc").select { |r| r["rank"] == 2 }.map { |r| r["id"] }
+    assert_equal tied.sort, tied
   end
 end
