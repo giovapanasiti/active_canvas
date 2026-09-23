@@ -134,4 +134,22 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
       assert_includes collection.errors[:fields].join, "could not be read"
     end
   end
+
+  test "param_schema describes limit, sort and filter params from the fields" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team",
+      fields: [ { "label" => "Name", "type" => "text" }, { "label" => "Dept", "type" => "select", "options" => %w[eng sales] } ])
+    schema = collection.param_schema
+    assert_equal({ type: :integer, default: 100, range: [ 1, 500 ], allowed: nil }, schema[:limit])
+    assert_equal %w[name dept], schema[:sort_field][:allowed]
+    assert_equal({ "name" => "Name", "dept" => "Dept" }, schema[:sort_field][:labels])
+    assert_equal %w[asc desc], schema[:sort_dir][:allowed]
+    assert_equal "desc", schema[:sort_dir][:default]
+    assert_equal %w[name dept], schema[:filter_field][:allowed]
+    assert_equal({ type: :string, default: nil, range: nil, allowed: nil }, schema[:filter_value])
+  end
+
+  test "item_name comes from the slug" do
+    assert_equal "member", ActiveCanvas::Collection.new(name: "Members", slug: "members").item_name
+    assert_equal "item", ActiveCanvas::Collection.new(name: "Team", slug: "team").item_name
+  end
 end

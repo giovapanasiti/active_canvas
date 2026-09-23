@@ -17,6 +17,24 @@ module ActiveCanvas
     validate :slug_not_reserved
     validate :fields_well_formed
 
+    def item_name
+      ActiveCanvas::DataSources.item_name(slug)
+    end
+
+    # The params an editor can set on a binding to this collection, in the
+    # same shape as DataSources::Source#param_schema plus field labels.
+    def param_schema
+      ids = fields.map { |f| f["id"] }
+      labels = fields.each_with_object({}) { |f, acc| acc[f["id"]] = f["label"] }
+      {
+        limit:        { type: :integer, default: CollectionSource::DEFAULT_LIMIT, range: [ 1, CollectionSource::MAX_LIMIT ], allowed: nil },
+        sort_field:   { type: :string, default: nil, range: nil, allowed: ids, labels: labels },
+        sort_dir:     { type: :string, default: "desc", range: nil, allowed: %w[asc desc] },
+        filter_field: { type: :string, default: nil, range: nil, allowed: ids, labels: labels },
+        filter_value: { type: :string, default: nil, range: nil, allowed: nil }
+      }
+    end
+
     private
 
     def normalize_slug

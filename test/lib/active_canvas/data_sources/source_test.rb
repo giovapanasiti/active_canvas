@@ -2,6 +2,9 @@ require "test_helper"
 require "liquid"
 
 class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
+  setup { ActiveCanvas::DataSources.reset_for_testing! }
+  teardown { ActiveCanvas::DataSources.reset_for_testing! }
+
   def build_source(&blk)
     builder = ActiveCanvas::DataSources::Registration.new(:fixtures)
     builder.instance_eval(&blk)
@@ -77,5 +80,34 @@ class ActiveCanvas::DataSources::SourceTest < ActiveSupport::TestCase
       ActiveCanvas::DataSources::Registration.new(:nofetch).to_source
     end
     assert_match(/fetch block required/, err.message)
+  end
+
+  test "sources are lists unless they declare returns :one" do
+    ActiveCanvas::DataSources.register(:many) { fetch { [] } }
+    ActiveCanvas::DataSources.register(:one) do
+      returns :one
+      fetch { "x" }
+    end
+    assert ActiveCanvas::DataSources.lookup(:many).list?
+    assert_not ActiveCanvas::DataSources.lookup(:one).list?
+  end
+
+  test "returns rejects anything but :one or :list" do
+    assert_raises(ArgumentError) do
+      ActiveCanvas::DataSources.register(:bad) do
+        returns :many
+        fetch { [] }
+      end
+    end
+  end
+
+  test "param_schema serializes a range as [min, max]" do
+    ActiveCanvas::DataSources.register(:ranged) do
+      param :limit, type: :integer, default: 5, range: 1..50
+      fetch { |limit:| limit }
+    end
+    schema = ActiveCanvas::DataSources.lookup(:ranged).param_schema
+    assert_equal [ 1, 50 ], schema[:limit][:range]
+    assert_nil schema[:limit][:allowed]
   end
 end

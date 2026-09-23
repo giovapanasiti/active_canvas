@@ -49,4 +49,11 @@ class ActiveCanvas::DataSourcesTest < ActiveSupport::TestCase
   ensure
     ActiveCanvas.config.template_default_on_error = original
   end
+
+  test "item_name singularizes the binding name and falls back to item" do
+    assert_equal "article", ActiveCanvas::DataSources.item_name("articles")
+    assert_equal "member", ActiveCanvas::DataSources.item_name(:members)
+    assert_equal "item", ActiveCanvas::DataSources.item_name("team")
+    assert_equal "item", ActiveCanvas::DataSources.item_name("")
+  end
 end

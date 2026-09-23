@@ -30,6 +30,13 @@ module ActiveCanvas
         @registry.each_pair(&block)
       end
 
+      # Default loop variable for a binding: `articles` → `article`, and
+      # `item` when the singular is no different (`team`).
+      def item_name(name)
+        singular = name.to_s.singularize
+        singular.present? && singular != name.to_s ? singular : "item"
+      end
+
       def freeze!
         @frozen = true
       end

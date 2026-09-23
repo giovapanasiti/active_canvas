@@ -9,6 +9,7 @@ module ActiveCanvas
         @drop_class = nil
         @auto_drop_config = nil
         @on_error = nil
+        @returns = :list
       end
 
       def param(name, type:, default: nil, range: nil, allowed: nil)
@@ -36,6 +37,12 @@ module ActiveCanvas
         @on_error = mode
       end
 
+      # Whether the fetch block returns a list (loopable) or a single value.
+      def returns(shape)
+        raise ArgumentError, "returns must be :one or :list, got #{shape.inspect}" unless %i[one list].include?(shape)
+        @returns = shape
+      end
+
       def to_source
         raise ArgumentError, "fetch block required for data source #{@name.inspect}" unless @fetch_block
         Source.new(
@@ -44,7 +51,8 @@ module ActiveCanvas
           fetch_block: @fetch_block,
           drop_class: @drop_class,
           auto_drop_config: @auto_drop_config,
-          on_error: @on_error || ActiveCanvas.config.template_default_on_error
+          on_error: @on_error || ActiveCanvas.config.template_default_on_error,
+          returns: @returns
         )
       end
     end

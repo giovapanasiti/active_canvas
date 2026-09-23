@@ -170,21 +170,25 @@ module ActiveCanvas
 
       def data_sources
         literal = {
-          name: "_literal", kind: "literal",
+          name: "_literal", kind: "literal", label: "Literal", item_name: "item", list: false,
           params: { value: { type: :string, default: nil, range: nil, allowed: nil } }
         }
 
         registered = ActiveCanvas::DataSources.registered_names.map do |name|
           source = ActiveCanvas::DataSources.lookup(name)
-          { name: name, kind: "source", params: source.param_schema }
+          {
+            name: name, kind: "source", label: name.to_s.humanize,
+            item_name: ActiveCanvas::DataSources.item_name(name), list: source.list?,
+            params: source.param_schema
+          }
         end
 
         collections = ActiveCanvas::Collection.order(:name).map do |collection|
           {
-            name: collection.slug,
-            kind: "collection",
+            name: collection.slug, kind: "collection", label: collection.name,
+            item_name: collection.item_name, list: true,
             fields: collection.fields.map { |f| f.slice("id", "label", "type", "options") },
-            params: { limit: nil, sort_field: nil, sort_dir: "desc", filter_field: nil, filter_value: nil }
+            params: collection.param_schema
           }
         end
 

@@ -3,13 +3,18 @@ module ActiveCanvas
     class Source
       attr_reader :name, :params, :drop_class, :auto_drop_config, :on_error
 
-      def initialize(name:, params:, fetch_block:, drop_class:, auto_drop_config:, on_error:)
+      def initialize(name:, params:, fetch_block:, drop_class:, auto_drop_config:, on_error:, returns: :list)
         @name = name
         @params = params
         @fetch_block = fetch_block
         @drop_class = drop_class
         @auto_drop_config = auto_drop_config || { attributes: [], associations: {}, html: [] }
         @on_error = on_error
+        @returns = returns
+      end
+
+      def list?
+        @returns == :list
       end
 
       # Resolves params (with defaults + validation) then calls the fetch block.
@@ -26,9 +31,15 @@ module ActiveCanvas
         end
       end
 
+      # JSON-friendly description of the params for the editor's Data panel.
       def param_schema
         params.transform_values do |spec|
-          { type: spec.type, default: spec.default, range: spec.range, allowed: spec.allowed }
+          {
+            type: spec.type,
+            default: spec.default,
+            range: spec.range && [ spec.range.min, spec.range.max ],
+            allowed: spec.allowed
+          }
         end
       end
     end
