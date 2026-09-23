@@ -179,4 +179,12 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
     assert_equal [ { "id" => "name", "label" => "Name", "type" => "text" } ], JSON.parse(collection.fields_json)
   end
+
+  test "assigning fields after an unreadable fields_json clears the read error" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team")
+    collection.fields_json = "{bad"
+    assert_not collection.valid?
+    collection.fields = [ { "label" => "Name", "type" => "text" } ]
+    assert collection.valid?
+  end
 end

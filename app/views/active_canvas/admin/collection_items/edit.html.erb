@@ -4,13 +4,20 @@
   <h2>Edit item</h2>
   <div>
     <%= link_to "History", history_admin_collection_item_path(@collection, @item), class: "btn btn-secondary" %>
-    <% if @item.status == "published" %>
-      <%= button_to "Unpublish", unpublish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-secondary" %>
+    <% if @item.status != "published" %>
+      <%= button_to "Publish", publish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-primary", form: { style: "display:inline" } %>
     <% else %>
-      <%= button_to "Publish", publish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-primary" %>
+      <% if @item.pending_changes? %>
+        <%= button_to "Publish changes", publish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-primary", form: { style: "display:inline" } %>
+      <% end %>
+      <%= button_to "Unpublish", unpublish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-secondary", form: { style: "display:inline" } %>
     <% end %>
   </div>
 </div>
+
+<% if @item.status == "published" && @item.pending_changes? %>
+  <p class="help-text" style="margin:0 0 1rem;">This item has draft changes that visitors do not see yet. Publish changes to make them live.</p>
+<% end %>
 
 <div class="card" style="padding:1.5rem;">
   <%= render "form" %>

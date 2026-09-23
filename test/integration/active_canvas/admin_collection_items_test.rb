@@ -199,4 +199,53 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_select "template#ac-field-row-template code[data-field-id-display]"
     assert_includes css_select("script#ac-fields-data").first.content, "\"id\":\"name\""
   end
+
+  test "edit offers Publish changes and Unpublish for a published item with pending edits" do
+    item = add_item(name: "Ada", publish: true)
+    item.assign_fields("name" => "Grace"); item.save!
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/unpublish"
+    assert_includes response.body, "Publish changes"
+    assert_includes response.body, "draft changes that visitors do not see yet"
+  end
+
+  test "edit offers only Unpublish for a published item without pending edits" do
+    item = add_item(name: "Ada", publish: true)
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish", count: 0
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/unpublish"
+  end
+
+  test "edit offers Publish for a draft" do
+    item = add_item(name: "Ada")
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/publish"
+    refute_includes response.body, "Publish changes"
+  end
+
+  test "the grid badges pending changes and offers every row action" do
+    published = add_item(name: "Ada", publish: true)
+    published.assign_fields("name" => "Grace"); published.save!
+    draft = add_item(name: "Bob")
+
+    get "/canvas/admin/collections/#{@collection.id}/items"
+    assert_select ".badge-warning", text: /draft changes/i
+    assert_select "a[href=?]", "/canvas/admin/collections/#{@collection.id}/items/#{published.id}/history"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{published.id}/unpublish"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{published.id}/publish"
+    assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{draft.id}/publish"
+    assert_select "form[action=?][method=post] input[name=_method][value=delete]", "/canvas/admin/collections/#{@collection.id}/items/#{draft.id}"
+  end
+
+  test "history keeps showing a field that was removed from the schema" do
+    item = add_item(name: "Ada", active: true)
+    item.publish!
+    @collection.update!(fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/history"
+    assert_response :success
+    assert_select "dt", text: /\Aactive\s*\(removed field\)/   # raw id, label is gone
+    assert_select "dd", text: "true"
+  end
 end

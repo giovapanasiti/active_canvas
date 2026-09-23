@@ -47,6 +47,11 @@ module ActiveCanvas
       (fields.is_a?(Array) ? fields : []).to_json
     end
 
+    def fields=(value)
+      @fields_unreadable = false
+      super
+    end
+
     private
 
     def normalize_slug
@@ -74,7 +79,7 @@ module ActiveCanvas
     end
 
     def fields_readable?
-      fields.is_a?(Array) && fields.all?(Hash)
+      !@fields_unreadable && fields.is_a?(Array) && fields.all?(Hash)
     end
 
     def fields_well_formed

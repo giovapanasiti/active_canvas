@@ -16,10 +16,11 @@
             <% if version.changed_by.present? %> &middot; by <%= version.changed_by %><% end %>
           </small>
         </p>
+        <% labels = @collection.fields.each_with_object({}) { |f, acc| acc[f["id"]] = f["label"] } %>
         <dl>
-          <% @collection.fields.each do |field| %>
-            <dt><%= field["label"] %></dt>
-            <dd><%= truncate((version.data || {})[field["id"]].to_s, length: 120) %></dd>
+          <% (version.data || {}).each do |field_id, value| %>
+            <dt><%= labels[field_id] || field_id %><% unless labels.key?(field_id) %> <small>(removed field)</small><% end %></dt>
+            <dd><%= truncate(value.to_s, length: 120) %></dd>
           <% end %>
         </dl>
       </div>

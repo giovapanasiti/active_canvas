@@ -34,8 +34,20 @@
             <% end %>
             <td><%= collection_status_badge(item) %></td>
             <td><%= item.updated_at.strftime("%Y-%m-%d %H:%M") %></td>
-            <td class="actions">
+            <td class="actions" style="white-space:nowrap;">
               <%= link_to "Edit", edit_admin_collection_item_path(@collection, item), class: "btn btn-sm btn-secondary" %>
+              <% if item.status != "published" || item.pending_changes? %>
+                <%= button_to (item.status == "published" ? "Publish changes" : "Publish"), publish_admin_collection_item_path(@collection, item),
+                      method: :patch, class: "btn btn-sm btn-primary", form: { style: "display:inline" } %>
+              <% end %>
+              <% if item.status == "published" %>
+                <%= button_to "Unpublish", unpublish_admin_collection_item_path(@collection, item),
+                      method: :patch, class: "btn btn-sm btn-secondary", form: { style: "display:inline" } %>
+              <% end %>
+              <%= link_to "History", history_admin_collection_item_path(@collection, item), class: "btn btn-sm btn-secondary" %>
+              <%= button_to "Delete", admin_collection_item_path(@collection, item), method: :delete,
+                    class: "btn btn-sm btn-danger", form: { style: "display:inline" },
+                    onclick: "return confirm('Delete this item?')" %>
             </td>
           </tr>
         <% end %>
