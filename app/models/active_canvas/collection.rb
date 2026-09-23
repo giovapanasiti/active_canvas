@@ -1,6 +1,9 @@
 module ActiveCanvas
   class Collection < ApplicationRecord
     RESERVED_SLUGS = %w[_literal].freeze
+    # Keys CollectionSource puts on every row; a field may not shadow them.
+    RESERVED_FIELD_IDS = %w[id slug published_at].freeze
+    FIELD_ID_FORMAT = /\A[a-z][a-z0-9_]*\z/
 
     has_many :items, class_name: "ActiveCanvas::CollectionItem", dependent: :destroy
 
@@ -17,12 +20,14 @@ module ActiveCanvas
     private
 
     def normalize_slug
-      self.slug = slug.to_s.parameterize if slug.present?
+      self.slug = (slug.presence || name).to_s.parameterize
     end
 
     def assign_missing_field_ids
-      taken = []
-      self.fields = (fields || []).map do |field|
+      return unless fields_readable?
+
+      taken = RESERVED_FIELD_IDS.dup
+      self.fields = fields.map do |field|
         field = field.transform_keys(&:to_s)
         id = field["id"].presence || CollectionSchema.generate_field_id(field["label"], taken)
         taken << id
@@ -38,11 +43,19 @@ module ActiveCanvas
       end
     end
 
+    def fields_readable?
+      fields.is_a?(Array) && fields.all?(Hash)
+    end
+
     def fields_well_formed
+      return errors.add(:fields, "could not be read") unless fields_readable?
+
       seen = []
-      Array(fields).each do |field|
+      fields.each do |field|
         errors.add(:fields, "must each have a label") if field["label"].blank?
         errors.add(:fields, "have an unknown type: #{field["type"]}") unless CollectionSchema::VALID_FIELD_TYPES.include?(field["type"])
+        errors.add(:fields, "have an invalid id: #{field["id"]}") unless field["id"].to_s.match?(FIELD_ID_FORMAT)
+        errors.add(:fields, "use a reserved id: #{field["id"]}") if RESERVED_FIELD_IDS.include?(field["id"])
         errors.add(:fields, "have duplicate ids: #{field["id"]}") if seen.include?(field["id"])
         seen << field["id"]
       end

@@ -15,10 +15,12 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
     ActiveCanvas::CollectionSchema.new(FIELDS)
   end
 
-  test "generate_field_id snakes the label and dedupes" do
+  test "generate_field_id snakes the label, prefixes digits and dedupes" do
     assert_equal "full_name", ActiveCanvas::CollectionSchema.generate_field_id("Full Name!", [])
     assert_equal "name_2", ActiveCanvas::CollectionSchema.generate_field_id("Name", %w[name])
     assert_equal "field", ActiveCanvas::CollectionSchema.generate_field_id("", [])
+    assert_equal "f_2nd", ActiveCanvas::CollectionSchema.generate_field_id("2nd", [])
+    assert_equal "f_1", ActiveCanvas::CollectionSchema.generate_field_id("1", [])
   end
 
   test "field_ids lists ids in order" do

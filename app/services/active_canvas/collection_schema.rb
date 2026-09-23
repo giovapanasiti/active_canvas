@@ -9,6 +9,7 @@ module ActiveCanvas
 
     def self.generate_field_id(label, taken)
       base = label.to_s.parameterize(separator: "_").presence || "field"
+      base = "f_#{base}" unless base.match?(/\A[a-z]/)
       candidate = base
       counter = 1
       while taken.include?(candidate)

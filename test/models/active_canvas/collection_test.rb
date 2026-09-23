@@ -8,9 +8,13 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert collection.valid?
   end
 
-  test "requires name and slug" do
+  test "requires a name" do
     assert_not ActiveCanvas::Collection.new(slug: "team").valid?
-    assert_not ActiveCanvas::Collection.new(name: "Team").valid?
+  end
+
+  test "a blank slug is derived from the name" do
+    collection = ActiveCanvas::Collection.create!(name: "Our Team")
+    assert_equal "our-team", collection.slug
   end
 
   test "slug is unique" do
@@ -89,5 +93,40 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     collection.items.create!(status: "draft")
     collection.destroy
     assert_equal 0, ActiveCanvas::CollectionItem.count
+  end
+
+  test "a field labelled like a reserved row key gets a suffixed id" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team",
+      fields: [ { "label" => "Id", "type" => "text" }, { "label" => "Slug", "type" => "text" }, { "label" => "Published at", "type" => "date" } ])
+    assert_equal %w[id_2 slug_2 published_at_2], collection.fields.map { |f| f["id"] }
+  end
+
+  test "an explicit reserved field id is invalid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "id", "label" => "Id", "type" => "text" } ])
+    assert_not collection.valid?
+    assert_includes collection.errors[:fields].join, "reserved"
+  end
+
+  test "a field id must be snake_case starting with a letter" do
+    [ "Has Space", "Upper", "1st", "with-dash" ].each do |bad|
+      collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+        fields: [ { "id" => bad, "label" => "X", "type" => "text" } ])
+      assert_not collection.valid?, "expected #{bad.inspect} to be rejected"
+    end
+  end
+
+  test "a label starting with a digit gets a letter prefix" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team",
+      fields: [ { "label" => "2nd line", "type" => "text" } ])
+    assert_equal %w[f_2nd_line], collection.fields.map { |f| f["id"] }
+  end
+
+  test "fields that are not an array of hashes are invalid" do
+    [ "junk", [ "junk" ], { "a" => 1 } ].each do |bad|
+      collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", fields: bad)
+      assert_not collection.valid?, "expected #{bad.inspect} to be rejected"
+      assert_includes collection.errors[:fields].join, "could not be read"
+    end
   end
 end
