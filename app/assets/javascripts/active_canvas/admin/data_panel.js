@@ -4,7 +4,7 @@
 
   let registry = []; // [{ name, params: { limit: { type, default, ... } } }]
   let bindings = {}; // { localName: { source, params } | { source: '_literal', value } }
-  const NAME_RE = /^[a-z_][a-z0-9_]*$/;
+  const NAME_RE = /^[a-z][a-z0-9_]*$/;
 
   const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
   const post = (url, body) => fetch(url, {
@@ -165,6 +165,7 @@
   }
 
   function showForm() {
+    showPanelMessage('');
     const list = document.getElementById('ac-bindings-list');
     if (list.querySelector('#ac-binding-form')) return;
     const tpl = document.getElementById('ac-binding-form-template');

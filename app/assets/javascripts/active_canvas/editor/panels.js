@@ -245,7 +245,7 @@
               message += ` · Tailwind compiled (${sizeKb}KB in ${result.tailwind.elapsed_ms}ms)`;
             } else {
               showToast('Page saved, but Tailwind compilation failed: ' + result.tailwind.error, 'warning');
-              return false;
+              return true; // the page itself was saved
             }
           }
 
