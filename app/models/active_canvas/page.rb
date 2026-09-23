@@ -10,6 +10,7 @@ module ActiveCanvas
 
     validates :title, presence: true
     validates :slug, uniqueness: true, allow_blank: true
+    validate :bindings_shape
 
     before_save :set_default_slug
     before_save :normalize_slug
@@ -56,6 +57,17 @@ module ActiveCanvas
 
     def normalize_slug
       self.slug = slug.parameterize if slug.present?
+    end
+
+    # bindings is `{ "name" => { "source" => "...", ... } }`. Anything else
+    # would blow up inside BindingResolver on the public page, so refuse it here.
+    def bindings_shape
+      return errors.add(:bindings, "must be a JSON object") unless bindings.is_a?(Hash)
+
+      bindings.each do |name, spec|
+        source = spec.is_a?(Hash) ? (spec["source"] || spec[:source]) : nil
+        errors.add(:bindings, "entry #{name.to_s.inspect} must be an object with a source") if source.to_s.blank?
+      end
     end
 
     def sanitize_content_if_enabled

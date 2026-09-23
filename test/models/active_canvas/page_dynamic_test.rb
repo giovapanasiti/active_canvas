@@ -38,4 +38,24 @@ class ActiveCanvas::PageDynamicTest < ActiveSupport::TestCase
     assert_equal({ "name" => { "source" => "_literal", "value" => "Jane" } }, v.bindings_before)
     assert_equal({ "name" => { "source" => "_literal", "value" => "John" } }, v.bindings_after)
   end
+
+  test "bindings must be a hash of hashes that each name a source" do
+    page = ActiveCanvas::Page.new(title: "Dyn", page_type: @page_type, content: "")
+    [ [ 1 ], "str", { "x" => 5 }, { "x" => nil }, { "x" => "notahash" }, { "x" => { "value" => 1 } }, { "x" => { "source" => "" } } ].each do |bad|
+      page.bindings = bad
+      assert_not page.valid?, "expected #{bad.inspect} to be invalid"
+      assert page.errors[:bindings].any?, "expected a bindings error for #{bad.inspect}"
+    end
+  end
+
+  test "well-formed bindings are valid" do
+    page = ActiveCanvas::Page.new(title: "Dyn", page_type: @page_type, content: "",
+      bindings: { "x" => { "source" => "_literal", "value" => 1 }, "y" => { "source" => "posts", "params" => {} } })
+    assert page.valid?
+  end
+
+  test "empty bindings are valid" do
+    page = ActiveCanvas::Page.new(title: "Dyn", page_type: @page_type, content: "", bindings: {})
+    assert page.valid?
+  end
 end

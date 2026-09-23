@@ -119,6 +119,10 @@ module ActiveCanvas
         snapshot.template_enabled = true
         snapshot.bindings = parse_bindings(params[:bindings])
 
+        if (message = invalid_bindings_message(snapshot))
+          return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
+        end
+
         html = TemplateRenderer.new(snapshot, mode: :preview).render
         render json: { html: html, error: nil }
       rescue ActiveCanvas::DataSources::TemplateRenderError => e
@@ -139,6 +143,10 @@ module ActiveCanvas
         snapshot.content_js = params[:content_js].to_s if params.key?(:content_js)
         snapshot.template_enabled = true
         snapshot.bindings = parse_bindings(params[:bindings])
+
+        if (message = invalid_bindings_message(snapshot))
+          return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
+        end
 
         # Reuse the public show view + layout so the iframe matches what a
         # visitor would actually see (SEO meta, Tailwind, partials, scripts).
@@ -201,11 +209,21 @@ module ActiveCanvas
         params.require(:page).permit(:content, :content_css, :content_js, :content_components, :template_enabled, :bindings)
       end
 
+      # Returns whatever the client sent, parsed. Page#bindings_shape does the
+      # checking, so a bad payload becomes a validation error, not a 500.
       def parse_bindings(raw)
         return {} if raw.blank?
-        raw.is_a?(String) ? JSON.parse(raw) : raw.to_unsafe_h.to_h
+        return JSON.parse(raw) if raw.is_a?(String)
+        raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h : raw
       rescue JSON::ParserError
-        {}
+        raw
+      end
+
+      # A dup'd page fails the slug uniqueness check against its own row, so
+      # only the bindings errors are meaningful here.
+      def invalid_bindings_message(page)
+        page.validate
+        page.errors.full_messages_for(:bindings).to_sentence.presence
       end
     end
   end

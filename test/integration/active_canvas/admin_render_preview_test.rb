@@ -39,4 +39,12 @@ class ActiveCanvas::AdminRenderPreviewTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_includes body.dig("error", "message").to_s, "totally_unknown_source"
   end
+
+  test "returns 422 on malformed bindings instead of 500" do
+    [ "[1]", "{\"x\": 5}", "not json", { "x" => "5" } ].each do |bad|
+      post "/canvas/admin/pages/#{@page.id}/render_preview", params: { content: "{{ x }}", bindings: bad }
+      assert_response :unprocessable_entity, "expected 422 for #{bad.inspect}"
+      assert_match(/bindings/i, JSON.parse(response.body).dig("error", "message").to_s)
+    end
+  end
 end
