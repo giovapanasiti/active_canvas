@@ -227,6 +227,41 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     assert_raises(ActiveCanvas::DataSources::UnknownSource) { described_class.new({}).sample("nope") }
   end
 
+  test "sample flattens a custom drop through Liquid's surface and skips methods with arguments" do
+    base = Class.new(::Liquid::Drop) do
+      def initialize(n); super(); @n = n; end
+      def base_field; "base#{@n}"; end
+    end
+    child = Class.new(base) do
+      def child_field; "child"; end
+      def with_arg(x); x; end
+      def me; self; end
+    end
+    ActiveCanvas::DataSources.register(:custom) do
+      fetch { [ 1 ] }
+      drop child
+    end
+    row = described_class.new({ "x" => { "source" => "custom" } }).sample("x").first
+    assert_equal "base1", row["base_field"]
+    assert_equal "child", row["child_field"]
+    refute row.key?("with_arg")
+    assert_kind_of Hash, row["me"]            # recursion is capped, not infinite
+  end
+
+  test "sample never serializes an object outside the Liquid boundary" do
+    leaky = Class.new(::Liquid::Drop) do
+      def initialize(_); super(); end
+      def record; ActiveCanvas::PageType.new(name: "secret"); end
+    end
+    ActiveCanvas::DataSources.register(:leaky) do
+      fetch { [ 1 ] }
+      drop leaky
+    end
+    row = described_class.new({ "x" => { "source" => "leaky" } }).sample("x").first
+    assert_kind_of String, row["record"]
+    refute_includes row["record"], "secret"
+  end
+
   private
 
   def described_class

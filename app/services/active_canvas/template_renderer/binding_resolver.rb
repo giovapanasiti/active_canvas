@@ -96,15 +96,25 @@ module ActiveCanvas
         end
       end
 
-      def plain(value)
+      # Flattens a resolved value for JSON. Drops expose only what Liquid
+      # would (`invokable_methods`, zero-arity), depth is capped so a drop
+      # that points back at itself cannot recurse, and anything outside the
+      # Liquid boundary is rendered as text, never serialized as an object.
+      def plain(value, depth = 0)
         case value
-        when AutoDrop then plain(value.to_h)
+        when AutoDrop
+          depth > 2 ? value.to_s : plain(value.to_h, depth + 1)
         when ::Liquid::Drop
-          value.class.public_instance_methods(false).sort.each_with_object({}) { |m, acc| acc[m.to_s] = plain(value.invoke_drop(m.to_s)) }
-        when Hash   then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = plain(v) }
-        when Array  then value.first(3).map { |v| plain(v) }
+          return value.to_s if depth > 2
+          value.class.invokable_methods.sort
+            .select { |m| value.method(m).arity.zero? }
+            .each_with_object({}) { |m, acc| acc[m.to_s] = plain(value.invoke_drop(m), depth + 1) }
+        when Hash   then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = plain(v, depth + 1) }
+        when Array  then value.first(3).map { |v| plain(v, depth + 1) }
         when String then CGI.unescapeHTML(value.to_s)
-        else value
+        when Symbol then value.to_s
+        when Numeric, true, false, nil, Date, Time then value
+        else value.to_s
         end
       end
     end

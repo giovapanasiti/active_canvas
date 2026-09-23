@@ -142,7 +142,7 @@ module ActiveCanvas
 
         render json: { rows: TemplateRenderer::BindingResolver.new(preview.bindings).sample(name) }
       rescue StandardError => e
-        Rails.logger.info("[ActiveCanvas] sample_data for page #{@page.id} failed: #{e.class}: #{e.message}")
+        Rails.logger.warn("[ActiveCanvas] sample_data for page #{@page.id} failed: #{e.class}: #{e.message}")
         render json: { error: e.message }, status: :unprocessable_entity
       end
 
