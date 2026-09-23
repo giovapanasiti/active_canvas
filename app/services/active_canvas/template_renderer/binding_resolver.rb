@@ -51,11 +51,7 @@ module ActiveCanvas
         if source.drop_class
           source.drop_class.new(item)
         elsif source.auto_drop_config[:attributes].any?
-          AutoDrop.new(
-            item,
-            attributes: source.auto_drop_config[:attributes],
-            associations: source.auto_drop_config[:associations]
-          )
+          AutoDrop.new(item, **source.auto_drop_config)
         elsif unsafe?(item)
           raise DataSources::UnsafeData.new(source.name, item.class.name)
         else

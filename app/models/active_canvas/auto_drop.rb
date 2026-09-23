@@ -2,7 +2,9 @@ module ActiveCanvas
   # Generic Liquid Drop wrapper that exposes only declared attributes from any
   # object. String values are HTML-escaped on the way out unless the attribute
   # is listed in `html:` or the value is already html_safe. Associations are
-  # off by default; each must be opted in with its own whitelist.
+  # off by default; each must be opted in with its own whitelist. Association
+  # values are always escaped (no `html:` for nested drops). Templates should
+  # not add `| escape` on top.
   class AutoDrop < ::Liquid::Drop
     def self.wrap_collection(collection, attributes:, associations: {}, html: [])
       collection.map { |item| new(item, attributes: attributes, associations: associations, html: html) }
@@ -35,9 +37,14 @@ module ActiveCanvas
     end
 
     def escape(value, attribute)
-      return value unless value.is_a?(String)
-      return value if value.html_safe? || @html.include?(attribute)
-      ERB::Util.html_escape(value)
+      case value
+      when Array then value.map { |v| escape(v, attribute) }
+      when Hash  then value.each_with_object({}) { |(k, v), acc| acc[k.to_s] = escape(v, attribute) }
+      when Symbol then escape(value.to_s, attribute)
+      when String
+        value.html_safe? || @html.include?(attribute) ? value : ERB::Util.html_escape(value)
+      else value
+      end
     end
 
     def wrap_association(value, attrs)

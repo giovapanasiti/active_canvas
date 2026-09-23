@@ -66,4 +66,14 @@ class ActiveCanvas::AutoDropTest < ActiveSupport::TestCase
     drop = ActiveCanvas::AutoDrop.new(Article.new(7, "Hello", "shh", nil), attributes: %i[id])
     assert_equal 7, drop.invoke_drop("id")
   end
+
+  test "escapes strings inside arrays and hashes" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, [ "<i>", { k: "<u>" } ], "shh", nil), attributes: %i[title])
+    assert_equal [ "&lt;i&gt;", { "k" => "&lt;u&gt;" } ], drop.invoke_drop("title")
+  end
+
+  test "symbols are escaped as strings" do
+    drop = ActiveCanvas::AutoDrop.new(Article.new(1, :"<s>", "shh", nil), attributes: %i[title])
+    assert_equal "&lt;s&gt;", drop.invoke_drop("title")
+  end
 end

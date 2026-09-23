@@ -63,6 +63,16 @@ class ActiveCanvas::TemplateRenderer::BindingResolverTest < ActiveSupport::TestC
     assert_raises(ActiveCanvas::DataSources::UnsafeData) { described_class.new(bindings).resolve }
   end
 
+  test "auto_drop html: attributes reach Liquid unescaped" do
+    row = Struct.new(:id, :body)
+    ActiveCanvas::DataSources.register(:posts) do
+      fetch { [ row.new(1, "<p>keep me</p>") ] }
+      auto_drop attributes: %i[id body], html: %i[body]
+    end
+    drop = described_class.new("posts" => { "source" => "posts" }).resolve["posts"].first
+    assert_equal "<p>keep me</p>", drop.invoke_drop("body")
+  end
+
   private
 
   def described_class
