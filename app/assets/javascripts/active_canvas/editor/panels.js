@@ -219,7 +219,7 @@
         content_js: js,
         content_components: components,
         bindings: bindingsJson
-        // template_enabled is sent by the Data panel toggle only (see data_panel.js).
+        // template_enabled deliberately NOT sent here — page form is authoritative.
       };
 
       fetch(config.saveUrl, {

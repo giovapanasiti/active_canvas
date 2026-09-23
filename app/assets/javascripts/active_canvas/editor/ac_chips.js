@@ -53,6 +53,7 @@
 
   // Replace each chip span with its text. The inverse of decorate().
   function undecorate(html) {
+    // GrapesJS serializes text nodes the same way DOMParser does, so skipping the round trip when there are no chips changes nothing.
     if (!html || html.indexOf('data-ac-var') === -1) return html;
     const doc = parse(html);
     doc.querySelectorAll('span[data-ac-var]').forEach(el => {
@@ -114,7 +115,8 @@
           if (next === null) return;
           const expr = next.trim();
           if (!expr) return;
-          this.model.components(expr.startsWith('{{') ? expr : `{{ ${expr} }}`);
+          const tag = expr.startsWith('{{') ? expr : `{{ ${expr} }}`;
+          this.model.components([{ type: 'textnode', content: tag }]);
         }
       }
     });

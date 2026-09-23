@@ -69,6 +69,11 @@
       // Storage - we'll handle saving manually
       storageManager: false,
 
+      // Text blocks that contain a Liquid chip must still be editable text.
+      parser: {
+        textTypes: ['text', 'textnode', 'comment', 'ac-chip']
+      },
+
       // Device Manager
       deviceManager: {
         devices: [
