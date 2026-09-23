@@ -57,6 +57,7 @@
       component.__acDirectivesWired = true;
       component.set('_undoexc', (component.get('_undoexc') || []).concat(PROPS), { silent: true });
       component.on('change:ac-repeat change:ac-item', () => applyFor(component));
+      component.on('change:attributes:data-ac-for', () => syncFromAttribute(component));
       component.on('change:attributes:data-ac-if', () => {
         const value = (component.getAttributes()['data-ac-if'] || '').trim();
         if (!value) component.removeAttributes('data-ac-if');
@@ -67,7 +68,7 @@
   function applyFor(component) {
     const binding = component.get('ac-repeat');
     if (!binding) {
-      component.removeAttributes('data-ac-for');
+      if ('data-ac-for' in component.getAttributes()) component.removeAttributes('data-ac-for');
       return;
     }
     let item = (component.get('ac-item') || '').trim();
@@ -77,7 +78,17 @@
       return; // the change:ac-item handler calls applyFor again with the item set
     }
     const tail = component.get('ac-tail') || '';
-    component.addAttributes({ 'data-ac-for': `${item} in ${binding}${tail ? ' ' + tail : ''}` });
+    const next = `${item} in ${binding}${tail ? ' ' + tail : ''}`;
+    if (component.getAttributes()['data-ac-for'] !== next) component.addAttributes({ 'data-ac-for': next });
+  }
+
+  // Keeps the trait values in step with the attribute when it changes behind
+  // the traits' back (undo, code panel, another handler). Non-silent so the
+  // inputs re-render; applyFor is a no-op when nothing differs.
+  function syncFromAttribute(component) {
+    const parsed = parseFor(component.getAttributes()['data-ac-for']);
+    if (component.get('ac-repeat') === parsed.binding && component.get('ac-item') === parsed.item && component.get('ac-tail') === parsed.tail) return;
+    component.set({ 'ac-repeat': parsed.binding, 'ac-item': parsed.item, 'ac-tail': parsed.tail });
   }
 
   window.ActiveCanvasEditor.setupDirectiveTraits = setupDirectiveTraits;
