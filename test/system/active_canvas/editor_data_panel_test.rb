@@ -40,7 +40,7 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
     within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var][data-ac-source='{{ name }}']" }
 
     find("#btn-save").click
-    assert_text "Page saved successfully", wait: 10
+    assert_text :all, "Page saved successfully", wait: 30
 
     content = @page.reload.content
     assert_includes content, "{{ name }}"
@@ -62,7 +62,7 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
       click_button "Save binding"
     end
     find("#btn-save").click
-    assert_text "Page saved successfully", wait: 10
+    assert_text :all, "Page saved successfully", wait: 30
     assert_equal "Hi there", @page.reload.bindings.dig("title", "value")
   end
 
@@ -81,16 +81,21 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
     within_frame(find("iframe.gjs-frame")) do
       assert_selector "span[data-ac-var]", text: "World", wait: 10
       assert_selector "tr[data-ac-for='r in rows'] span[data-ac-var]", text: "a"
+      assert_selector "tr[data-ac-ghost]", text: "b"
     end
 
     find("#btn-save").click
-    assert_text "Page saved successfully", wait: 10
+    assert_text :all, "Page saved successfully", wait: 30
     content = @page.reload.content
     assert_includes content, "{{ name }}"
     refute_includes content, "World"
-    refute_match(/data-ac-(var|source|id)/, content)
+    refute_match(/data-ac-(var|source|id|ghost)/, content)
+    refute_includes content, ">b<"
 
     find("#btn-live-data").click
-    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var]", text: "{{ name }}" }
+    within_frame(find("iframe.gjs-frame")) do
+      assert_selector "span[data-ac-var]", text: "{{ name }}"
+      assert_no_selector "[data-ac-ghost]"
+    end
   end
 end

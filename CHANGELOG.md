@@ -10,7 +10,7 @@
 - **Collections in the Data panel.** Grouped source picker with labels, typed limit / sort / filter controls built from the collection's fields, filter values from select options.
 - **Collections admin.** Publish while published (pending changes), grid badge and row actions, history shows removed fields, required fields enforced on publish, publish is row-locked and re-sanitizes rich text, the draft is normalized on publish. Reserved field ids (`id`, `slug`, `published_at`) are rejected; generated ids are always valid; a blank slug derives from the name. Media for the item form is loaded once.
 - **Security.** Preview iframe is sandboxed. `Current.editor` replaces both thread-local editor accessors and records the user's name or email.
-- **Live data in the canvas.** A header switch shows the real value of every chip and the item count of every loop while editing; the saved source is never touched. New `chip_values` endpoint.
+- **Live data in the canvas.** A header switch shows the real value of every chip, every item of a loop (the other items as dimmed, view-only copies, up to 10) and whether a condition shows its element, while editing; the saved source is never touched. New `chip_values` endpoint.
 - **Sanitizer keeps Liquid.** `ContentSanitizer` masks Liquid tags before parsing, so `{{ url }}` inside an `href` is no longer percent-encoded and `{% if a < b %}` is no longer read as markup.
 - **Tests.** Opt-in Selenium system test for the editor round trip (`AC_SYSTEM=1`).
 

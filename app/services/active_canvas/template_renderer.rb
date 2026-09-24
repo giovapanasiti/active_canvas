@@ -18,12 +18,17 @@ module ActiveCanvas
       handle_error(e)
     end
 
-    # What each editor chip displays and how many times each loop runs, for
-    # the editor's live-data view. Chips are <span data-ac-var data-ac-source
-    # data-ac-id> wrappers the editor adds around {{ }} tags; loops carry
-    # data-ac-for. Lenient render, values are returned as plain text.
+    MAX_LOOP_COPIES = 10
+
+    # What the editor's live-data view needs: the text each chip displays in
+    # its first occurrence, and for every loop and condition element (in
+    # document order) how it rendered: the item count, the rendered copies
+    # after the first (so the editor can show them as ghosts), and whether a
+    # condition holds. Nested elements are measured inside the first copy of
+    # their enclosing loop. Lenient render; only text and rendered HTML that
+    # the editor treats as display-only leave this method.
     def chip_values(decorated_html)
-      source = mark_chips_and_loops(decorated_html)
+      source, markers = mark_for_probe(decorated_html)
       source = DirectiveExpander.new(source).expand
       source = decode_entities_in_liquid_tags(source)
 
@@ -38,10 +43,14 @@ module ActiveCanvas
       values = fragment.css("[data-ac-id]").each_with_object({}) do |chip, acc|
         acc[chip["data-ac-id"]] ||= chip.text.strip.truncate(200)
       end
-      loops = fragment.css("[data-ac-loop]").each_with_object(Hash.new(0)) { |el, acc| acc[el["data-ac-loop"]] += 1 }
-      { values: values, loops: loop_counts(decorated_html, loops) }
+      loops = markers[:loops].map do |marker|
+        copies = occurrences(fragment, marker)
+        { expr: marker[:expr], count: copies.size, copies: copies.drop(1).first(MAX_LOOP_COPIES).map { |c| strip_probe_markers(c).to_html } }
+      end
+      conds = markers[:conds].map { |marker| { expr: marker[:expr], shown: occurrences(fragment, marker).any? } }
+      { values: values, loops: loops, conds: conds }
     rescue StandardError => e
-      { values: {}, loops: {}, error: e.message }
+      { values: {}, loops: [], conds: [], error: e.message }
     end
 
     private
@@ -108,20 +117,44 @@ module ActiveCanvas
     end
 
     # Chips render their source (their text may hold a stale value in the
-    # editor); loop elements keep a marker attribute so their copies can be
-    # counted after the loop tags are consumed.
-    def mark_chips_and_loops(html)
+    # editor). Loop and condition elements get a marker attribute with a
+    # document-order id and remember their nearest enclosing loop, so their
+    # copies can be found and scoped after the Liquid tags are consumed.
+    def mark_for_probe(html)
       fragment = Nokogiri::HTML5.fragment(html)
       fragment.css("[data-ac-id]").each { |chip| chip.content = chip["data-ac-source"] if chip["data-ac-source"] }
-      fragment.css("[data-ac-for]").each { |el| el["data-ac-loop"] = el["data-ac-for"] }
-      fragment.to_html
+
+      markers = { loops: [], conds: [] }
+      fragment.css("[data-ac-for], [data-ac-if]").each_with_index do |el, i|
+        parent = el.ancestors.find { |a| a["data-ac-probe-loop"] }
+        parent_loop = parent && parent["data-ac-probe-loop"]
+        if el["data-ac-for"]
+          el["data-ac-probe-loop"] = "l#{i}"
+          markers[:loops] << { id: "l#{i}", attr: "data-ac-probe-loop", expr: el["data-ac-for"], parent: parent_loop }
+        end
+        if el["data-ac-if"]
+          el["data-ac-probe-cond"] = "k#{i}"
+          markers[:conds] << { id: "k#{i}", attr: "data-ac-probe-cond", expr: el["data-ac-if"], parent: parent_loop }
+        end
+      end
+      [ fragment.to_html, markers ]
     end
 
-    # Every loop present in the source gets a count, zero when it rendered nothing.
-    def loop_counts(html, counted)
-      Nokogiri::HTML5.fragment(html).css("[data-ac-for]").each_with_object({}) do |el, acc|
-        acc[el["data-ac-for"]] = counted[el["data-ac-for"]]
+    # The rendered copies of a marked element, inside the first copy of its
+    # enclosing loop (the whole page when it is not nested).
+    def occurrences(fragment, marker)
+      scope = marker[:parent] ? fragment.at_css("[data-ac-probe-loop=\"#{marker[:parent]}\"]") : fragment
+      return [] unless scope
+      scope.css("[#{marker[:attr]}=\"#{marker[:id]}\"]").to_a
+    end
+
+    def strip_probe_markers(element)
+      copy = element.dup
+      ([ copy ] + copy.css("[data-ac-probe-loop], [data-ac-probe-cond]").to_a).each do |el|
+        el.remove_attribute("data-ac-probe-loop")
+        el.remove_attribute("data-ac-probe-cond")
       end
+      copy
     end
   end
 end

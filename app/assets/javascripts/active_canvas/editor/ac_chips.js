@@ -25,6 +25,11 @@
     return el.getAttribute('data-ac-source') || el.textContent;
   }
 
+  // Live-data ghosts (the other items of a loop) are display only.
+  function stripGhosts(doc) {
+    doc.querySelectorAll('[data-ac-ghost]').forEach(el => el.remove());
+  }
+
   function parse(html) {
     return new DOMParser().parseFromString(`<!doctype html><body>${html}</body>`, 'text/html');
   }
@@ -32,6 +37,7 @@
   // Wrap each {{ expr }} in a text node with a chip span.
   function decorate(html) {
     const doc = parse(html);
+    stripGhosts(doc);
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -67,8 +73,9 @@
   // Replace each chip span with its text. The inverse of decorate().
   function undecorate(html) {
     // GrapesJS serializes text nodes the same way DOMParser does, so skipping the round trip when there are no chips changes nothing.
-    if (!html || html.indexOf('data-ac-var') === -1) return html;
+    if (!html || (html.indexOf('data-ac-var') === -1 && html.indexOf('data-ac-ghost') === -1)) return html;
     const doc = parse(html);
+    stripGhosts(doc);
     doc.querySelectorAll('span[data-ac-var]').forEach(el => {
       el.replaceWith(doc.createTextNode(sourceOf(el)));
     });
@@ -91,6 +98,9 @@
       font-family: inherit; font-size: inherit; white-space: normal; cursor: help;
     }
     .ac-live-data span[data-ac-var].ac-chip-empty { opacity: 0.6; }
+    [data-ac-ghost] { opacity: 0.55; pointer-events: none; user-select: none; }
+    [data-ac-ghost] [data-ac-for]::before, [data-ac-ghost] [data-ac-if]::after { content: none; }
+    [data-ac-ghost] [data-ac-for], [data-ac-ghost] [data-ac-if] { outline: none; }
     [data-ac-if] { outline: 1px dotted #f59e0b; outline-offset: 2px; }
     [data-ac-if]::after {
       content: "if " attr(data-ac-if); display: inline-block; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -159,6 +169,8 @@
       const component = view && view.model;
       if (!component || !component.getInnerHTML) return;
       setTimeout(() => {
+        // Ghost copies caught by the RTE re-parse must not become components.
+        component.find('[data-ac-ghost]').forEach(ghost => ghost.remove());
         const inner = component.getInnerHTML();
         if (!/\{\{[\s\S]*?\}\}/.test(undecorate(inner))) return;
         const decorated = decorate(inner);
