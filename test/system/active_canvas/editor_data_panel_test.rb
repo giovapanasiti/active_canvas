@@ -76,6 +76,30 @@ class ActiveCanvas::EditorDataPanelTest < ApplicationSystemTestCase
   end
 
 
+  test "a literal binding is edited in place and the canvas follows" do
+    visit "/canvas/admin/pages/#{@page.id}/editor"
+    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var]", text: "World", wait: 10 }
+
+    find("#btn-toggle-left").click
+    click_button "Data"
+    field = find("input[data-literal='name']")
+    assert_equal "World", field.value
+    field.fill_in(with: "Mundo")
+    field.send_keys(:enter)
+    within_frame(find("iframe.gjs-frame")) { assert_selector "span[data-ac-var]", text: "Mundo", wait: 10 }
+
+    find(".data-panel-row", text: "rows").hover
+    find("[data-edit='rows']").click
+    assert_field "name", with: "rows", readonly: true
+    assert_selector ".data-panel-add-card-title", text: /edit rows/i
+    find("#ac-binding-form [data-cancel]").click
+    assert_no_selector "#ac-binding-form"
+
+    find("#btn-save").click
+    assert_text :all, "Page saved successfully", wait: 30
+    assert_equal "Mundo", @page.reload.bindings.dig("name", "value")
+  end
+
   test "live data shows values in the chips and saving still stores the source" do
     visit "/canvas/admin/pages/#{@page.id}/editor"
     within_frame(find("iframe.gjs-frame")) do

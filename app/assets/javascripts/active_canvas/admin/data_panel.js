@@ -95,13 +95,20 @@
         <div class="data-panel-row-header">
           <strong class="data-panel-row-name">${escape(name)}</strong>
           <span class="data-panel-row-source">${escape(sourceLabel)}</span>
-          <button type="button" class="data-panel-row-remove" data-remove="${escape(name)}" title="Remove binding">
+          <button type="button" class="data-panel-row-action" data-edit="${escape(name)}" title="Edit binding">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </button>
+          <button type="button" class="data-panel-row-action data-panel-row-remove" data-remove="${escape(name)}" title="Remove binding">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
+        ${valueLineHTML(name, spec)}
         <div class="data-panel-row-chips">
           <button type="button" class="data-panel-chip" data-snippet="${escape(snippet)}" title="Copy ${escape(snippet)}">{{ }}</button>
           ${B.isList(name) ? `<button type="button" class="data-panel-chip" data-snippet="${escape(loopSnippet)}" title="Copy loop">for&hellip;</button>` : ''}
@@ -114,7 +121,30 @@
     `;
   }
 
+  // A literal shows its value in a text box you can type in. Any other
+  // binding shows its parameters; the pencil opens the form to change them.
+  function valueLineHTML(name, spec) {
+    if (spec.source === '_literal') {
+      if (typeof spec.value !== 'string') {
+        return `<code class="data-panel-row-params" title="Edit with the pencil">${escape(JSON.stringify(spec.value))}</code>`;
+      }
+      return `<input type="text" class="data-panel-row-literal" data-literal="${escape(name)}" value="${escape(spec.value)}" placeholder="Value" title="The value of {{ ${escape(name)} }}">`;
+    }
+    const params = Object.entries(spec.params || {}).filter(([, v]) => v != null && v !== '');
+    return `<span class="data-panel-row-params">${params.length ? params.map(([k, v]) => `${escape(k)}: ${escape(v)}`).join(' · ') : 'default parameters'}</span>`;
+  }
+
   function wireRowEvents(list) {
+    list.querySelectorAll('[data-literal]').forEach(input => {
+      input.addEventListener('change', () => {
+        bindings[input.dataset.literal].value = input.value;
+        persistBindings();
+      });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+    });
+    list.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => showForm(btn.dataset.edit));
+    });
     list.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
         delete bindings[btn.dataset.remove];
@@ -164,7 +194,8 @@
     }, 1000);
   }
 
-  function showForm() {
+  // With a name, the form opens prefilled to edit that binding in place.
+  function showForm(existing) {
     showPanelMessage('');
     const list = document.getElementById('ac-bindings-list');
     if (list.querySelector('#ac-binding-form')) return;
@@ -180,8 +211,37 @@
     form.querySelector('#ac-binding-cancel').addEventListener('click', hideForm);
     form.querySelector('[data-cancel]').addEventListener('click', hideForm);
     form.querySelector('select[name="source"]').addEventListener('change', () => renderParamInputs(form));
-    form.querySelector('input[name="name"]').focus();
     form.querySelector('input[name="name"]').addEventListener('input', () => showNameError(form, ''));
+    if (typeof existing === 'string' && bindings[existing]) {
+      prefill(form, existing, bindings[existing]);
+    } else {
+      form.querySelector('input[name="name"]').focus();
+    }
+  }
+
+  function prefill(form, name, spec) {
+    form.dataset.editing = name;
+    form.querySelector('.data-panel-add-card-title').textContent = `Edit ${name}`;
+    form.querySelector('button[type="submit"]').textContent = 'Save changes';
+    const nameInput = form.querySelector('input[name="name"]');
+    nameInput.value = name;
+    nameInput.readOnly = true;
+    const sel = form.querySelector('select[name="source"]');
+    if (![...sel.options].some(o => o.value === spec.source)) return;
+    sel.value = spec.source;
+    renderParamInputs(form);
+    const params = spec.source === '_literal' ? { value: spec.value } : (spec.params || {});
+    Object.entries(params).forEach(([pname, value]) => {
+      const el = form.querySelector(`[name="param_${pname}"]`);
+      if (!el || value == null) return;
+      if (el.type === 'checkbox') el.checked = !!value;
+      else el.value = typeof value === 'string' ? value : JSON.stringify(value);
+      if (pname === 'filter_field') el.dispatchEvent(new Event('change'));
+    });
+    const filterValue = form.querySelector('[name="param_filter_value"]');
+    if (filterValue && params.filter_value != null) filterValue.value = params.filter_value;
+    const first = form.querySelector('#ac-binding-params input, #ac-binding-params select');
+    if (first) first.focus();
   }
 
   function hideForm() {
@@ -268,7 +328,7 @@
       form.querySelector('input[name="name"]').focus();
       return;
     }
-    if (bindings[name] && !window.confirm(`A binding named "${name}" already exists. Replace it?`)) return;
+    if (bindings[name] && form.dataset.editing !== name && !window.confirm(`A binding named "${name}" already exists. Replace it?`)) return;
     const sourceName = form.source.value;
     const source = registry.find(s => s.name === sourceName);
     if (!source) { showPanelMessage('Pick a source.'); return; }
