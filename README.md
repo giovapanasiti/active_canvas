@@ -1,6 +1,8 @@
 # ActiveCanvas
 
-![ActiveCanvas Demo](docs/images/active-canvas-demo.gif)
+![Live data in the ActiveCanvas editor: the switch flips between rendered values and Liquid source](docs/images/active-canvas-live-data.gif)
+
+*The Live data switch: every chip shows the value it renders, loops show every item, conditions dim what they hide. Switch it off to see the Liquid source. The saved page always keeps the source.*
 
 A mountable Rails engine that turns any Rails app into a full-featured CMS. Includes a visual drag-and-drop editor (GrapesJS), AI-powered content generation, Tailwind CSS compilation, media management, page versioning, and SEO controls -- all behind an admin interface that works out of the box.
 
@@ -14,9 +16,28 @@ A mountable Rails engine that turns any Rails app into a full-featured CMS. Incl
 - **Header & Footer Partials** -- Reusable components, togglable per page
 - **SEO** -- Meta tags, Open Graph, Twitter Cards, JSON-LD structured data
 - **Page Types** -- Categorize pages (blog posts, landing pages, etc.)
-- **Dynamic Content** -- Bind host-app data sources, write inline Liquid templates with live preview ([docs](docs/dynamic_content.md))
+- **Dynamic Content** -- Bind host-app data sources or admin-managed collections, repeat and show elements with attributes, see real data while editing ([docs](docs/dynamic_content.md))
+- **Collections** -- Typed content lists (text, rich text, number, boolean, date, media, select) with draft and published versions, editable in the admin without code
 - **Authentication** -- Pluggable auth (Devise, custom, or HTTP Basic)
 - **Isolated Namespace** -- No conflicts with your host application
+
+## A look inside
+
+**A page built from collections.** Cards, pricing with a featured badge, FAQs, filters, loop modifiers and conditions, all from data the admin edits.
+
+![The public Showcase page: a hero from literal bindings and one card per team member](docs/images/showcase-public.jpg)
+
+**Bindings edited in place.** The Data tab lists every binding. A literal shows its value in a text box, a collection shows its parameters, and the canvas updates as you type.
+
+![The editor with the Data tab open next to the canvas showing the team cards](docs/images/editor-data-panel.jpg)
+
+**Collections in the admin.** Typed fields, a draft and a published version per item, publish and unpublish, and a history of every publish.
+
+![The Plans collection items grid with status, publish and history actions](docs/images/collections-items.jpg)
+
+**Version history.** Every save is a version with size deltas, a quick diff and a full view.
+
+![The version history of a page with quick diff and view details actions](docs/images/version-history.jpg)
 
 ## Requirements
 
