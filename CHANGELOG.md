@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 (2026-09-27)
 
 ### Dynamic content
 - **Editor keeps the Liquid source.** The canvas no longer loads rendered HTML; `{{ }}` tags are lossless chips, loops and conditions are `data-ac-for` / `data-ac-if` attributes set through the Settings tab, and tags inside attributes, tables and nested loops survive every save.
