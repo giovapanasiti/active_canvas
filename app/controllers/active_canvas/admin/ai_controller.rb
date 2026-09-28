@@ -138,13 +138,7 @@ module ActiveCanvas
       end
 
       def status
-        render json: {
-          configured: AiConfiguration.configured?,
-          providers: AiConfiguration.configured_providers,
-          text_enabled: AiConfiguration.text_enabled?,
-          image_enabled: AiConfiguration.image_enabled?,
-          screenshot_enabled: AiConfiguration.screenshot_enabled?
-        }
+        render json: AiConfiguration.status_payload
       end
 
       private

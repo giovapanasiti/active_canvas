@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_02_223304) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -31,6 +31,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_02_223304) do
     t.index ["model_id"], name: "index_active_canvas_ai_models_on_model_id", unique: true
     t.index ["model_type"], name: "index_active_canvas_ai_models_on_model_type"
     t.index ["provider"], name: "index_active_canvas_ai_models_on_provider"
+  end
+
+  create_table "active_canvas_api_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "created_by"
+    t.datetime "expires_at"
+    t.datetime "last_used_at"
+    t.string "name", null: false
+    t.datetime "revoked_at"
+    t.json "scopes", default: ["read"], null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_active_canvas_api_tokens_on_token_digest", unique: true
   end
 
   create_table "active_canvas_collection_item_versions", force: :cascade do |t|

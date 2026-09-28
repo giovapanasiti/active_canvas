@@ -1,0 +1,288 @@
+<%#
+  The plaintext of a freshly issued token is passed through flash[:api_token_plaintext]
+  so it can be shown once to the admin who just created it. It is never persisted in the
+  database - only its SHA-256 digest lives there - but it does live in the session store
+  (the session cookie itself, or whatever backs it) until the next request reads and clears
+  that flash entry, so a second GET of this tab never sees it again.
+%>
+<% unless ActiveCanvas.config.enable_mcp %>
+  <div class="api-token-notice" style="margin-bottom: 1.5rem;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div>
+      <strong>MCP is disabled</strong>
+      <p>Set <code>config.enable_mcp = true</code> in the ActiveCanvas initializer to let AI agents connect. The endpoint returns 404 while this is off; existing tokens are kept.</p>
+    </div>
+  </div>
+<% end %>
+
+<% if flash[:api_token_plaintext] %>
+  <div class="card" style="margin-bottom: 1.5rem; border-color: var(--success);">
+    <div class="card-header" style="background: var(--success-light);">
+      <span class="card-title" style="color: #065f46;">New token created</span>
+    </div>
+    <div class="card-body">
+      <p class="help-text">Copy this token now &mdash; it will not be shown again.</p>
+      <div class="api-token-plaintext-row">
+        <code class="api-token-plaintext-value" id="api-token-plaintext"><%= flash[:api_token_plaintext] %></code>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="activeCanvasCopyApiToken(this)">Copy</button>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Connect an agent -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Connect an agent</span>
+  </div>
+  <div class="card-body">
+    <p class="help-text">MCP endpoint:</p>
+    <pre class="api-token-snippet"><code><%= mcp_url %></code></pre>
+
+    <% shown_token = flash[:api_token_plaintext] || "<YOUR_TOKEN>" %>
+
+    <div class="api-token-snippet-block">
+      <h4>Claude Code</h4>
+      <pre class="api-token-snippet"><code>claude mcp add --transport http active-canvas <%= mcp_url %> --header "Authorization: Bearer <%= shown_token %>"</code></pre>
+    </div>
+
+    <div class="api-token-snippet-block">
+      <h4>Codex (<code>~/.codex/config.toml</code>)</h4>
+      <pre class="api-token-snippet"><code>[mcp_servers.active_canvas]
+url = "<%= mcp_url %>"
+bearer_token_env_var = "ACTIVE_CANVAS_TOKEN"</code></pre>
+      <p class="help-text">Export the token before launching Codex: <code>export ACTIVE_CANVAS_TOKEN=<%= shown_token %></code></p>
+    </div>
+
+    <div class="api-token-snippet-block">
+      <h4>OpenCode (<code>opencode.json</code>)</h4>
+      <pre class="api-token-snippet"><code>{
+  "mcp": {
+    "active-canvas": {
+      "type": "remote",
+      "url": "<%= mcp_url %>",
+      "headers": { "Authorization": "Bearer <%= shown_token %>" }
+    }
+  }
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Create a token -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Create a token</span>
+  </div>
+  <div class="card-body">
+    <%= form_with url: admin_api_tokens_path, method: :post, local: true do |form| %>
+      <div class="form-group">
+        <%= form.label :name, "Name" %>
+        <%= form.text_field :name, class: "form-control", required: true, placeholder: "e.g. Claude Code" %>
+      </div>
+
+      <div class="form-group">
+        <label>Access level</label>
+        <div class="api-token-level-group">
+          <label class="api-token-level-label">
+            <%= form.radio_button :level, "read", checked: true %>
+            <span class="api-token-level-text">
+              <strong>Read</strong>
+              <span class="api-token-level-description">List and get pages, versions, media, collections, settings.</span>
+            </span>
+          </label>
+          <label class="api-token-level-label">
+            <%= form.radio_button :level, "write" %>
+            <span class="api-token-level-text">
+              <strong>Write</strong>
+              <span class="api-token-level-description">Read, plus create, update and delete unpublished content.</span>
+            </span>
+          </label>
+          <label class="api-token-level-label">
+            <%= form.radio_button :level, "publish" %>
+            <span class="api-token-level-text">
+              <strong>Publish</strong>
+              <span class="api-token-level-description">Write, plus publish, unpublish and change live content.</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :expires_at, "Expires (optional)" %>
+        <%= form.date_field :expires_at, class: "form-control", style: "max-width: 220px;" %>
+      </div>
+
+      <div class="form-actions">
+        <%= form.submit "Create token", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Tokens -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Tokens</span>
+  </div>
+  <% if @api_tokens.present? %>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Token</th>
+          <th>Scopes</th>
+          <th>Created by</th>
+          <th>Last used</th>
+          <th>Expires</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @api_tokens.each do |token| %>
+          <tr>
+            <td><%= token.name %></td>
+            <td><code><%= token.token_prefix %>&hellip;</code></td>
+            <td><%= token.scopes.join(", ") %></td>
+            <td><%= token.created_by.presence || "—" %></td>
+            <td><%= token.last_used_at ? "#{time_ago_in_words(token.last_used_at)} ago" : "never" %></td>
+            <td><%= token.expires_at ? token.expires_at.to_date.iso8601 : "never" %></td>
+            <td>
+              <% if token.revoked_at.present? %>
+                <span class="api-token-status api-token-status-revoked">Revoked</span>
+              <% elsif !token.active? %>
+                <span class="api-token-status api-token-status-expired">Expired</span>
+              <% else %>
+                <span class="api-token-status api-token-status-active">Active</span>
+              <% end %>
+            </td>
+            <td class="actions">
+              <% if token.active? %>
+                <%= button_to "Revoke", admin_api_token_path(token), method: :delete,
+                      class: "btn btn-sm btn-danger", form: { style: "display:inline" },
+                      data: { turbo_confirm: "Revoke this token? Any agent using it will lose access immediately." } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <h3>No API tokens yet</h3>
+      <p>Create a token above to let an AI agent connect over MCP.</p>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  function activeCanvasCopyApiToken(button) {
+    const el = document.getElementById('api-token-plaintext');
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+      const original = button.textContent;
+      button.textContent = 'Copied!';
+      setTimeout(() => { button.textContent = original; }, 1500);
+    });
+  }
+</script>
+
+<style>
+  .api-token-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: var(--warning-light);
+    border: 1px solid #fde68a;
+    border-radius: var(--radius);
+    color: #92400e;
+  }
+  .api-token-notice svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .api-token-notice p {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+  }
+  .api-token-plaintext-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .api-token-plaintext-value {
+    flex: 1;
+    background: var(--bg-main);
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    word-break: break-all;
+  }
+  .api-token-snippet-block {
+    margin-top: 1.25rem;
+  }
+  .api-token-snippet-block h4 {
+    margin: 0 0 0.375rem 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .api-token-snippet {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+  }
+  .api-token-level-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .api-token-level-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+  .api-token-level-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+  }
+  .api-token-level-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .api-token-level-description {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+  .api-token-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+  }
+  .api-token-status-active {
+    background: var(--success-light);
+    color: #065f46;
+  }
+  .api-token-status-expired {
+    background: var(--warning-light);
+    color: #92400e;
+  }
+  .api-token-status-revoked {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+</style>

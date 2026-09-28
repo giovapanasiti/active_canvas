@@ -126,6 +126,13 @@ module ActiveCanvas
     # Per-IP submissions allowed per minute
     attr_accessor :form_rate_limit_per_minute
 
+    # ==> MCP server
+    # Enable/disable the MCP endpoint
+    attr_accessor :enable_mcp
+
+    # Per-token rate limit for the MCP endpoint (requests per minute)
+    attr_accessor :mcp_rate_limit_per_minute
+
     # Dangerous content types that are always blocked
     DANGEROUS_CONTENT_TYPES = %w[
       application/x-executable
@@ -217,6 +224,10 @@ module ActiveCanvas
       @on_form_submission = nil
       @form_min_submit_seconds = 3
       @form_rate_limit_per_minute = 5
+
+      # MCP server
+      @enable_mcp = true
+      @mcp_rate_limit_per_minute = 120
     end
 
     # Get effective allowed content types (includes SVG if enabled, excludes dangerous types)

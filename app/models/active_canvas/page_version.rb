@@ -36,6 +36,14 @@ module ActiveCanvas
       changes.empty? ? "No changes" : "Changed: #{changes.join(', ')}"
     end
 
+    def previous
+      page.versions.where("version_number < ?", version_number).order(version_number: :desc).first
+    end
+
+    def next
+      page.versions.where("version_number > ?", version_number).order(version_number: :asc).first
+    end
+
     private
 
     def set_version_number

@@ -46,6 +46,8 @@ module ActiveCanvas
             .order(:provider, :model_type, :name)
             .group_by(&:provider)
         end
+
+        @api_tokens = ApiToken.order(created_at: :desc) if @active_tab == "api_tokens"
       end
 
       def update
@@ -82,23 +84,7 @@ module ActiveCanvas
       end
 
       def update_ai
-        # API Keys - only update if a new value is provided (not empty, not masked)
-        update_api_key("ai_openai_api_key", params[:ai_openai_api_key])
-        update_api_key("ai_anthropic_api_key", params[:ai_anthropic_api_key])
-        update_api_key("ai_openrouter_api_key", params[:ai_openrouter_api_key])
-
-        # Default models
-        Setting.ai_default_text_model = params[:ai_default_text_model] if params.key?(:ai_default_text_model)
-        Setting.ai_default_image_model = params[:ai_default_image_model] if params.key?(:ai_default_image_model)
-        Setting.ai_default_vision_model = params[:ai_default_vision_model] if params.key?(:ai_default_vision_model)
-
-        # Connection mode
-        Setting.ai_connection_mode = params[:ai_connection_mode] if params.key?(:ai_connection_mode)
-
-        # Feature toggles
-        Setting.ai_text_enabled = params[:ai_text_enabled] == "1"
-        Setting.ai_image_enabled = params[:ai_image_enabled] == "1"
-        Setting.ai_screenshot_enabled = params[:ai_screenshot_enabled] == "1"
+        ActiveCanvas::AiSettingsUpdate.call(params)
 
         respond_to do |format|
           format.html { redirect_to admin_settings_path(tab: "ai"), notice: "AI settings saved." }
@@ -147,29 +133,17 @@ module ActiveCanvas
       end
 
       def create_ai_model
-        model = AiModel.new(
-          model_id: params[:model_id],
-          provider: params[:provider],
-          model_type: params[:model_type],
-          name: params[:name],
-          context_window: params[:context_window].presence,
-          max_tokens: params[:max_tokens].presence,
-          supports_functions: params[:supports_functions] == "1",
-          active: params[:active] != "0",
-          input_modalities: Array(params[:input_modalities]).reject(&:blank?),
-          output_modalities: Array(params[:output_modalities]).reject(&:blank?)
-        )
+        model = AiModel.create_from_params!(params)
 
-        if model.save
-          respond_to do |format|
-            format.html { redirect_to admin_settings_path(tab: "models"), notice: "Model '#{model.display_name}' added." }
-            format.json { render json: { success: true, model: model.as_json_for_editor } }
-          end
-        else
-          respond_to do |format|
-            format.html { redirect_to admin_settings_path(tab: "models"), alert: model.errors.full_messages.to_sentence }
-            format.json { render json: { success: false, errors: model.errors.full_messages }, status: :unprocessable_entity }
-          end
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "models"), notice: "Model '#{model.display_name}' added." }
+          format.json { render json: { success: true, model: model.as_json_for_editor } }
+        end
+      rescue ActiveRecord::RecordInvalid => e
+        model = e.record
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "models"), alert: model.errors.full_messages.to_sentence }
+          format.json { render json: { success: false, errors: model.errors.full_messages }, status: :unprocessable_entity }
         end
       end
 
@@ -223,42 +197,17 @@ module ActiveCanvas
         end
       end
 
-      private
-
-      def update_api_key(key, value)
-        return if value.blank?
-        return if value.start_with?("****") # Masked value, don't update
-
-        Setting.set(key, value)
-      end
-
-      public
-
       def recompile_tailwind
-        unless ActiveCanvas::TailwindCompiler.available?
-          respond_to do |format|
-            format.html { redirect_to admin_settings_path(tab: "styles"), alert: "tailwindcss-ruby gem is not installed." }
-            format.json { render json: { success: false, error: "tailwindcss-ruby gem is not installed." }, status: :unprocessable_entity }
-          end
-          return
-        end
-
-        unless Setting.css_framework == "tailwind"
-          respond_to do |format|
-            format.html { redirect_to admin_settings_path(tab: "styles"), alert: "Tailwind is not the selected CSS framework." }
-            format.json { render json: { success: false, error: "Tailwind is not the selected CSS framework." }, status: :unprocessable_entity }
-          end
-          return
-        end
-
-        pages = Page.where.not(content: [nil, ""])
-        pages.find_each do |page|
-          CompileTailwindJob.perform_later(page.id)
-        end
+        result = ActiveCanvas::TailwindRecompile.call
 
         respond_to do |format|
-          format.html { redirect_to admin_settings_path(tab: "styles"), notice: "Queued #{pages.count} pages for Tailwind compilation." }
-          format.json { render json: { success: true, count: pages.count, message: "Queued #{pages.count} pages for compilation." } }
+          format.html { redirect_to admin_settings_path(tab: "styles"), notice: "Queued #{result[:enqueued]} pages for Tailwind compilation." }
+          format.json { render json: { success: true, count: result[:enqueued], message: "Queued #{result[:enqueued]} pages for compilation." } }
+        end
+      rescue ActiveCanvas::TailwindRecompile::Unavailable => e
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "styles"), alert: e.message }
+          format.json { render json: { success: false, error: e.message }, status: :unprocessable_entity }
         end
       end
     end

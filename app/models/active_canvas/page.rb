@@ -35,6 +35,23 @@ module ActiveCanvas
       versions.maximum(:version_number) || 0
     end
 
+    # Sets content/css/bindings back to an earlier version's *_after values,
+    # through the same validation/Tailwind pipeline as any other content
+    # update. History is append-only: this creates a new version rather than
+    # deleting the ones after it. content_js and template_enabled are not
+    # versioned, so restoring never touches them.
+    #
+    # A version saved before the bindings migration has a nil bindings_after
+    # (the column didn't exist yet). Omitting the `bindings` key rather than
+    # passing nil keeps the page's current bindings as-is instead of wiping
+    # them out on restore.
+    def restore_version!(version, keep_components: false)
+      attrs = { content: version.content_after, content_css: version.css_after }
+      attrs[:bindings] = version.bindings_after unless version.bindings_after.nil?
+
+      ActiveCanvas::PageContentUpdate.call(self, attrs, keep_components: keep_components)
+    end
+
     # An unsaved copy carrying the editor's current state, for previews. Same
     # id, so form tokens and media references resolve like the real page.
     # Sanitized the way a save would be, so a static preview never shows raw

@@ -5,8 +5,8 @@ module ActiveCanvas
       before_action :set_version
 
       def show
-        @previous_version = @page.versions.where("version_number < ?", @version.version_number).order(version_number: :desc).first
-        @next_version = @page.versions.where("version_number > ?", @version.version_number).order(version_number: :asc).first
+        @previous_version = @version.previous
+        @next_version = @version.next
       end
 
       private

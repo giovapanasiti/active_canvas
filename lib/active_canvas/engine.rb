@@ -32,7 +32,13 @@ module ActiveCanvas
         :ai_openrouter_api_key,
         :http_basic_password,
         /active_canvas.*api.*key/i,
-        /active_canvas.*password/i
+        /active_canvas.*password/i,
+        # MCP tool arguments: upload_media's raw file bytes, and update_ai_settings' unprefixed
+        # key names (distinct from the ai_*_api_key Setting names filtered above).
+        :data_base64,
+        :openai_api_key,
+        :anthropic_api_key,
+        :openrouter_api_key
       ]
     end
 

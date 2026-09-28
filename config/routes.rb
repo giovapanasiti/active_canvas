@@ -35,6 +35,7 @@ ActiveCanvas::Engine.routes.draw do
         end
       end
     end
+    resources :api_tokens, only: %i[create destroy]
     resource :settings, only: [:show, :update] do
       patch :update_global_css
       patch :update_global_js
@@ -59,6 +60,8 @@ ActiveCanvas::Engine.routes.draw do
 
     root to: "pages#index"
   end
+
+  match "mcp", to: "mcp#handle", via: %i[get post delete], as: :mcp
 
   root to: "pages#home"
   post "forms", to: "form_submissions#create", as: :public_form_submissions

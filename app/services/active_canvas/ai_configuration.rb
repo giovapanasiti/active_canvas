@@ -35,6 +35,17 @@ module ActiveCanvas
         providers << "openrouter" if Setting.ai_openrouter_api_key.present?
         providers
       end
+
+      # Shared by Admin::AiController#status and the `get_ai_status` MCP tool.
+      def status_payload
+        {
+          configured: configured?,
+          providers: configured_providers,
+          text_enabled: text_enabled?,
+          image_enabled: image_enabled?,
+          screenshot_enabled: screenshot_enabled?
+        }
+      end
     end
   end
 end

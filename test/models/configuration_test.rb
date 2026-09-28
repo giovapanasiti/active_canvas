@@ -11,5 +11,11 @@ module ActiveCanvas
       assert_equal types.uniq, types, "expected no duplicate content types"
       assert_equal 1, types.count("image/svg+xml")
     end
+
+    test "MCP server defaults" do
+      config = ActiveCanvas::Configuration.new
+      assert_equal true, config.enable_mcp
+      assert_equal 120, config.mcp_rate_limit_per_minute
+    end
   end
 end

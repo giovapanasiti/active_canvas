@@ -1,8 +1,6 @@
 module ActiveCanvas
   module Admin
     class PagesController < ApplicationController
-      include ActiveCanvas::TailwindCompilation
-
       before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template sample_data chip_values preview_iframe]
 
       def index
@@ -71,39 +69,28 @@ module ActiveCanvas
 
       def save_editor
         attrs = editor_params
-        if attrs[:bindings].is_a?(String)
-          begin
-            attrs[:bindings] = JSON.parse(attrs[:bindings])
-          rescue JSON::ParserError => e
-            return render json: { success: false, error: e.message }, status: :unprocessable_entity
-          end
-        end
-
         content_changed = @page.content != attrs[:content]
         Rails.logger.info "[ActiveCanvas::PagesController] save_editor for page ##{@page.id}"
         Rails.logger.info "[ActiveCanvas::PagesController]   content_changed: #{content_changed}"
 
-        if @page.update(attrs)
-          tailwind_info = compile_tailwind_if_needed(content_changed) do
-            compiled_css = ActiveCanvas::TailwindCompiler.compile_for_page(@page)
-            @page.update_columns(compiled_tailwind_css: compiled_css, tailwind_compiled_at: Time.current)
-            compiled_css
-          end
+        result = ActiveCanvas::PageContentUpdate.call(@page, attrs, keep_components: true, validate_template: false)
 
+        if result.success?
           respond_to do |format|
             format.html { redirect_to editor_admin_page_path(@page), notice: "Page saved successfully." }
             format.json do
               render json: {
                 success: true,
                 message: "Page saved successfully.",
-                tailwind: tailwind_info
+                tailwind: result.tailwind
               }
             end
           end
         else
+          errors = result.template_error ? [ result.template_error[:message] ] : result.errors
           respond_to do |format|
             format.html { render :editor, layout: "active_canvas/admin/editor", status: :unprocessable_entity }
-            format.json { render json: { success: false, errors: @page.errors.full_messages }, status: :unprocessable_entity }
+            format.json { render json: { success: false, errors: errors }, status: :unprocessable_entity }
           end
         end
       end
@@ -115,17 +102,10 @@ module ActiveCanvas
       # Runs the editor's current source through the strict preview renderer
       # and reports the first error with its position. Never returns HTML.
       def validate_template
-        preview = @page.preview_with(content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}, template_enabled: true)
-
-        if (message = invalid_bindings_message(preview))
-          return render json: { ok: false, error: { message: message } }, status: :unprocessable_entity
-        end
-
-        TemplateRenderer.new(preview, mode: :preview).render
-        render json: { ok: true, error: nil }
-      rescue ActiveCanvas::DataSources::TemplateRenderError => e
-        render json: { ok: false, error: { message: e.message, line: e.line, column: e.column } },
-               status: :unprocessable_entity
+        result = ActiveCanvas::TemplateValidation.call(
+          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}
+        )
+        render json: result, status: result[:ok] ? :ok : :unprocessable_entity
       end
 
       # First rows of one binding, resolved from the editor's unsaved bindings,
@@ -133,79 +113,42 @@ module ActiveCanvas
       # Live values for the editor's chips: what each {{ }} shows in its first
       # occurrence and how many items each loop renders.
       def chip_values
-        preview = @page.preview_with(bindings: parse_bindings(params[:bindings]) || {}, template_enabled: true)
-
-        if (message = invalid_bindings_message(preview))
-          return render json: { values: {}, loops: {}, error: message }, status: :unprocessable_entity
-        end
-
-        render json: TemplateRenderer.new(preview, mode: :preview).chip_values(params[:content].to_s)
+        result = ActiveCanvas::TemplateChipValues.call(
+          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}
+        )
+        render json: result.body, status: result.invalid_bindings? ? :unprocessable_entity : :ok
       end
 
       def sample_data
-        preview = @page.preview_with(bindings: parse_bindings(params[:bindings]) || {})
+        result = ActiveCanvas::BindingSampler.call(
+          @page, bindings: parse_bindings(params[:bindings]) || {}, binding: params[:binding].to_s
+        )
+        return render json: { rows: result.rows } unless result.error
 
-        if (message = invalid_bindings_message(preview))
-          return render json: { error: message }, status: :unprocessable_entity
-        end
-
-        name = params[:binding].to_s
-        return render json: { error: "No binding named #{name.inspect}" }, status: :not_found unless preview.bindings.key?(name)
-
-        render json: { rows: TemplateRenderer::BindingResolver.new(preview.bindings).sample(name) }
-      rescue StandardError => e
-        Rails.logger.warn("[ActiveCanvas] sample_data for page #{@page.id} failed: #{e.class}: #{e.message}")
-        message = Rails.env.development? ? e.message : "#{e.class}: the data source failed"
-        render json: { error: message }, status: :unprocessable_entity
+        render json: { error: result.error }, status: result.not_found ? :not_found : :unprocessable_entity
       end
 
       # Renders a complete HTML page (layout, partials, CSS framework) from the
       # editor's current unsaved state, for the preview modal's iframe. Uses the
       # page's own template_enabled flag so a static page previews as static.
       def preview_iframe
-        preview = @page.preview_with(
+        result = ActiveCanvas::PagePreview.call(
+          @page,
           content: params[:content]&.to_s,
           content_css: params[:content_css]&.to_s,
           content_js: params[:content_js]&.to_s,
           bindings: parse_bindings(params[:bindings])
         )
 
-        if (message = invalid_bindings_message(preview))
-          return render json: { html: nil, error: { message: message } }, status: :unprocessable_entity
+        if result[:error]
+          return render json: { html: nil, error: result[:error] }, status: :unprocessable_entity
         end
 
-        @page = preview
-        html = render_to_string(template: "active_canvas/pages/show",
-                                layout: "active_canvas/application",
-                                formats: [ :html ])
-        render json: { html: html, error: nil }
+        render json: { html: result[:html], error: nil }
       end
 
       def data_sources
-        literal = {
-          name: "_literal", kind: "literal", label: "Literal", item_name: "item", list: false,
-          params: { value: { type: :string, default: nil, range: nil, allowed: nil } }
-        }
-
-        registered = ActiveCanvas::DataSources.registered_names.map do |name|
-          source = ActiveCanvas::DataSources.lookup(name)
-          {
-            name: name, kind: "source", label: name.to_s.humanize,
-            item_name: ActiveCanvas::DataSources.item_name(name), list: source.list?,
-            params: source.param_schema
-          }
-        end
-
-        collections = ActiveCanvas::Collection.order(:name).map do |collection|
-          {
-            name: collection.slug, kind: "collection", label: collection.name,
-            item_name: collection.item_name, list: true,
-            fields: collection.fields.map { |f| f.slice("id", "label", "type", "options") },
-            params: collection.param_schema
-          }
-        end
-
-        render json: [ literal ] + registered + collections
+        render json: ActiveCanvas::DataSourceCatalog.call
       end
 
       private
@@ -242,13 +185,6 @@ module ActiveCanvas
         raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h : raw
       rescue JSON::ParserError
         raw
-      end
-
-      # A dup'd page fails the slug uniqueness check against its own row, so
-      # only the bindings errors are meaningful here.
-      def invalid_bindings_message(page)
-        page.validate
-        page.errors.full_messages_for(:bindings).to_sentence.presence
       end
     end
   end

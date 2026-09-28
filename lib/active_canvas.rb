@@ -1,4 +1,5 @@
 require "liquid"
+require "mcp"
 require "active_canvas/version"
 require "active_canvas/configuration"
 require "active_canvas/data_sources/errors"
@@ -6,6 +7,7 @@ require "active_canvas/data_sources/param_spec"
 require "active_canvas/data_sources/source"
 require "active_canvas/data_sources/registration"
 require "active_canvas/data_sources"
+require "active_canvas/mcp/errors"
 require "active_canvas/engine"
 
 # Load RubyLLM if available for AI features

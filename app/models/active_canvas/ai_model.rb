@@ -102,6 +102,27 @@ module ActiveCanvas
       end
     end
 
+    # Builds and saves a model from the same fields Admin::SettingsController#create_ai_model
+    # reads today (and the `create_ai_model` MCP tool). Raises ActiveRecord::RecordInvalid
+    # on validation failure so callers can decide how to render it.
+    def self.create_from_params!(params)
+      params = params.to_unsafe_h if params.respond_to?(:to_unsafe_h)
+      params = params.with_indifferent_access
+
+      new(
+        model_id: params[:model_id],
+        provider: params[:provider],
+        model_type: params[:model_type],
+        name: params[:name],
+        context_window: params[:context_window].presence,
+        max_tokens: params[:max_tokens].presence,
+        supports_functions: params[:supports_functions] == "1",
+        active: params[:active] != "0",
+        input_modalities: Array(params[:input_modalities]).reject(&:blank?),
+        output_modalities: Array(params[:output_modalities]).reject(&:blank?)
+      ).tap(&:save!)
+    end
+
     def display_name
       name.presence || model_id
     end
