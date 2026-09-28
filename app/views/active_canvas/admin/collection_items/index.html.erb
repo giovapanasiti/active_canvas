@@ -2,7 +2,10 @@
 
 <div class="page-header">
   <h2><%= @collection.name %> &middot; Items</h2>
-  <%= link_to "New item", new_admin_collection_item_path(@collection), class: "btn btn-primary" %>
+  <div>
+    <%= render "active_canvas/admin/collections/template_links", collection: @collection %>
+    <%= link_to "New item", new_admin_collection_item_path(@collection), class: "btn btn-primary" %>
+  </div>
 </div>
 
 <div class="card">

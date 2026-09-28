@@ -1,0 +1,11 @@
+<%# locals: (collection:) -%>
+<% if collection.has_pages? %>
+  <% templates = collection.template_pages.index_by(&:collection_role) %>
+  <% if templates["index"] %>
+    <%= link_to "Design index page", editor_admin_page_path(templates["index"]), class: "btn btn-secondary" %>
+  <% end %>
+  <% if templates["show"] %>
+    <%= link_to "Design item page", editor_admin_page_path(templates["show"]), class: "btn btn-secondary" %>
+  <% end %>
+  <%= link_to "View public page", public_collection_index_path(collection.slug), class: "btn btn-secondary", target: "_blank", rel: "noopener" %>
+<% end %>

@@ -298,4 +298,25 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_select "dt", text: /\Aactive\s*\(removed field\)/   # raw id, label is gone
     assert_select "dd", text: "true"
   end
+
+  test "items page links to the index/item templates and the public page when the collection has pages" do
+    @collection.update!(has_pages: true)
+    index_template = @collection.template_pages.find_by!(collection_role: "index")
+    show_template = @collection.template_pages.find_by!(collection_role: "show")
+
+    get "/canvas/admin/collections/#{@collection.id}/items"
+
+    assert_response :success
+    assert_select "a[href=?]", "/canvas/admin/pages/#{index_template.id}/editor", text: "Design index page"
+    assert_select "a[href=?]", "/canvas/admin/pages/#{show_template.id}/editor", text: "Design item page"
+    assert_select "a[href=?]", "/canvas/team", text: "View public page"
+  end
+
+  test "items page shows no template links when the collection has no public pages" do
+    get "/canvas/admin/collections/#{@collection.id}/items"
+
+    assert_response :success
+    assert_select "a", text: "Design index page", count: 0
+    assert_select "a", text: "View public page", count: 0
+  end
 end
