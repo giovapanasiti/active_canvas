@@ -167,6 +167,25 @@ module ActiveCanvas
         }
       end
 
+      # Media ids plus their resolved URLs (nil when unset or the Media row was
+      # deleted), so a caller never has to make a second `get_media` round trip
+      # just to show/link the current favicon or default OG image.
+      def seo_settings
+        {
+          site_name: ActiveCanvas::Setting.seo_site_name,
+          title_template: ActiveCanvas::Setting.seo_title_template,
+          default_meta_description: ActiveCanvas::Setting.seo_default_meta_description,
+          favicon_media_id: ActiveCanvas::Setting.seo_favicon_media_id,
+          favicon_url: ActiveCanvas::Seo.favicon_url,
+          default_og_image_media_id: ActiveCanvas::Setting.seo_default_og_image_media_id,
+          default_og_image_url: ActiveCanvas::Seo.default_og_image_url,
+          google_site_verification: ActiveCanvas::Setting.seo_google_site_verification,
+          bing_site_verification: ActiveCanvas::Setting.seo_bing_site_verification,
+          robots_txt: ActiveCanvas::Setting.seo_robots_txt,
+          sitemap_enabled: ActiveCanvas::Setting.seo_sitemap_enabled?
+        }
+      end
+
       # API keys are always masked (last 4 chars only, via Setting.masked_api_key);
       # the full key is never included in a tool response.
       def ai_settings

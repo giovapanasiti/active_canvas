@@ -48,12 +48,39 @@ module ActiveCanvas
         end
 
         @api_tokens = ApiToken.order(created_at: :desc) if @active_tab == "api_tokens"
+
+        if @active_tab == "seo"
+          @seo_site_name = Setting.seo_site_name
+          @seo_title_template = Setting.seo_title_template
+          @seo_default_meta_description = Setting.seo_default_meta_description
+          @seo_favicon_media_id = Setting.seo_favicon_media_id
+          @seo_default_og_image_media_id = Setting.seo_default_og_image_media_id
+          @seo_google_site_verification = Setting.seo_google_site_verification
+          @seo_bing_site_verification = Setting.seo_bing_site_verification
+          @seo_robots_txt = Setting.seo_robots_txt
+          @seo_sitemap_enabled = Setting.seo_sitemap_enabled?
+          @seo_media_images = ActiveCanvas::Media.images.recent
+        end
       end
 
       def update
         Setting.homepage_page_id = params[:homepage_page_id]
 
         redirect_to admin_settings_path, notice: "Settings saved successfully."
+      end
+
+      def update_seo
+        ActiveCanvas::SeoSettingsUpdate.call(params)
+
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "seo"), notice: "SEO settings saved." }
+          format.json { render json: { success: true, message: "SEO settings saved." } }
+        end
+      rescue ActiveRecord::RecordNotFound
+        respond_to do |format|
+          format.html { redirect_to admin_settings_path(tab: "seo"), alert: "Media not found." }
+          format.json { render json: { success: false, error: "Media not found" }, status: :unprocessable_entity }
+        end
       end
 
       def update_global_css

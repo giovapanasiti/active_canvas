@@ -1,0 +1,88 @@
+<%= form_with url: update_seo_admin_settings_path, method: :patch, local: true do |f| %>
+  <div class="settings-card">
+    <div class="form-group">
+      <label for="seo-site-name-input">Site name</label>
+      <input type="text" id="seo-site-name-input" name="seo_site_name"
+             value="<%= @seo_site_name %>" placeholder="My Site">
+      <p class="help-text">Used by the title template and as a fallback title.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-title-template-input">Title template</label>
+      <input type="text" id="seo-title-template-input" name="seo_title_template"
+             value="<%= @seo_title_template %>" placeholder="%{title} | %{site_name}">
+      <p class="help-text">Use <code>%{title}</code> and <code>%{site_name}</code>. Pages without their own meta title use this.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-default-description-input">Default meta description</label>
+      <textarea id="seo-default-description-input" name="seo_default_meta_description" rows="2"><%= @seo_default_meta_description %></textarea>
+      <p class="help-text">Fallback description for pages that don't set one.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-favicon-input">Favicon</label>
+      <% favicon_media = @seo_media_images.find { |m| m.id == @seo_favicon_media_id } %>
+      <select id="seo-favicon-input" name="seo_favicon_media_id" data-media-select>
+        <option value="">&mdash; None &mdash;</option>
+        <% @seo_media_images.each do |m| %>
+          <option value="<%= m.id %>" data-url="<%= m.url %>" <%= "selected" if m.id == @seo_favicon_media_id %>><%= m.filename %></option>
+        <% end %>
+      </select>
+      <% if favicon_media&.url.present? %>
+        <%= image_tag favicon_media.url, class: "ac-media-preview", alt: "", style: "max-height:80px;margin-top:.5rem;" %>
+      <% else %>
+        <img class="ac-media-preview" alt="" style="max-height:80px;margin-top:.5rem;display:none;">
+      <% end %>
+      <p class="help-text">Pick an image from your <%= link_to "Media library", admin_media_path %>.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-og-image-input">Default Open Graph image</label>
+      <% og_image_media = @seo_media_images.find { |m| m.id == @seo_default_og_image_media_id } %>
+      <select id="seo-og-image-input" name="seo_default_og_image_media_id" data-media-select>
+        <option value="">&mdash; None &mdash;</option>
+        <% @seo_media_images.each do |m| %>
+          <option value="<%= m.id %>" data-url="<%= m.url %>" <%= "selected" if m.id == @seo_default_og_image_media_id %>><%= m.filename %></option>
+        <% end %>
+      </select>
+      <% if og_image_media&.url.present? %>
+        <%= image_tag og_image_media.url, class: "ac-media-preview", alt: "", style: "max-height:80px;margin-top:.5rem;" %>
+      <% else %>
+        <img class="ac-media-preview" alt="" style="max-height:80px;margin-top:.5rem;display:none;">
+      <% end %>
+      <p class="help-text">Used for social sharing when a page has no OG image.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-google-verification-input">Google site verification</label>
+      <input type="text" id="seo-google-verification-input" name="seo_google_site_verification"
+             value="<%= @seo_google_site_verification %>">
+    </div>
+
+    <div class="form-group">
+      <label for="seo-bing-verification-input">Bing site verification</label>
+      <input type="text" id="seo-bing-verification-input" name="seo_bing_site_verification"
+             value="<%= @seo_bing_site_verification %>">
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="hidden" name="seo_sitemap_enabled" value="0">
+        <input type="checkbox" name="seo_sitemap_enabled" value="1" <%= "checked" if @seo_sitemap_enabled %>>
+        Enable XML sitemap
+      </label>
+      <p class="help-text">Serves <a href="/sitemap.xml" target="_blank" rel="noopener">/sitemap.xml</a> from your published pages.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="seo-robots-input">robots.txt</label>
+      <textarea id="seo-robots-input" name="seo_robots_txt" rows="6"
+                placeholder="Leave blank to auto-generate a default that allows all crawlers and links the sitemap."><%= @seo_robots_txt %></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save SEO settings</button>
+  </div>
+<% end %>
+
+<%= javascript_include_tag "active_canvas/admin/media_select_preview" %>

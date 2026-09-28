@@ -4,10 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title><%= yield(:page_title).presence || "Active Canvas" %></title>
+  <title><%= ActiveCanvas::Seo.compose_title(yield(:page_title).presence).presence || "Active Canvas" %></title>
 
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
+
+  <!-- Favicon -->
+  <% if (favicon_href = ActiveCanvas::Seo.favicon_url).present? %>
+    <%= tag.link(rel: "icon", href: favicon_href, type: ActiveCanvas::Seo.favicon_content_type.presence) %>
+  <% end %>
+
+  <!-- Search engine verification -->
+  <% if ActiveCanvas::Seo.google_site_verification.present? %>
+    <%= tag.meta(name: "google-site-verification", content: ActiveCanvas::Seo.google_site_verification) %>
+  <% end %>
+  <% if ActiveCanvas::Seo.bing_site_verification.present? %>
+    <%= tag.meta(name: "msvalidate.01", content: ActiveCanvas::Seo.bing_site_verification) %>
+  <% end %>
 
   <!-- SEO Meta Tags -->
   <%= yield :seo_meta %>

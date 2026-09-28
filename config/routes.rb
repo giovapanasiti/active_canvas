@@ -37,6 +37,7 @@ ActiveCanvas::Engine.routes.draw do
     end
     resources :api_tokens, only: %i[create destroy]
     resource :settings, only: [:show, :update] do
+      patch :update_seo
       patch :update_global_css
       patch :update_global_js
       patch :update_custom_head
@@ -62,6 +63,9 @@ ActiveCanvas::Engine.routes.draw do
   end
 
   match "mcp", to: "mcp#handle", via: %i[get post delete], as: :mcp
+
+  get "/sitemap.xml" => "sitemap#show", defaults: { format: "xml" }
+  get "/robots.txt"  => "robots#show",  defaults: { format: "text" }
 
   root to: "pages#home"
   post "forms", to: "form_submissions#create", as: :public_form_submissions

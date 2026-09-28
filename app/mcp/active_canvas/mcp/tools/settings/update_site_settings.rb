@@ -4,13 +4,22 @@ module ActiveCanvas
       module Settings
         class UpdateSiteSettings < BaseTool
           tool_name "update_site_settings"
-          description "Update site-wide settings. Every field is optional; only the fields given are changed. `tailwind_config` must be a JSON object string. `homepage_page_id` must reference an existing page."
+          description "Update site-wide settings, including SEO. Every field is optional; only the fields given are changed. `tailwind_config` must be a JSON object string. `homepage_page_id` must reference an existing page. `seo_favicon_media_id` and `seo_default_og_image_media_id` must reference an existing Media (upload_media first); either can be cleared by passing null."
           input_schema(properties: {
             homepage_page_id: { type: "integer" },
             global_css: { type: "string" },
             global_js: { type: "string" },
             custom_head_html: { type: "string" },
-            tailwind_config: { type: "string" }
+            tailwind_config: { type: "string" },
+            seo_site_name: { type: "string" },
+            seo_title_template: { type: "string" },
+            seo_default_meta_description: { type: "string" },
+            seo_favicon_media_id: { type: [ "integer", "null" ] },
+            seo_default_og_image_media_id: { type: [ "integer", "null" ] },
+            seo_google_site_verification: { type: "string" },
+            seo_bing_site_verification: { type: "string" },
+            seo_robots_txt: { type: "string" },
+            seo_sitemap_enabled: { type: "boolean" }
           })
           required_scope :publish
 
@@ -20,8 +29,9 @@ module ActiveCanvas
             ActiveCanvas::Setting.global_css = args[:global_css] if args.key?(:global_css)
             ActiveCanvas::Setting.global_js = args[:global_js] if args.key?(:global_js)
             ActiveCanvas::Setting.custom_head_html = args[:custom_head_html] if args.key?(:custom_head_html)
+            ActiveCanvas::SeoSettingsUpdate.call(args)
 
-            Serializers.site_settings
+            Serializers.site_settings.merge(seo: Serializers.seo_settings)
           end
 
           private

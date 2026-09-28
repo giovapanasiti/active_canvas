@@ -118,6 +118,9 @@ module ActiveCanvas
         - `create_page` never publishes; call `set_page_published` afterwards.
         - `homepage_page_id` is a site setting (`update_site_settings`), not a
           page field.
+        - Site-wide SEO (title template, sitemap, favicon, robots.txt, default
+          meta/OG image, verification tags) lives under `get_settings.seo` and
+          is changed with `update_site_settings`, alongside the other fields.
         - Changing the slug of a published page creates a redirect from the
           old slug automatically.
       TEXT

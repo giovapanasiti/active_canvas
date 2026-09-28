@@ -17,12 +17,52 @@ class ActiveCanvas::Mcp::SettingsToolsTest < ActionDispatch::IntegrationTest
     assert settings.key?("tailwind_config")
     assert settings.key?("tailwind_available")
     assert settings.key?("ai")
+    assert settings.key?("seo")
 
     assert_match(/\*\*\*\*/, settings["ai"]["openai_api_key"])
 
     body = mcp_rpc(@rw, "tools/call", { name: "get_settings", arguments: {} })
     raw_text = body["result"]["content"].first["text"]
     assert_not_includes raw_text, "sk-super-secret-value"
+  end
+
+  test "get_settings returns the full seo object, including media ids and resolved urls" do
+    media = build_saved_media(filename: "favicon.png")
+    ActiveCanvas::Setting.seo_site_name = "Acme"
+    ActiveCanvas::Setting.seo_title_template = "%{title} — %{site_name}"
+    ActiveCanvas::Setting.seo_default_meta_description = "A great site."
+    ActiveCanvas::Setting.seo_favicon_media_id = media.id
+    ActiveCanvas::Setting.seo_default_og_image_media_id = media.id
+    ActiveCanvas::Setting.seo_google_site_verification = "gv"
+    ActiveCanvas::Setting.seo_bing_site_verification = "bv"
+    ActiveCanvas::Setting.seo_robots_txt = "User-agent: *\nDisallow: /admin"
+    ActiveCanvas::Setting.seo_sitemap_enabled = false
+
+    settings, err = mcp_call(@rw, "get_settings")
+    assert_nil err
+    seo = settings["seo"]
+
+    assert_equal "Acme", seo["site_name"]
+    assert_equal "%{title} — %{site_name}", seo["title_template"]
+    assert_equal "A great site.", seo["default_meta_description"]
+    assert_equal media.id, seo["favicon_media_id"]
+    assert_includes seo["favicon_url"], "favicon.png"
+    assert_equal media.id, seo["default_og_image_media_id"]
+    assert_includes seo["default_og_image_url"], "favicon.png"
+    assert_equal "gv", seo["google_site_verification"]
+    assert_equal "bv", seo["bing_site_verification"]
+    assert_equal "User-agent: *\nDisallow: /admin", seo["robots_txt"]
+    refute seo["sitemap_enabled"]
+  ensure
+    ActiveCanvas::Setting.seo_site_name = ""
+    ActiveCanvas::Setting.seo_title_template = nil
+    ActiveCanvas::Setting.seo_default_meta_description = ""
+    ActiveCanvas::Setting.seo_favicon_media_id = nil
+    ActiveCanvas::Setting.seo_default_og_image_media_id = nil
+    ActiveCanvas::Setting.seo_google_site_verification = ""
+    ActiveCanvas::Setting.seo_bing_site_verification = ""
+    ActiveCanvas::Setting.seo_robots_txt = ""
+    ActiveCanvas::Setting.seo_sitemap_enabled = true
   end
 
   test "get_settings is a read-scope tool" do
@@ -65,6 +105,65 @@ class ActiveCanvas::Mcp::SettingsToolsTest < ActionDispatch::IntegrationTest
     assert_equal page.id, updated["homepage_page_id"]
     ActiveCanvas::Current.reset
     assert_equal page.id, ActiveCanvas::Setting.homepage_page_id
+  end
+
+  test "update_site_settings persists seo fields and returns the updated seo object" do
+    media = build_saved_media(filename: "favicon.png")
+
+    updated, err = mcp_call(@rw, "update_site_settings", {
+      seo_site_name: "Acme",
+      seo_title_template: "%{title} — %{site_name}",
+      seo_default_meta_description: "A great site.",
+      seo_favicon_media_id: media.id,
+      seo_google_site_verification: "gv",
+      seo_sitemap_enabled: false
+    })
+    assert_nil err
+    seo = updated["seo"]
+    assert_equal "Acme", seo["site_name"]
+    assert_equal "%{title} — %{site_name}", seo["title_template"]
+    assert_equal "A great site.", seo["default_meta_description"]
+    assert_equal media.id, seo["favicon_media_id"]
+    assert_equal "gv", seo["google_site_verification"]
+    refute seo["sitemap_enabled"]
+
+    ActiveCanvas::Current.reset
+    assert_equal "Acme", ActiveCanvas::Setting.seo_site_name
+    assert_equal media.id, ActiveCanvas::Setting.seo_favicon_media_id
+    refute ActiveCanvas::Setting.seo_sitemap_enabled?
+  ensure
+    ActiveCanvas::Setting.seo_site_name = ""
+    ActiveCanvas::Setting.seo_title_template = nil
+    ActiveCanvas::Setting.seo_default_meta_description = ""
+    ActiveCanvas::Setting.seo_favicon_media_id = nil
+    ActiveCanvas::Setting.seo_google_site_verification = ""
+    ActiveCanvas::Setting.seo_sitemap_enabled = true
+  end
+
+  test "update_site_settings rejects a seo_favicon_media_id that doesn't reference an existing media" do
+    _, err = mcp_call(@rw, "update_site_settings", { seo_favicon_media_id: 999_999 })
+    refute_nil err
+    assert_match(/not found/i, err)
+  end
+
+  test "update_site_settings rejects a seo_default_og_image_media_id that doesn't reference an existing media" do
+    _, err = mcp_call(@rw, "update_site_settings", { seo_default_og_image_media_id: 999_999 })
+    refute_nil err
+    assert_match(/not found/i, err)
+  end
+
+  test "update_site_settings clears seo_favicon_media_id when given null" do
+    media = build_saved_media(filename: "favicon.png")
+    ActiveCanvas::Setting.seo_favicon_media_id = media.id
+
+    updated, err = mcp_call(@rw, "update_site_settings", { seo_favicon_media_id: nil })
+    assert_nil err
+    assert_nil updated["seo"]["favicon_media_id"]
+
+    ActiveCanvas::Current.reset
+    assert_nil ActiveCanvas::Setting.seo_favicon_media_id
+  ensure
+    ActiveCanvas::Setting.seo_favicon_media_id = nil
   end
 
   test "settings mutation tools require write or publish and are not listed for a plain read token" do

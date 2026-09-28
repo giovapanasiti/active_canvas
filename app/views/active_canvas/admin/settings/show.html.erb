@@ -56,6 +56,14 @@
     </svg>
     API Tokens
   <% end %>
+  <%= link_to admin_settings_path(tab: "seo"), class: "settings-tab #{'active' if @active_tab == 'seo'}" do %>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 0.5rem;">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+    SEO
+  <% end %>
 </div>
 
 <% if @active_tab == "general" %>
@@ -1931,4 +1939,6 @@
   </style>
 <% elsif @active_tab == "api_tokens" %>
   <%= render "active_canvas/admin/settings/api_tokens_tab" %>
+<% elsif @active_tab == "seo" %>
+  <%= render "active_canvas/admin/settings/seo_tab" %>
 <% end %>

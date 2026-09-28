@@ -3,8 +3,9 @@
 
 <%# SEO Meta Tags %>
 <% content_for :seo_meta do %>
-  <% if @page.meta_description.present? %>
-    <meta name="description" content="<%= @page.meta_description %>">
+  <% meta_description = @page.meta_description.presence || ActiveCanvas::Seo.default_meta_description.presence %>
+  <% if meta_description %>
+    <meta name="description" content="<%= meta_description %>">
   <% end %>
   <% if @page.meta_robots.present? %>
     <meta name="robots" content="<%= @page.meta_robots %>">
@@ -18,8 +19,9 @@
   <% if @page.og_description.present? || @page.meta_description.present? %>
     <meta property="og:description" content="<%= @page.og_description.presence || @page.meta_description %>">
   <% end %>
-  <% if @page.og_image.present? %>
-    <meta property="og:image" content="<%= @page.og_image %>">
+  <% og_image = @page.og_image.presence || ActiveCanvas::Seo.default_og_image_url.presence %>
+  <% if og_image %>
+    <meta property="og:image" content="<%= og_image %>">
   <% end %>
   <meta property="og:url" content="<%= request.original_url %>">
 <% end %>

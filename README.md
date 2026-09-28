@@ -233,6 +233,19 @@ Every content change creates a version automatically. View the version history f
 
 Configure the maximum versions kept per page (default: 50, set to 0 for unlimited).
 
+## Site-wide SEO
+
+The admin Settings area has an **SEO** tab for the site-wide options that sit above per-page meta tags:
+
+- Site name and a title template (`%{title} | %{site_name}`) used as the fallback `<title>` for every page.
+- Default meta description and default Open Graph image, used when a page doesn't set its own.
+- Favicon, picked from the Media library.
+- Google / Bing search-engine verification tags.
+- An auto-generated XML sitemap at `/sitemap.xml`, built from published pages (drafts and pages with `noindex` in their `meta_robots` are excluded). It can be turned off from the SEO tab.
+- `robots.txt` at `/robots.txt`, either a custom body you provide or a generated default that allows all crawlers and links the sitemap.
+
+Both `/sitemap.xml` and `/robots.txt` are served relative to wherever the engine is mounted, so they still work if you mount ActiveCanvas somewhere other than the root. If you need them at the domain root, mount the engine at `/` or reverse-proxy those two paths.
+
 ## MCP server (agents)
 
 ActiveCanvas exposes an [MCP](https://modelcontextprotocol.io) server so a coding agent can manage pages, partials, collections, media, forms and settings the same way an admin would in the UI -- roughly 50 tools covering everything from `list_pages` to `update_page_content` to `publish_collection_item`.

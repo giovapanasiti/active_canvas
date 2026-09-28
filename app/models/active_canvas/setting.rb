@@ -189,6 +189,81 @@ module ActiveCanvas
         set("custom_head_html", html)
       end
 
+      # --- SEO settings ---
+
+      def seo_site_name
+        get("seo_site_name") || ""
+      end
+
+      def seo_site_name=(value)
+        set("seo_site_name", value.to_s)
+      end
+
+      def seo_title_template
+        get("seo_title_template").presence || "%{title} | %{site_name}"
+      end
+
+      def seo_title_template=(value)
+        set("seo_title_template", value.presence)
+      end
+
+      def seo_default_meta_description
+        get("seo_default_meta_description") || ""
+      end
+
+      def seo_default_meta_description=(value)
+        set("seo_default_meta_description", value.to_s)
+      end
+
+      def seo_favicon_media_id
+        get("seo_favicon_media_id").presence&.to_i
+      end
+
+      def seo_favicon_media_id=(value)
+        set("seo_favicon_media_id", value.presence)
+      end
+
+      def seo_default_og_image_media_id
+        get("seo_default_og_image_media_id").presence&.to_i
+      end
+
+      def seo_default_og_image_media_id=(value)
+        set("seo_default_og_image_media_id", value.presence)
+      end
+
+      def seo_google_site_verification
+        get("seo_google_site_verification") || ""
+      end
+
+      def seo_google_site_verification=(value)
+        set("seo_google_site_verification", value.to_s)
+      end
+
+      def seo_bing_site_verification
+        get("seo_bing_site_verification") || ""
+      end
+
+      def seo_bing_site_verification=(value)
+        set("seo_bing_site_verification", value.to_s)
+      end
+
+      def seo_robots_txt
+        get("seo_robots_txt") || ""
+      end
+
+      def seo_robots_txt=(value)
+        set("seo_robots_txt", value.to_s)
+      end
+
+      def seo_sitemap_enabled?
+        get("seo_sitemap_enabled") != "false"
+      end
+
+      def seo_sitemap_enabled=(value)
+        enabled = ActiveModel::Type::Boolean.new.cast(value)
+        set("seo_sitemap_enabled", enabled.to_s)
+      end
+
       # AI API Keys
       def ai_openai_api_key
         get("ai_openai_api_key")
