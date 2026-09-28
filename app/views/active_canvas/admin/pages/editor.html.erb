@@ -17,7 +17,13 @@
       Back
     <% end %>
     <div class="header-separator"></div>
-    <div class="editor-title"><%= @page.title %></div>
+    <% if @page.template? %>
+      <div class="editor-title editor-title-template">
+        Collection: <%= @page.collection.name %> &mdash; <%= @page.collection_role == "index" ? "index" : "item" %> template
+      </div>
+    <% else %>
+      <div class="editor-title"><%= @page.title %></div>
+    <% end %>
   </div>
 
   <div class="editor-header-center">
@@ -652,6 +658,9 @@
     config: {
       pageId: <%= @page.id %>,
       templateEnabled: <%= @page.template_enabled? %>,
+      isTemplate: <%= @page.template? %>,
+      collectionRole: <%= raw @page.collection_role.to_json %>,
+      implicitBindings: <%= json_escape(@implicit_bindings.to_json).html_safe %>,
       saveUrl: '<%= save_editor_admin_page_path(@page) %>',
       mediaUrl: '<%= admin_media_path(format: :json) %>',
       uploadUrl: '<%= admin_media_path %>',

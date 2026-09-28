@@ -73,6 +73,17 @@ class ActiveCanvas::PageContentUpdateTest < ActiveSupport::TestCase
     assert_match(/bindings/i, result.errors.join)
   end
 
+  test "on a collection template page, template validation applies the implicit item context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+
+    result = ActiveCanvas::PageContentUpdate.call(template, { content: "<h1>{{ item.name }}</h1>" })
+
+    assert result.success?, result.errors.inspect
+    assert_equal "<h1>{{ item.name }}</h1>", template.reload.content
+  end
+
   test "validate_template: false saves invalid Liquid on a template_enabled page instead of rejecting it" do
     result = ActiveCanvas::PageContentUpdate.call(
       @page, { content: "{% if %}", template_enabled: true }, validate_template: false

@@ -1,0 +1,11 @@
+<%# The item show head (Part 4 "SEO & sitemap"): _seo.meta_title/meta_description
+    -> the title/description fields -> the item's slug, composed like any other
+    page's title. `@robots` is set by the admin draft preview (`noindex`); a
+    public visit leaves it nil. %>
+<%= render "active_canvas/pages/head",
+      title: @head_seo[:title],
+      description: @head_seo[:description],
+      og_image: @head_seo[:image_url],
+      robots: @robots %>
+
+<%= render "active_canvas/pages/body", page: @page, context: @context %>

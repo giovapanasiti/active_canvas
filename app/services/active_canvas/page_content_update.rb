@@ -89,8 +89,12 @@ module ActiveCanvas
       end
     end
 
-    # Same strict check as Admin::PagesController#validate_template, against
-    # the content/bindings the save is about to apply.
+    # Same strict check as Admin::PagesController#validate_template (and the MCP
+    # `validate_template` tool), against the content/bindings the save is about to
+    # apply -- including a collection template page's implicit item/items/collection/
+    # pagination assigns (TemplateEditorContext), so a template that validates via
+    # `validate_template` doesn't turn around and fail here on save/restore for the
+    # same content.
     def template_validation_failure
       preview = @page.preview_with(
         content: @attrs[:content], content_css: @attrs[:content_css], content_js: @attrs[:content_js],
@@ -101,7 +105,8 @@ module ActiveCanvas
         return error_result([ message ])
       end
 
-      ActiveCanvas::TemplateRenderer.new(preview, mode: :preview).render
+      context = preview.template? ? ActiveCanvas::TemplateEditorContext.live(preview) : {}
+      ActiveCanvas::TemplateRenderer.new(preview, mode: :preview, context: context).render
       nil
     rescue ActiveCanvas::DataSources::TemplateRenderError => e
       Result.new(

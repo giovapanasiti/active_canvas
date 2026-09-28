@@ -15,7 +15,7 @@ class TransfersTest < ActionDispatch::IntegrationTest
   end
 
   test "import applies an uploaded zip and redirects with a summary" do
-    path = File.join(Dir.tmpdir, "ac_ctrl_#{rand(1_000_000)}.zip")
+    path = File.join(Dir.tmpdir, "ac_ctrl_#{SecureRandom.hex(8)}.zip")
     ActiveCanvas::Exporter.new.export_to(path)
 
     ActiveCanvas::Page.find_by(slug: "home").update!(title: "Changed")
@@ -55,7 +55,7 @@ class TransfersTest < ActionDispatch::IntegrationTest
   end
 
   test "an invalid record in the manifest redirects with a named alert and leaves the database unchanged" do
-    path = File.join(Dir.tmpdir, "ac_ctrl_invalid_#{rand(1_000_000)}.zip")
+    path = File.join(Dir.tmpdir, "ac_ctrl_invalid_#{SecureRandom.hex(8)}.zip")
     ActiveCanvas::Exporter.new.export_to(path)
     Zip::File.open(path) do |z|
       manifest = JSON.parse(z.find_entry("manifest.json").get_input_stream.read)

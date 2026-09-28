@@ -36,6 +36,9 @@
             <td><%= item.updated_at.strftime("%Y-%m-%d %H:%M") %></td>
             <td class="actions" style="white-space:nowrap;">
               <%= link_to "Edit", edit_admin_collection_item_path(@collection, item), class: "btn btn-sm btn-secondary" %>
+              <% if @collection.has_pages? %>
+                <%= link_to "Preview", preview_admin_collection_item_path(@collection, item), class: "btn btn-sm btn-secondary", target: "_blank", rel: "noopener" %>
+              <% end %>
               <% if item.status != "published" || item.pending_changes? %>
                 <%= button_to (item.status == "published" ? "Publish changes" : "Publish"), publish_admin_collection_item_path(@collection, item),
                       method: :patch, class: "btn btn-sm btn-primary", form: { style: "display:inline" } %>

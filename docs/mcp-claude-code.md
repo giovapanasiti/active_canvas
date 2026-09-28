@@ -176,6 +176,7 @@ Back in **Settings → API Tokens**, the token shows its scopes, when it was las
 - *"Export this week's contact form submissions as CSV."* This uses `export_form_submissions_csv`.
 - *"Change the brand color in the Tailwind config to #4f46e5 and recompile."* This uses `update_site_settings` and `recompile_tailwind` (Publish level).
 - *"Something broke on the Pricing page. Show me the last three versions and restore the previous one."* This uses `list_page_versions`, `get_page_version` and `restore_page_version`.
+- *"Create a Blog collection with public pages -- title, body (rich text) and cover image fields -- add a couple of draft posts, then redesign its item template with a hero image and a byline."* This uses `create_collection` (`has_pages: true`), `create_collection_item`, and `update_page_content` on the show template found via `list_pages` with `collection_id` -- `render_page_preview` and `preview_collection_item` check the result before anything is published.
 
 Header and footer changes (`update_partial`) go live immediately and are **not** versioned, so review those carefully.
 

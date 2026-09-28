@@ -109,6 +109,54 @@ class ActiveCanvas::Mcp::DynamicDataToolsTest < ActionDispatch::IntegrationTest
     assert_match(/No binding named "ghost"/, err)
   end
 
+  test "validate_template applies a show template's implicit item context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    item = collection.items.new(slug: "ada")
+    item.assign_fields("name" => "Ada")
+    item.save!
+    item.publish!
+    template = collection.template_pages.find_by!(collection_role: "show")
+
+    result, err = mcp_call(@rw, "validate_template", { page_id: template.id, content: "{{ item.name }} {{ collection.name }}" })
+    assert_nil err
+    assert_equal true, result["ok"]
+  end
+
+  test "preview_template_values resolves a show template's implicit item context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    item = collection.items.new(slug: "ada")
+    item.assign_fields("name" => "Ada")
+    item.save!
+    item.publish!
+    template = collection.template_pages.find_by!(collection_role: "show")
+
+    content = %(<span data-ac-var="" data-ac-source="{{ item.name }}" data-ac-id="c1">{{ item.name }}</span>)
+    result, err = mcp_call(@rw, "preview_template_values", { page_id: template.id, content: content })
+    assert_nil err
+    assert_equal "Ada", result.dig("values", "c1")
+  end
+
+  test "render_page_preview on an index template renders page 1 of published items" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, per_page: 1, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    item1 = collection.items.new(slug: "ada")
+    item1.assign_fields("name" => "Ada")
+    item1.save!
+    item1.publish!
+    item2 = collection.items.new(slug: "bob")
+    item2.assign_fields("name" => "Bob")
+    item2.save!
+    item2.publish!
+    index_template = collection.template_pages.find_by!(collection_role: "index")
+
+    result, err = mcp_call(@rw, "render_page_preview", { page_id: index_template.id })
+    assert_nil err
+    assert_includes result["html"], "Bob"
+    refute_includes result["html"], "Ada"
+  end
+
   test "render_page_preview returns HTML containing unsaved content and leaves the page unchanged" do
     original_content = @page.content
     result, err = mcp_call(@rw, "render_page_preview", {
@@ -124,5 +172,33 @@ class ActiveCanvas::Mcp::DynamicDataToolsTest < ActionDispatch::IntegrationTest
   test "render_page_preview gives a tool error when bindings are invalid" do
     _, err = mcp_call(@rw, "render_page_preview", { page_id: @page.id, content: "x", bindings: "[1]" })
     assert_match(/bindings/i, err)
+  end
+
+  test "render_page_preview renders a rich_text attachment's URL against the MCP request host, not the bare-renderer placeholder" do
+    host! "cms.example.com"
+
+    media = build_saved_media(filename: "pic.png", content_type: "image/png")
+    sgid = media.file.blob.attachable_sgid
+    team = ActiveCanvas::Collection.create!(name: "Team", slug: "team",
+      fields: [ { "id" => "bio", "label" => "Bio", "type" => "rich_text" } ])
+    item = team.items.new
+    item.assign_fields("bio" => %(<action-text-attachment sgid="#{sgid}" content-type="image/png" filename="pic.png" width="1" height="1"></action-text-attachment>))
+    item.save!
+    item.publish!
+
+    page = ActiveCanvas::Page.create!(title: "Team page", page_type: @page_type,
+      content: "{% for member in team %}{{ member.bio }}{% endfor %}")
+
+    result, err = mcp_call(@rw, "render_page_preview", {
+      page_id: page.id, template_enabled: true,
+      bindings: { team: { source: "team" } }
+    })
+
+    assert_nil err
+    srcs = Nokogiri::HTML(result["html"]).css("img").map { |img| img["src"].to_s }
+    assert srcs.any? { |src| src.start_with?("http://cms.example.com/rails/active_storage/") },
+      "expected the attachment <img> on the MCP request host, got #{srcs.inspect}"
+    refute_includes result["html"], ActiveCanvas::TemplateRenderer::PUBLIC_FALLBACK
+    refute_includes result["html"], "example.org"
   end
 end

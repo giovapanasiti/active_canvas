@@ -3,7 +3,7 @@ require "test_helper"
 module ActiveCanvas
   class ImporterRecordsTest < ActiveSupport::TestCase
     def export_now(**opts)
-      path = File.join(Dir.tmpdir, "ac_imp_#{rand(1_000_000)}.zip")
+      path = File.join(Dir.tmpdir, "ac_imp_#{SecureRandom.hex(8)}.zip")
       ActiveCanvas::Exporter.new(**opts).export_to(path)
       path
     end
@@ -388,6 +388,38 @@ module ActiveCanvas
       assert(summary[:warnings].any? { |w| w.include?("redirect 'a' skipped") })
     end
 
+    test "import fails validation, and rolls back, when a has_pages collection's slug collides with a redirect from the same manifest" do
+      pt = ActiveCanvas::PageType.create!(key: "default", name: "Default")
+      page = ActiveCanvas::Page.create!(title: "Home", slug: "home", published: true, page_type: pt)
+      page.update!(slug: "home2") # leaves a PageRedirect "home" -> page
+      zip = export_now
+      require "zip"
+      Zip::File.open(zip) do |z|
+        manifest = JSON.parse(z.find_entry("manifest.json").get_input_stream.read)
+        # A has_pages collection whose slug is the exact from_slug of a redirect
+        # THIS SAME manifest also restores - page_redirects must be imported
+        # before collections so Collection#has_pages_slug_availability sees it
+        # and rejects the collision, rather than only checking whatever
+        # redirects already happened to exist on the target beforehand.
+        manifest["collections"] << {
+          "slug" => "home", "name" => "Home Collection", "fields" => [],
+          "has_pages" => true, "per_page" => 12, "show_in_sidebar" => false,
+          "title_field" => nil, "description_field" => nil, "image_field" => nil
+        }
+        z.get_output_stream("manifest.json") { |io| io.write(JSON.generate(manifest)) }
+      end
+
+      assert_raises(ActiveRecord::RecordInvalid) do
+        ActiveCanvas::Importer.new(zip, mode: :replace).run
+      end
+
+      # Rolled back entirely: the bad collection was never created, and the
+      # original page/redirect this same transaction wiped are back.
+      refute ActiveCanvas::Collection.exists?(slug: "home")
+      assert_equal "home2", ActiveCanvas::Page.find(page.id).slug
+      assert_equal "home2", ActiveCanvas::PageRedirect.find_by(from_slug: "home").page.slug
+    end
+
     test "replace mode also cleans up persisted image variants of removed media" do
       media = build_saved_media(filename: "photo.png", content_type: "image/png")
       blob = media.file.blob
@@ -514,6 +546,138 @@ module ActiveCanvas
       assert_raises(ActiveCanvas::Importer::InvalidArchive) do
         ActiveCanvas::Importer.new(zip, mode: :replace).run
       end
+    end
+
+    test "replace mode restores collection page options and both templates, linked to the right collection" do
+      collection = ActiveCanvas::Collection.create!(
+        name: "Team", slug: "team",
+        fields: [ { "label" => "Name", "type" => "text" } ],
+        has_pages: true, per_page: 5, show_in_sidebar: true
+      )
+      collection.update!(title_field: collection.fields.first["id"])
+      collection.template_pages.find_by(collection_role: "index").update!(content: "<p>custom index</p>")
+      collection.template_pages.find_by(collection_role: "show").update!(content: "<p>custom show</p>")
+      zip = export_now
+
+      ActiveCanvas::Importer.new(zip, mode: :replace).run
+
+      new_collection = ActiveCanvas::Collection.find_by(slug: "team")
+      assert_equal true, new_collection.has_pages
+      assert_equal 5, new_collection.per_page
+      assert_equal true, new_collection.show_in_sidebar
+      assert_equal collection.fields.first["id"], new_collection.title_field
+
+      assert_equal 2, new_collection.template_pages.count, "exactly one index + one show template, no duplicates from ensure_templates!"
+      assert_equal "<p>custom index</p>", new_collection.template_pages.find_by(collection_role: "index").content
+      assert_equal "<p>custom show</p>", new_collection.template_pages.find_by(collection_role: "show").content
+    end
+
+    test "merge mode upserts a collection's template pages by [collection, role] instead of duplicating" do
+      collection = ActiveCanvas::Collection.create!(
+        name: "Team", slug: "team", fields: [ { "label" => "Name", "type" => "text" } ], has_pages: true
+      )
+      collection.template_pages.find_by(collection_role: "index").update!(content: "<p>original index</p>")
+      zip = export_now
+
+      # Re-import over the SAME collection (already has_pages: true, so
+      # ensure_templates! does not fire again this time) to prove the upsert
+      # path itself (not just idempotency-via-callback) is what matches.
+      collection.template_pages.find_by(collection_role: "index").update!(content: "<p>locally changed</p>")
+
+      ActiveCanvas::Importer.new(zip, mode: :merge).run
+
+      reloaded = ActiveCanvas::Collection.find_by(slug: "team")
+      assert_equal 2, reloaded.template_pages.count
+      assert_equal "<p>original index</p>", reloaded.template_pages.find_by(collection_role: "index").content
+    end
+
+    test "a replace import restores the index template's exact version history from the manifest" do
+      collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: [], has_pages: true)
+      index_tpl = collection.template_pages.find_by(collection_role: "index")
+      index_tpl.update!(content: "<p>v1</p>")
+      index_tpl.update!(content: "<p>v2</p>")
+      zip = export_now
+
+      ActiveCanvas::Importer.new(zip, mode: :replace).run
+
+      new_tpl = ActiveCanvas::Collection.find_by(slug: "team").template_pages.find_by(collection_role: "index")
+      assert_equal 2, new_tpl.versions.count, "exactly the manifest's two versions - no spurious extra from restoring the starter template's content"
+      assert_equal [ 1, 2 ], new_tpl.versions.order(:version_number).pluck(:version_number)
+      assert_equal "<p>v2</p>", new_tpl.versions.order(:version_number).last.content_after
+      assert_equal 2, new_tpl.current_version_number
+    end
+
+    test "a merge import appends a new version onto a template's existing history rather than replacing it" do
+      collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: [], has_pages: true)
+      index_tpl = collection.template_pages.find_by(collection_role: "index")
+      index_tpl.update!(content: "<p>source v1</p>")
+      zip = export_now
+
+      # The target's own local history since that export - independent of what
+      # the manifest knows about.
+      index_tpl.update!(content: "<p>target v2</p>")
+      index_tpl.update!(content: "<p>target v3</p>")
+      assert_equal 3, index_tpl.versions.count, "precondition: 3 local versions before merging"
+
+      ActiveCanvas::Importer.new(zip, mode: :merge).run
+
+      reloaded = ActiveCanvas::Collection.find_by(slug: "team").template_pages.find_by(collection_role: "index")
+      assert_equal 4, reloaded.versions.count, "merge appends one new version on top of the existing 3 - it never replays or replaces history"
+      assert_equal "<p>source v1</p>", reloaded.content
+      last_version = reloaded.versions.order(:version_number).last
+      assert_equal 4, last_version.version_number
+      assert_equal "<p>source v1</p>", last_version.content_after
+      assert_equal 4, reloaded.current_version_number
+    end
+
+    test "importing a v2 manifest (no collection page options or template pages) still imports the collection with defaults" do
+      collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: [ { "label" => "Name", "type" => "text" } ])
+      zip = export_now
+      require "zip"
+      Zip::File.open(zip) do |z|
+        manifest = JSON.parse(z.find_entry("manifest.json").get_input_stream.read)
+        manifest["meta"]["format_version"] = 2
+        manifest["collections"].each { |r| %w[has_pages per_page show_in_sidebar title_field description_field image_field].each { |k| r.delete(k) } }
+        manifest.delete("collection_template_pages")
+        z.get_output_stream("manifest.json") { |io| io.write(JSON.generate(manifest)) }
+      end
+
+      assert_nothing_raised { ActiveCanvas::Importer.new(zip, mode: :replace).run }
+
+      new_collection = ActiveCanvas::Collection.find_by(slug: "team")
+      assert_equal false, new_collection.has_pages
+      assert_equal 12, new_collection.per_page
+      assert_equal false, new_collection.show_in_sidebar
+      assert_nil new_collection.title_field
+      assert_equal 0, new_collection.template_pages.count
+    end
+
+    test "a collection item's per-item SEO og_image_media_id is remapped, and dropped with a warning when unmapped" do
+      photo = build_saved_media(filename: "og.png", content_type: "image/png")
+      svg = with_config(allow_svg_uploads: true) { build_saved_media(filename: "icon.svg", content_type: "image/svg+xml") }
+      collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: [ { "label" => "Name", "type" => "text" } ])
+      item = collection.items.create!
+      item.assign_fields("name" => "Ada", "_seo" => { "meta_title" => "Ada", "og_image_media_id" => photo.id.to_s })
+      item.save!
+      item.publish!
+
+      other = collection.items.create!
+      other.assign_fields("name" => "Grace", "_seo" => { "og_image_media_id" => svg.id.to_s })
+      other.save!
+      other.publish!
+      zip = export_now
+
+      summary = ActiveCanvas::Importer.new(zip, mode: :replace).run
+
+      new_photo = ActiveCanvas::Media.find_by(filename: "og.png")
+      new_collection = ActiveCanvas::Collection.find_by(slug: "team")
+      new_items = new_collection.items.order(:id).to_a
+      new_ada, new_grace = new_items
+
+      assert_equal new_photo.id, new_ada.data["_seo"]["og_image_media_id"]
+      assert_equal "Ada", new_ada.data["_seo"]["meta_title"]
+      refute new_grace.data["_seo"].key?("og_image_media_id"), "unmapped og_image_media_id is dropped, not left dangling"
+      assert(summary[:warnings].any? { |w| w.include?("dropped a reference to media id #{svg.id}") })
     end
 
     test "the total media size cap is configurable via ActiveCanvas.config.import_max_media_bytes" do

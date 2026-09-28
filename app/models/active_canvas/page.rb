@@ -1,6 +1,7 @@
 module ActiveCanvas
   class Page < ApplicationRecord
     belongs_to :page_type
+    belongs_to :collection, class_name: "ActiveCanvas::Collection", optional: true
     has_many :versions, class_name: "ActiveCanvas::PageVersion", dependent: :destroy
     has_many :redirects, class_name: "ActiveCanvas::PageRedirect", dependent: :destroy
     has_many :form_submissions, class_name: "ActiveCanvas::FormSubmission", dependent: :destroy
@@ -8,25 +9,52 @@ module ActiveCanvas
     # bindings column is JSON; ensure default and not-null at the model level too.
     attribute :bindings, default: {}
 
+    # Extra Liquid assigns merged over the page's bindings on render (Part 4
+    # "Implicit assigns"); transient, never persisted. A template page's
+    # public/preview renderer sets this to the `item`/`items`/`collection`/
+    # `pagination` context (TemplateEditorContext, CollectionPageContext)
+    # before calling `rendered_content`. nil (the default) renders with no
+    # extra context, unchanged from a regular page.
+    attr_accessor :liquid_context
+
     validates :title, presence: true
     validates :slug, uniqueness: true, allow_blank: true
+    validates :collection_role, inclusion: { in: %w[index show] }, allow_nil: true
     validate :bindings_shape
+    validate :slug_not_used_by_a_collection_with_pages
 
     before_save :set_default_slug
     before_save :normalize_slug
     before_save :sanitize_content_if_enabled
+    before_validation :normalize_template_attributes
+    before_destroy :refuse_direct_template_destroy
     after_update :create_version_if_content_changed
     after_save :manage_slug_redirects, if: :saved_change_to_slug?
 
     scope :published, -> { where(published: true) }
     scope :draft, -> { where(published: false) }
+    # A "template page" (Part 4: Model) belongs to a collection (`collection_id`
+    # present) and is never routed by slug. Regular pages are everything else:
+    # the admin pages list, public `:slug` routing, homepage selection and the
+    # sitemap page list all use this scope.
+    scope :regular, -> { where(collection_id: nil) }
+
+    # A template page (`collection_id` present).
+    def template?
+      collection_id.present?
+    end
 
     def to_param
       id&.to_s
     end
 
-    def rendered_content(form_feedback: nil, form_action: nil)
-      rendered = ActiveCanvas::TemplateRenderer.new(self, mode: :public).render
+    # `context:` (Part 4 "Implicit assigns") is extra Liquid assigns merged over
+    # the page's own bindings -- how a collection's template pages get their
+    # `item`/`items`/`collection`/`pagination` names (CollectionPageContext).
+    # When not passed, the transient `liquid_context` set by the editor
+    # preview path (TemplateEditorContext) is used.
+    def rendered_content(form_feedback: nil, form_action: nil, context: nil)
+      rendered = ActiveCanvas::TemplateRenderer.new(self, mode: :public, context: context || liquid_context || {}).render
       rendered = ActiveCanvas::ContentRenderer.resolve(rendered).to_s
       ActiveCanvas::FormStamper.new(rendered, page: self, feedback: form_feedback, action: form_action).stamp.html_safe
     end
@@ -83,12 +111,37 @@ module ActiveCanvas
     private
 
     def set_default_slug
+      return if collection_id.present? # a template page is never routed by slug
+
       self.slug = "active_canvas_id_#{id}" if slug.blank? && persisted?
     end
 
     def normalize_slug
       self.slug = slug.parameterize if slug.present?
     end
+
+    # ensure_templates! — Task 3
+    # A template page is never routed by slug and always renders dynamically:
+    # force both regardless of what a caller (form, MCP tool) sends.
+    def normalize_template_attributes
+      return unless collection_id.present?
+
+      self.slug = nil
+      self.template_enabled = true
+    end
+
+    # Templates are only removed as a side effect of their collection being
+    # destroyed (Collection has_many :template_pages, dependent: :destroy),
+    # which Rails marks via `destroyed_by_association`. A direct destroy
+    # (UI, delete_page) is refused instead.
+    def refuse_direct_template_destroy
+      return unless collection_id.present?
+      return if destroyed_by_association.present?
+
+      errors.add(:base, "Template pages are removed with their collection")
+      throw :abort
+    end
+    # /ensure_templates! — Task 3
 
     # bindings is `{ "name" => { "source" => "...", ... } }`. Anything else
     # would blow up inside BindingResolver on the public page, so refuse it here.
@@ -99,6 +152,16 @@ module ActiveCanvas
         source = spec.is_a?(Hash) ? (spec["source"] || spec[:source]) : nil
         errors.add(:bindings, "entry #{name.to_s.inspect} must be an object with a source") if source.to_s.blank?
       end
+    end
+
+    # The reverse of Collection#has_pages_slug_availability: a collection with
+    # public pages owns its slug, so no regular page may claim it.
+    def slug_not_used_by_a_collection_with_pages
+      return if slug.blank?
+      # Compare what will be stored: normalize_slug parameterizes before save.
+      return unless ActiveCanvas::Collection.where(has_pages: true, slug: slug.to_s.parameterize).exists?
+
+      errors.add(:slug, "is used by a collection with public pages")
     end
 
     protected

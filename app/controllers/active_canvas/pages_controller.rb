@@ -13,7 +13,7 @@ module ActiveCanvas
     end
 
     def show
-      @page = Page.published.find_by(slug: params[:slug])
+      @page = Page.published.regular.find_by(slug: params[:slug])
       raise ActionController::RoutingError, "Not Found" unless @page
     end
 

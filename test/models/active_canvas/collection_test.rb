@@ -108,6 +108,13 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert_includes collection.errors[:fields].join, "reserved"
   end
 
+  test "_seo is rejected as a field id" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "_seo", "label" => "Seo", "type" => "text" } ])
+    assert_not collection.valid?
+    assert_includes collection.errors[:fields].join, "reserved"
+  end
+
   test "a field id must be snake_case starting with a letter" do
     [ "Has Space", "Upper", "1st", "with-dash" ].each do |bad|
       collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
@@ -186,5 +193,89 @@ class ActiveCanvas::CollectionTest < ActiveSupport::TestCase
     assert_not collection.valid?
     collection.fields = [ { "label" => "Name", "type" => "text" } ]
     assert collection.valid?
+  end
+
+  test "defaults for the public pages options" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team")
+    assert_equal false, collection.has_pages
+    assert_equal 12, collection.per_page
+    assert_equal false, collection.show_in_sidebar
+    assert_nil collection.title_field
+  end
+
+  test "title_field and description_field must reference a text-like field" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" }, { "id" => "photo", "label" => "Photo", "type" => "media" } ],
+      title_field: "photo")
+    assert_not collection.valid?
+    assert_includes collection.errors[:title_field].join, "text"
+
+    collection.title_field = "name"
+    assert collection.valid?
+  end
+
+  test "image_field must reference a media field" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" }, { "id" => "photo", "label" => "Photo", "type" => "media" } ],
+      image_field: "name")
+    assert_not collection.valid?
+    assert_includes collection.errors[:image_field].join, "media"
+
+    collection.image_field = "photo"
+    assert collection.valid?
+  end
+
+  test "a *_field referencing an unknown field id is invalid" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team", title_field: "nope")
+    assert_not collection.valid?
+    assert_includes collection.errors[:title_field].join, "unknown"
+  end
+
+  test "rich_text is an acceptable title_field / description_field type" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team",
+      fields: [ { "id" => "bio", "label" => "Bio", "type" => "rich_text" } ],
+      title_field: "bio", description_field: "bio")
+    assert collection.valid?
+  end
+
+  test "has_pages requires the slug to not collide with a page, redirect or reserved path" do
+    page = create_page(content: "<p>hi</p>", title: "Team")
+    page.update!(slug: "team-page")
+    ActiveCanvas::PageRedirect.create!(from_slug: "old-team", page: page)
+
+    assert_not ActiveCanvas::Collection.new(name: "X", slug: "team-page", has_pages: true).valid?
+    assert_not ActiveCanvas::Collection.new(name: "X", slug: "old-team", has_pages: true).valid?
+    assert_not ActiveCanvas::Collection.new(name: "X", slug: "mcp", has_pages: true).valid?
+    assert_not ActiveCanvas::Collection.new(name: "X", slug: "admin", has_pages: true).valid?
+    assert_not ActiveCanvas::Collection.new(name: "X", slug: "forms", has_pages: true).valid?
+  end
+
+  test "RESERVED_PATHS matches the engine's top-level routes" do
+    assert_equal %w[mcp sitemap.xml robots.txt admin forms], ActiveCanvas::Collection::RESERVED_PATHS
+  end
+
+  test "the same slug collision is allowed when has_pages is false" do
+    page = create_page(content: "<p>hi</p>", title: "Team")
+    page.update!(slug: "team-page")
+    assert ActiveCanvas::Collection.new(name: "X", slug: "team-page", has_pages: false).valid?
+  end
+
+  test "with_pages and in_sidebar scopes" do
+    on = ActiveCanvas::Collection.create!(name: "On", slug: "on", has_pages: true, show_in_sidebar: true)
+    off = ActiveCanvas::Collection.create!(name: "Off", slug: "off")
+    assert_equal [ on ], ActiveCanvas::Collection.with_pages.to_a
+    assert_equal [ on ], ActiveCanvas::Collection.in_sidebar.to_a
+    assert_not_includes ActiveCanvas::Collection.with_pages, off
+  end
+
+  test "turning has_pages on calls ensure_templates!" do
+    collection = ActiveCanvas::Collection.new(name: "Team", slug: "team")
+    called = false
+    collection.define_singleton_method(:ensure_templates!) { called = true }
+    collection.save!
+    assert_not called, "ensure_templates! must not run when has_pages stays false"
+
+    collection.update!(has_pages: true)
+    assert called
   end
 end

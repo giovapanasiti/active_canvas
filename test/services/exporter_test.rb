@@ -10,9 +10,38 @@ module ActiveCanvas
     end
 
     def export_to_tmp(**opts)
-      path = File.join(Dir.tmpdir, "ac_export_#{rand(1_000_000)}.zip")
+      path = File.join(Dir.tmpdir, "ac_export_#{SecureRandom.hex(8)}.zip")
       ActiveCanvas::Exporter.new(**opts).export_to(path)
       path
+    end
+
+    test "FORMAT_VERSION is 3" do
+      assert_equal 3, ActiveCanvas::Exporter::FORMAT_VERSION
+    end
+
+    test "manifest exports collection page options and template pages by collection slug + role, separately from regular pages" do
+      collection = ActiveCanvas::Collection.create!(
+        name: "Team", slug: "team",
+        fields: [ { "label" => "Name", "type" => "text" } ],
+        has_pages: true, per_page: 5, show_in_sidebar: true
+      )
+      collection.update!(title_field: collection.fields.first["id"])
+
+      manifest = read_manifest(export_to_tmp)
+
+      row = manifest["collections"].find { |h| h["slug"] == "team" }
+      assert_equal true, row["has_pages"]
+      assert_equal 5, row["per_page"]
+      assert_equal true, row["show_in_sidebar"]
+      assert_equal collection.fields.first["id"], row["title_field"]
+
+      refute(manifest["pages"].any? { |h| h["slug"].nil? }, "template pages are not exported as regular pages")
+
+      index_row = manifest["collection_template_pages"].find { |h| h["collection_role"] == "index" }
+      show_row = manifest["collection_template_pages"].find { |h| h["collection_role"] == "show" }
+      assert_equal "team", index_row["collection_slug"]
+      assert_equal "team", show_row["collection_slug"]
+      assert index_row["content"].present?
     end
 
     test "manifest includes meta, settings, page_types, pages, partials, media" do

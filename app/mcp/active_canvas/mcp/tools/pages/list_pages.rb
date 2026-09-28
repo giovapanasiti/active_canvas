@@ -4,8 +4,9 @@ module ActiveCanvas
       module Pages
         class ListPages < BaseTool
           tool_name "list_pages"
-          description "List pages (metadata only, no content). Filter by published, page_type_key, or a case-insensitive query matched against title/slug. Each item includes public_url and editor_url; call get_page for full content."
+          description "List pages (metadata only, no content). Excludes a collection's template pages by default -- pass collection_id to list that collection's templates instead. Filter by published, page_type_key, or a case-insensitive query matched against title/slug. Each item includes public_url and editor_url; call get_page for full content."
           input_schema(properties: {
+            collection_id: { type: "integer" },
             published: { type: "boolean" },
             page_type_key: { type: "string" },
             query: { type: "string" },
@@ -17,6 +18,7 @@ module ActiveCanvas
 
           def perform(args)
             relation = ActiveCanvas::Page.includes(:page_type)
+            relation = filter_by_collection(relation, args)
             relation = filter_by_published(relation, args)
             relation = filter_by_page_type(relation, args)
             relation = filter_by_query(relation, args)
@@ -27,6 +29,15 @@ module ActiveCanvas
           end
 
           private
+
+          # No collection_id: regular pages only (a collection's template pages are
+          # never routed by slug and would otherwise clutter this list -- Page.regular).
+          # A collection_id instead lists just that collection's own template pages.
+          def filter_by_collection(relation, args)
+            return relation.where(collection_id: args[:collection_id]) if args[:collection_id].present?
+
+            relation.regular
+          end
 
           def filter_by_published(relation, args)
             return relation unless args.key?(:published)

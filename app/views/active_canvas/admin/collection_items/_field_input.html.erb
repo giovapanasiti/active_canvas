@@ -10,8 +10,7 @@
   <% when "textarea" %>
     <%= text_area_tag name, value, id: dom_id, class: "form-control", rows: 4 %>
   <% when "rich_text" %>
-    <%= text_area_tag name, value, id: dom_id, class: "form-control", rows: 8 %>
-    <small>Raw HTML. Sanitized on save.</small>
+    <%= lexxy_rich_textarea_tag name, value, id: dom_id, class: "lexxy-content form-control" %>
   <% when "number" %>
     <%= number_field_tag name, value, id: dom_id, class: "form-control", step: "any" %>
   <% when "boolean" %>

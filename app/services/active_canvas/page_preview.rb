@@ -28,7 +28,12 @@ module ActiveCanvas
         return { html: nil, error: { message: message } }
       end
 
-      html = ActiveCanvas::PagesController.renderer.render(
+      # A template page's live data (Part 4 "Editor" > "Live data"): the
+      # editor's preview modal has no real item/page selected, so it renders
+      # the same defaults the Data panel and validate_template use.
+      preview.liquid_context = ActiveCanvas::TemplateEditorContext.live(preview) if preview.template?
+
+      html = RequestScopedRenderer.build.render(
         template: "active_canvas/pages/show",
         layout: "active_canvas/application",
         formats: [ :html ],

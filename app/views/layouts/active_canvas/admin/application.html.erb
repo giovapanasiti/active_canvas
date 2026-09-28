@@ -884,13 +884,23 @@
               </svg>
               <span>Form submissions</span>
             <% end %>
-            <%= link_to admin_collections_path, class: "nav-link #{controller_name.in?(%w[collections collection_items]) ? 'active' : ''}" do %>
+            <%= link_to admin_collections_path, class: "nav-link #{'active' if collections_nav_active?}" do %>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2 2 7l10 5 10-5-10-5Z"/>
                 <path d="m2 17 10 5 10-5"/>
                 <path d="m2 12 10 5 10-5"/>
               </svg>
               <span>Collections</span>
+            <% end %>
+            <% sidebar_collections.each do |collection| %>
+              <%= link_to admin_collection_items_path(collection), class: "nav-link #{'active' if sidebar_collection_active?(collection)}" do %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="1"/>
+                  <circle cx="19" cy="12" r="1"/>
+                  <circle cx="5" cy="12" r="1"/>
+                </svg>
+                <span><%= collection.name %></span>
+              <% end %>
             <% end %>
           </div>
 

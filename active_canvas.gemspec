@@ -18,7 +18,13 @@ Gem::Specification.new do |spec|
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 
-  spec.add_dependency "rails", ">= 8.0.0"
+  # Capped below 8.2: on Rails 8.2+ Lexxy registers itself as Action Text's
+  # editor adapter (app.config.action_text.editor = :lexxy), which changes
+  # every rich text editor in the host app, and ActiveCanvas's opt-out
+  # (config.lexxy.override_action_text_defaults = false) only covers the
+  # Rails 8.0/8.1 helper-override mode. Not supported yet.
+  spec.add_dependency "rails", ">= 8.0.0", "< 8.2"
+  spec.add_dependency "lexxy", ">= 0.9.33", "< 1.0"
   spec.add_dependency "ruby_llm", ">= 1.0"
   spec.add_dependency "liquid", ">= 5.4"
   spec.add_dependency "csv", ">= 3.0"

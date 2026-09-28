@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_28_000002) do
   create_table "active_canvas_ai_models", force: :cascade do |t|
     t.boolean "active", default: true
     t.integer "context_window"
@@ -67,14 +67,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
     t.string "slug"
     t.string "status", default: "draft", null: false
     t.datetime "updated_at", null: false
+    t.index ["collection_id", "slug"], name: "index_ac_collection_items_on_collection_id_and_slug", unique: true, where: "slug IS NOT NULL"
     t.index ["collection_id", "status"], name: "idx_on_collection_id_status_ce43821072"
   end
 
   create_table "active_canvas_collections", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "description_field"
     t.json "fields", default: [], null: false
+    t.boolean "has_pages", default: false, null: false
+    t.string "image_field"
     t.string "name", null: false
+    t.integer "per_page", default: 12, null: false
+    t.boolean "show_in_sidebar", default: false, null: false
     t.string "slug", null: false
+    t.string "title_field"
     t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_active_canvas_collections_on_slug", unique: true
   end
@@ -142,6 +149,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
   create_table "active_canvas_pages", force: :cascade do |t|
     t.json "bindings", default: {}, null: false
     t.string "canonical_url"
+    t.integer "collection_id"
+    t.string "collection_role"
     t.text "compiled_tailwind_css"
     t.text "content"
     t.text "content_components"
@@ -168,6 +177,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
     t.string "twitter_image"
     t.string "twitter_title"
     t.datetime "updated_at", null: false
+    t.index ["collection_id", "collection_role"], name: "index_active_canvas_pages_on_collection_id_and_role", unique: true
+    t.index ["collection_id"], name: "index_active_canvas_pages_on_collection_id"
     t.index ["page_type_id"], name: "index_active_canvas_pages_on_page_type_id"
     t.index ["slug"], name: "index_active_canvas_pages_on_slug", unique: true
   end
@@ -239,6 +250,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_27_205850) do
   add_foreign_key "active_canvas_form_submissions", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_redirects", "active_canvas_pages", column: "page_id"
   add_foreign_key "active_canvas_page_versions", "active_canvas_pages", column: "page_id"
+  add_foreign_key "active_canvas_pages", "active_canvas_collections", column: "collection_id"
   add_foreign_key "active_canvas_pages", "active_canvas_page_types", column: "page_type_id"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"

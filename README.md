@@ -43,7 +43,7 @@ A mountable Rails engine that turns any Rails app into a full-featured CMS. Incl
 ## Requirements
 
 - Ruby 3.1+
-- Rails 8.0+
+- Rails 8.0 or 8.1 (Rails 8.2+ isn't supported yet -- see "Rich text (Lexxy)")
 
 ## Installation
 
@@ -184,6 +184,68 @@ Upload and manage images directly from the admin or from within the editor's ass
 - Works with any Active Storage backend (local, S3, GCS, etc.)
 - Public or signed URL modes
 
+## Collections
+
+Collections are typed content lists (text, rich text, number, boolean, date, media, select) with a draft and a published version per item, editable in the admin without code. Beyond binding them into pages as a dynamic-data loop, a collection can optionally get its own public pages.
+
+### Public pages
+
+Turn a collection's items into a small public site of their own by checking **Public pages** on the collection form (`has_pages`). That gets you:
+
+- An **index** page at `/<collection-slug>` (paginated with `?page=N`, `per_page` items per page -- an integer 1-100, default 12, set on the collection form) and a **show** page at `/<collection-slug>/<item-slug>` for each published item. A page number below 1 or past the last page 404s; an empty collection still renders page 1 with no items.
+- Both pages are **designed in the same GrapesJS editor** as any other page -- open them from the collection's edit screen with the **Design index page** / **Design item page** buttons. Under the hood each is a `Page` record owned by the collection (`collection_id` + `collection_role: "index"`/`"show"`); it has no slug of its own and isn't listed among regular pages, but everything else (blocks, AI assistant, code editor, Tailwind compilation, versions) works exactly the same.
+- **Item slugs become mandatory** once `has_pages` is on: unique within the collection, `parameterize`-format. Leave it blank when creating an item and it's generated from the collection's **Title field** (or `item-1`, `item-2`, ... if none is set), de-duplicated with `-2`, `-3`, ... on collision.
+- Templates render with implicit Liquid assigns -- reserved names a binding can't reuse:
+  - **show**: `item` (the item's fields by id, plus `id`, `slug`, `published_at`, `url` and `seo`) and `collection` (`name`, `slug`, `url`).
+  - **index**: `items` (the current page's rows, same shape as `item` above), `collection`, and `pagination` (`page`, `per_page`, `total_pages`, `total_items`, `prev_url`, `next_url` -- the `*_url` values are `nil` at the edges).
+
+  For example, the index template's item loop:
+
+  ```liquid
+  <article data-ac-for="entry in items">
+    <a href="{{ entry.url }}">{{ entry.seo.title }}</a>
+  </article>
+  ```
+
+  and a show template:
+
+  ```liquid
+  <h1>{{ item.title }}</h1>
+  <div>{{ item.body }}</div>
+  <a href="{{ collection.url }}">Back to {{ collection.name }}</a>
+  ```
+
+  Enabling `has_pages` seeds both templates with a working starter design in this shape (a grid loop with prev/next links for the index, the title plus every field in order for the show page), so the pages already render before you touch the editor.
+- **Per-item SEO**: each item's edit form gets an SEO fieldset (meta title, meta description, OG image) once the collection has pages, stored under the item data's reserved `_seo` key. Fallback chain: title -- `_seo.meta_title` -> the collection's **Title field** (plain text) -> the item's slug; description -- `_seo.meta_description` -> the **Description field**, plain text truncated to 160 chars -> nothing (falls through to the site-wide default); OG image -- `_seo.og_image_media_id` -> the **Image field** -> nothing (site-wide default).
+- **Sitemap**: a `has_pages` collection's index URL and every published item's show URL are added to `/sitemap.xml`, with `lastmod` from the item's `updated_at`.
+- **Draft preview**: from the items grid or an item's edit page, **Preview** renders the show template with the item's *draft* data (published or not) inside the public layout, with a `noindex` meta tag. Admin-only.
+- **Admin sidebar**: checking **Show in admin sidebar** (`show_in_sidebar`) lists the collection directly under Content in the admin sidebar, linking to its items grid.
+- **Reserved names**: a collection field can't use the ids `id`, `slug`, `published_at` or `_seo` -- they're row keys `CollectionSource` always sets. `url` and `seo` are reserved only while `has_pages` is on (they become `item.url` / `item.seo`): a collection without public pages keeps an existing `url`/`seo` field, but public pages can't be enabled until it's removed. A `has_pages` collection's slug can't collide with an existing page slug, a redirect's `from_slug`, or the reserved top-level paths `mcp`, `sitemap.xml`, `robots.txt`, `admin`, `forms` -- and the reverse is enforced too, so a regular page can't take a slug already used by a `has_pages` collection.
+
+Template pages can't be deleted directly (in the UI or via MCP) -- they're removed automatically when their collection is. Disabling `has_pages` keeps the templates (so the design isn't lost) but stops routing them publicly.
+
+**Known limitations:**
+- The public URL is always `/<collection-slug>[/<item-slug>]` -- there's no way to give a collection its own custom base path.
+- Every item of a collection shares the one show template; there's no per-item template override.
+- No nested or categorized URLs (e.g. `/blog/2026/my-post`) -- a collection's public pages are always one flat level.
+- The public index has no built-in filtering/sorting UI; it always lists published items ordered by `published_at desc`, then `id`.
+- Lexxy attachments aren't part of the Media library (see "Rich text (Lexxy)" below for the related import/export limitation).
+- Redirects aren't cross-checked against `has_pages` collection slugs from the redirect side: a page redirect created later with a `from_slug` equal to a live collection's slug isn't refused (the collection side does check existing redirects when public pages are enabled).
+- Changing a live collection's slug doesn't create redirects from its old index/item URLs (unlike renaming a page's slug). Over MCP it needs the `publish` scope, as do `per_page` and `title_field` changes on a collection with public pages and published items.
+- Enabling public pages on a collection whose items have no slug gives each one a slug generated from its Title field (or `item-<n>`).
+
+### Rich text (Lexxy)
+
+Collection fields of type `rich_text` are edited with [Lexxy](https://github.com/basecamp/lexxy), Basecamp's Action Text editor, and rendered through Action Text (`ActionText::Content`). There is no separate `action_text_rich_texts` table -- the canonical HTML (including `<action-text-attachment sgid=...>` tags) is stored straight in the item's `data`/`draft_data` JSON, sanitized with Action Text's own safe list (extended by Lexxy for video/audio/table markup, and by ActiveCanvas for its own `data-ac-media-id` media-reference attribute) rather than the sanitizer used for page content.
+
+- **Host isolation:** on Rails 8.0/8.1, Lexxy defaults to overriding `form.rich_text_area` / `rich_text_area_tag` app-wide. ActiveCanvas turns that default off (`config.lexxy.override_action_text_defaults = false`) so a host app's own Action Text/Trix usage is unaffected; ActiveCanvas always calls `lexxy_rich_textarea_tag` explicitly for its own rich_text fields. If you want Lexxy app-wide too, set `Rails.application.config.lexxy.override_action_text_defaults = true` in your own `config/initializers/lexxy.rb` -- it runs after ActiveCanvas's default and wins.
+- **Assets:** Lexxy ships a single ES-module bundle with no importmap gem required -- ActiveCanvas loads its stylesheet and `<script type="module">` directly through the asset pipeline (Propshaft resolves `lexxy.js`/`lexxy.css` from the gem automatically). Lexxy's bundle does `await import("@rails/activestorage")` as a bare specifier at upload time, which the browser can't resolve on its own, so the item form also emits a tiny inline `<script type="importmap">` mapping just that one specifier to Active Storage's own `activestorage.esm.js` asset.
+- **Existing values:** HTML written before Lexxy (e.g. by the old raw-textarea `rich_text` input) opens fine in Lexxy, which imports plain HTML; unsupported markup may be simplified the next time the field is saved.
+- **Rails 8.2+ not supported yet:** on Rails 8.2+ Lexxy stops overriding helpers and instead registers itself as Action Text's editor adapter (`config.action_text.editor = :lexxy`), which would switch every rich text editor in the host app to Lexxy; ActiveCanvas's opt-out only covers the 8.0/8.1 mode, so the gemspec requires Rails `< 8.2` for now.
+- **App-wide sanitizer changes:** loading Lexxy (a dependency of ActiveCanvas) extends Action Text's allowed tags (`video`, `audio`, `source`, `embed`, `table`, `tbody`, `tr`, `th`, `td`) and attributes (`controls`, `poster`, `data-language`, `style`, `value`, `start`) for the **whole app**, including the host's own Action Text content -- notably inline `style` attributes and `embed` tags now survive Action Text sanitization everywhere.
+- **Attachment URLs:** attachments render through Action Text's own partials with the host app's routes (Active Storage lives there, not in the engine), on the current request's host and script name -- on public pages, admin previews and MCP previews alike. Image attachments are served as Active Storage variants, so the host app needs the `image_processing` gem (standard Action Text requirement). Rich text rendered outside a request (a console or background job) falls back to Rails' default placeholder host.
+- **Known limitation:** Action Text attachment blobs referenced by `sgid` inside rich_text HTML are **not** remapped across instances on import/export (unlike `data-ac-media-id` references, which are -- see Export/Import below). Re-attach files in Lexxy after importing into a different instance.
+
 ## Media & storage
 
 ### Stable media references
@@ -251,7 +313,7 @@ Both `/sitemap.xml` and `/robots.txt` are served relative to wherever the engine
 
 The admin **Export / Import** page (Configure section) backs up or migrates a whole ActiveCanvas instance as a single `.zip`.
 
-**Export** downloads everything: settings (including SEO), page types, pages (with version history), partials, redirects, form submissions, collections and their items (with item version history), AI models, and media -- both the records and the actual file bytes. Page versions, AI models and API keys/secrets are each optional (checkboxes); secrets are decrypted into the zip in clear text when included, so treat it like any other credential backup. **API tokens issued for MCP access are never exported** -- they're bearer credentials tied to the instance that issued them, not portable data.
+**Export** downloads everything: settings (including SEO), page types, pages (with version history), partials, redirects, form submissions, collections (including their public-pages options: `has_pages`, `per_page`, `show_in_sidebar`, the title/description/image field references) and their items (with item version history and per-item SEO), collection template pages (linked back to their collection by slug + role, not by id), AI models, and media -- both the records and the actual file bytes. Page versions, AI models and API keys/secrets are each optional (checkboxes); secrets are decrypted into the zip in clear text when included, so treat it like any other credential backup. **API tokens issued for MCP access are never exported** -- they're bearer credentials tied to the instance that issued them, not portable data.
 
 **Import** accepts a previously exported zip in one of two modes:
 
@@ -260,11 +322,13 @@ The admin **Export / Import** page (Configure section) backs up or migrates a wh
 
 Only import archives you trust. An import can set site-wide scripts and HTML (global CSS/JS, custom head HTML, page content), so treat an untrusted `.zip` the same as untrusted code.
 
-Media referenced from content (`<img data-ac-media-id="N">`), from a collection item's `media`-type fields, and from the SEO favicon/default-OG-image settings all get **new ids** on import (since media rows are recreated), so every one of those references is rewritten to point at the freshly imported media; a reference whose media wasn't imported (e.g. it failed the content-type check below) is dropped rather than left pointing at the wrong thing, and noted in the import summary. The homepage setting is remapped the same way, by the page's slug rather than its old id.
+Media referenced from content (`<img data-ac-media-id="N">`), from a collection item's `media`-type fields, from an item's per-item SEO `og_image_media_id`, and from the SEO favicon/default-OG-image settings all get **new ids** on import (since media rows are recreated), so every one of those references is rewritten to point at the freshly imported media; a reference whose media wasn't imported (e.g. it failed the content-type check below) is dropped rather than left pointing at the wrong thing, and noted in the import summary. The homepage setting is remapped the same way, by the page's slug rather than its old id.
+
+A collection's template pages (the `index`/`show` pages a `has_pages` collection owns) are restored linked to their collection by matching on `[collection, role]`, in both merge and replace mode -- never by slug (they don't have one). This also keeps `has_pages` turning on during import (which auto-creates starter templates) from leaving a duplicate behind: the exported template content lands on the very row the starter creation made.
 
 Import is wrapped in a single transaction (a failure rolls back every write), validates the zip's format version and internal consistency (entry/size caps, no two media rows sharing one file) before touching anything, and holds imported media to the exact same content-type/SVG/size rules as a normal upload -- a backup is not a way to smuggle in an otherwise-disallowed file. The total uncompressed media an archive may contain is capped by `config.import_max_media_bytes` (default 1 GB, independent of `max_upload_size`). Media bytes are uploaded to storage before the database transaction starts (storage writes aren't transactional), so if anything later in the same import fails, those just-uploaded files are explicitly purged rather than left as orphans. A corrupt or malicious upload (not a real zip, an oversized archive, an invalid record) redirects back with a clear error instead of a server error.
 
-**Known limitations:** media URLs embedded inside `og_image`, `twitter_image`, `custom_head_html`, or a GrapesJS `content_components` JSON blob are not guaranteed to be rewritten on import (only `data-ac-media-id` attributes in plain HTML `content`, and collection `media`/`rich_text` fields, are reliably remapped) -- re-point those manually after a cross-instance import if needed. Merge mode also overwrites a collection's field schema (`fields`) wholesale from the manifest rather than merging field-by-field.
+**Known limitations:** media URLs embedded inside `og_image`, `twitter_image`, `custom_head_html`, or a GrapesJS `content_components` JSON blob are not guaranteed to be rewritten on import (only `data-ac-media-id` attributes in plain HTML `content`, and collection `media`/`rich_text` fields, are reliably remapped) -- re-point those manually after a cross-instance import if needed. Action Text attachment blobs referenced by `sgid` inside a `rich_text` field (Lexxy attachments) are **not** remapped either -- only the `data-ac-media-id`-style references are; see "Rich text (Lexxy)" above. Merge mode also overwrites a collection's field schema (`fields`) wholesale from the manifest rather than merging field-by-field.
 
 ## MCP server (agents)
 
@@ -302,6 +366,13 @@ The settings page shows your MCP endpoint URL and ready-to-copy snippets for eac
 
 ```bash
 claude mcp add --transport http active-canvas https://yourapp.example.com/canvas/mcp --header "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+Also install the agent skill in [`skills/active-canvas`](skills/active-canvas/SKILL.md). It covers the workflow, the publish rules and, most importantly, the Liquid checks that keep a dynamic page from breaking on the live site:
+
+```bash
+cp -r skills/active-canvas ~/.claude/skills/       # all projects
+# or: cp -r skills/active-canvas .claude/skills/   # this project only
 ```
 
 **Codex** (`~/.codex/config.toml`)

@@ -20,6 +20,16 @@
 
   <p class="data-panel-message" id="ac-panel-message" hidden></p>
 
+  <% if @page.template? %>
+    <div class="data-panel-implicit" id="ac-implicit-panel">
+      <div class="data-panel-header">
+        <span class="data-panel-title">Template data</span>
+      </div>
+      <p class="data-panel-help">These come from the collection and can't be renamed or removed.</p>
+      <ul id="ac-implicit-list" class="data-panel-list"></ul>
+    </div>
+  <% end %>
+
   <label class="data-panel-toggle">
     <input type="checkbox" id="ac-template-toggle" <%= "checked" if @page.template_enabled? %>>
     <span>Render dynamic content (Liquid)</span>

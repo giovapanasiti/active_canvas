@@ -16,6 +16,7 @@ class ActiveCanvas::Mcp::RegistryTest < ActionDispatch::IntegrationTest
     list_collections get_collection create_collection update_collection delete_collection
     list_collection_items get_collection_item create_collection_item update_collection_item
     delete_collection_item publish_collection_item unpublish_collection_item get_collection_item_history
+    preview_collection_item
     get_settings update_site_settings recompile_tailwind
     get_ai_status list_ai_models update_ai_settings sync_ai_models set_ai_models_active
     create_ai_model delete_ai_model generate_image

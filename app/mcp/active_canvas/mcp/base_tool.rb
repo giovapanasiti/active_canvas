@@ -92,8 +92,13 @@ module ActiveCanvas
         raise ScopeError, reason || "This action requires the '#{scope}' scope."
       end
 
+      # A template page's own `published` column is ignored for rendering (it renders
+      # whenever its collection has_pages -- Page model docs), so it must be treated
+      # the same way for this check: editing a template of a `has_pages` collection
+      # changes what's live on the site just like editing a published regular page.
       def require_publish_if_published!(record, noun)
         published = record.respond_to?(:published?) ? record.published? : record.try(:status) == "published"
+        published ||= record.is_a?(ActiveCanvas::Page) && record.template? && record.collection.has_pages?
         require_scope!(:publish, "This #{noun} is published; changing it requires the 'publish' scope.") if published
       end
 
@@ -123,6 +128,17 @@ module ActiveCanvas
         ActiveCanvas::PageContentUpdate.parse_bindings(raw) || {}
       rescue JSON::ParserError => e
         fail!("Invalid bindings JSON: #{e.message}")
+      end
+
+      # A collection item's `data` argument, with a given `seo` merged in under the
+      # reserved "_seo" key CollectionItem#assign_fields expects. Shared by
+      # create_collection_item/update_collection_item: `seo`, when given, replaces
+      # the whole `_seo` draft value (CollectionItem#assign_fields itself decides
+      # per-key trimming/dropping via CollectionSchema#coerce_seo).
+      def fields_with_seo(args)
+        data = (args[:data] || {}).to_h
+        data = data.merge("_seo" => args[:seo]) if args.key?(:seo)
+        data
       end
     end
   end

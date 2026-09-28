@@ -153,4 +153,112 @@ class ActiveCanvas::CollectionSourceTest < ActiveSupport::TestCase
     tied = resolve("sort_field" => "rank", "sort_dir" => "asc").select { |r| r["rank"] == 2 }.map { |r| r["id"] }
     assert_equal tied.sort, tied
   end
+
+  # -- row_for / rows_for (Part 4 "Item row") --------------------------------
+
+  def with_page_options(collection, per_page: 12, title_field: nil, description_field: nil, image_field: nil)
+    collection.update!(per_page: per_page, title_field: title_field, description_field: description_field,
+      image_field: image_field)
+    collection
+  end
+
+  test "row_for includes the base fields plus url and seo" do
+    with_page_options(@collection, title_field: "name")
+    @a.update!(slug: "ada")
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(@a)
+    assert_equal @a.id, row["id"]
+    assert_equal "ada", row["slug"]
+    assert_equal "Ada", row["name"]
+    assert_equal "/canvas/team/ada", row["url"]
+    assert_equal({ "title" => "Ada", "description" => "", "image_url" => nil }, row["seo"])
+  end
+
+  test "row_for seo title falls back from _seo.meta_title to the title field to the slug" do
+    with_page_options(@collection, title_field: "name")
+    @a.update!(slug: "ada")
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(@a)
+    assert_equal "Ada", row["seo"]["title"]
+
+    with_page_options(@collection, title_field: nil)
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(@a.reload)
+    assert_equal "ada", row["seo"]["title"]
+
+    @a.update!(data: @a.data.merge("_seo" => { "meta_title" => "Custom Title" }))
+    with_page_options(@collection, title_field: "name")
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(@a.reload)
+    assert_equal "Custom Title", row["seo"]["title"]
+  end
+
+  test "row_for seo description is stripped of rich text and truncated to 160" do
+    coll = ActiveCanvas::Collection.create!(name: "Blog", slug: "blog",
+      fields: [ { "label" => "Title", "type" => "text" }, { "label" => "Body", "type" => "rich_text" } ])
+    with_page_options(coll, description_field: "body")
+    long_html = "<p>#{"word " * 40}</p>"
+    item = coll.items.new
+    item.assign_fields("title" => "Post", "body" => long_html)
+    item.save!; item.publish!
+
+    row = ActiveCanvas::CollectionSource.new(coll).row_for(item)
+    assert row["seo"]["description"].length <= 160
+    refute_includes row["seo"]["description"], "<p>"
+
+    item.update!(data: item.data.merge("_seo" => { "meta_description" => "Explicit description" }))
+    row = ActiveCanvas::CollectionSource.new(coll).row_for(item.reload)
+    assert_equal "Explicit description", row["seo"]["description"]
+  end
+
+  test "row_for seo image_url falls back from _seo.og_image_media_id to the image field" do
+    coll = ActiveCanvas::Collection.create!(name: "Gallery2", slug: "gallery2",
+      fields: [ { "label" => "Name", "type" => "text" }, { "label" => "Photo", "type" => "media" } ])
+    with_page_options(coll, image_field: "photo")
+    media = build_saved_media
+    other_media = build_saved_media(filename: "og.png")
+
+    item = coll.items.new
+    item.assign_fields("name" => "Item", "photo" => media.id)
+    item.save!; item.publish!
+
+    # Signed Active Storage URLs embed an expiry, so two calls can differ by a
+    # second; compare the file the URL points at instead of the full string.
+    row = ActiveCanvas::CollectionSource.new(coll).row_for(item)
+    assert_includes row["seo"]["image_url"], "/sample.png"
+
+    item.update!(data: item.data.merge("_seo" => { "og_image_media_id" => other_media.id }))
+    row = ActiveCanvas::CollectionSource.new(coll).row_for(item.reload)
+    assert_includes row["seo"]["image_url"], "/og.png"
+  end
+
+  test "row_for seo values are HTML-escaped" do
+    with_page_options(@collection, title_field: "name")
+    xss = @collection.items.new
+    xss.assign_fields("name" => "<script>1</script>", "rank" => 1, "dept" => "eng")
+    xss.save!; xss.publish!
+
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(xss)
+    refute_includes row["seo"]["title"], "<script>"
+    assert_includes row["seo"]["title"], "&lt;script&gt;"
+  end
+
+  test "row_for(data: :draft) reads the draft snapshot" do
+    with_page_options(@collection, title_field: "name")
+    draft = @collection.items.new
+    draft.assign_fields("name" => "Draft Ada", "rank" => 5, "dept" => "eng")
+    draft.save! # not published
+
+    row = ActiveCanvas::CollectionSource.new(@collection).row_for(draft, data: :draft)
+    assert_equal "Draft Ada", row["name"]
+    assert_equal "Draft Ada", row["seo"]["title"]
+  end
+
+  test "rows_for returns the same shape as row_for for each item" do
+    with_page_options(@collection, title_field: "name")
+    rows = ActiveCanvas::CollectionSource.new(@collection).rows_for([ @a, @b ])
+    assert_equal 2, rows.size
+    assert_equal %w[Ada Bob], rows.map { |r| r["name"] }
+    assert(rows.all? { |r| r["url"].present? && r["seo"].present? })
+  end
+
+  test "index_url is engine-mount aware" do
+    assert_equal "/canvas/team", ActiveCanvas::CollectionSource.new(@collection).index_url
+  end
 end

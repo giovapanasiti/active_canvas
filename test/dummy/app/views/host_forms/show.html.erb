@@ -1,0 +1,5 @@
+<%# Plain host-app form using ActionText/Trix's own form.rich_text_area, with no
+    ActiveCanvas involvement at all -- proves ActiveCanvas leaves it alone. %>
+<%= form_with url: "/host/rich_text_form", scope: :note, method: :get do |form| %>
+  <%= form.rich_text_area :body %>
+<% end %>

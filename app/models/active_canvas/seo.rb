@@ -54,7 +54,16 @@ module ActiveCanvas
     # Published pages eligible for the sitemap: excludes any page whose
     # meta_robots contains "noindex" (case-insensitive).
     def sitemap_pages
-      Page.published.reject { |page| noindex?(page) }
+      Page.published.regular.reject { |page| noindex?(page) }
+    end
+
+    # `has_pages` collections for the sitemap (Part 4 "SEO & sitemap"): each
+    # contributes its index URL plus every published item's show URL, with
+    # `lastmod` from the item's `updated_at`. Built in the view (collection
+    # and item public URLs are named routes, not string-built here) via
+    # `Collection#items.published`.
+    def sitemap_collections
+      Collection.with_pages
     end
 
     def homepage?(page)

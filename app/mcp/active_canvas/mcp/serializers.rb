@@ -37,6 +37,8 @@ module ActiveCanvas
           page_type_key: page.page_type.key,
           show_header: page.show_header?,
           show_footer: page.show_footer?,
+          collection_id: page.collection_id,
+          collection_role: page.collection_role,
           updated_at: page.updated_at,
           current_version_number: page.current_version_number,
           is_homepage: homepage_page_id == page.id,
@@ -104,17 +106,37 @@ module ActiveCanvas
 
       # `items_count:` lets a list caller preload every row's count in one query
       # (`group(:collection_id).count` Hash) instead of `c.items.count` firing once per row;
-      # omitted, it falls back to the per-record query.
-      def collection(c, items_count: nil)
-        {
+      # omitted, it falls back to the per-record query. `index_url` and the template page ids
+      # are only meaningful once the collection `has_pages` (there are no public pages, and no
+      # template pages, otherwise). `template_page_ids:` is `{ collection_id => { "index" => id,
+      # "show" => id } }`, letting a list caller preload every has_pages collection's template
+      # page ids in one query instead of two `find_by`s per row; omitted, it falls back to the
+      # per-record query (a no-op -- zero extra queries -- for a collection without has_pages).
+      def collection(c, items_count: nil, template_page_ids: nil)
+        base = {
           id: c.id,
           name: c.name,
           slug: c.slug,
           fields: c.fields,
+          has_pages: c.has_pages,
+          per_page: c.per_page,
+          show_in_sidebar: c.show_in_sidebar,
+          title_field: c.title_field,
+          description_field: c.description_field,
+          image_field: c.image_field,
           items_count: items_count.nil? ? c.items.count : items_count,
           created_at: c.created_at,
           updated_at: c.updated_at
         }
+
+        if c.has_pages?
+          base[:index_url] = ActiveCanvas::CollectionSource.new(c).index_url
+          ids = template_page_ids.nil? ? c.template_pages.pluck(:collection_role, :id).to_h : (template_page_ids[c.id] || {})
+          base[:index_template_page_id] = ids["index"]
+          base[:show_template_page_id] = ids["show"]
+        end
+
+        base
       end
 
       # First 4 schema fields' values from effective_data, keyed by field id.
@@ -130,8 +152,10 @@ module ActiveCanvas
         }
       end
 
+      # `url` (the item's public show-page URL) is only included when its collection
+      # `has_pages` -- there is no public page to link to otherwise.
       def collection_item(item)
-        {
+        base = {
           id: item.id,
           collection_id: item.collection_id,
           slug: item.slug,
@@ -140,9 +164,17 @@ module ActiveCanvas
           pending_changes: item.pending_changes?,
           data: item.data,
           draft_data: item.draft_data,
+          seo: item.seo,
           created_at: item.created_at,
           updated_at: item.updated_at
         }
+
+        if item.collection.has_pages?
+          url_helpers = ActiveCanvas::Engine.routes.url_helpers
+          base[:url] = item.slug.present? ? url_helpers.public_collection_item_path(item.collection.slug, item.slug, only_path: true) : nil
+        end
+
+        base
       end
 
       def collection_item_version(version)

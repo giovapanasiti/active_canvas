@@ -4,7 +4,7 @@ module ActiveCanvas
       module Settings
         class UpdateSiteSettings < BaseTool
           tool_name "update_site_settings"
-          description "Update site-wide settings, including SEO. Every field is optional; only the fields given are changed. `tailwind_config` must be a JSON object string. `homepage_page_id` must reference an existing page. `seo_favicon_media_id` and `seo_default_og_image_media_id` must reference an existing Media (upload_media first); either can be cleared by passing null."
+          description "Update site-wide settings, including SEO. Every field is optional; only the fields given are changed. `tailwind_config` must be a JSON object string. `homepage_page_id` must reference an existing regular page (not a collection template). `seo_favicon_media_id` and `seo_default_og_image_media_id` must reference an existing Media (upload_media first); either can be cleared by passing null."
           input_schema(properties: {
             homepage_page_id: { type: "integer" },
             global_css: { type: "string" },
@@ -45,7 +45,7 @@ module ActiveCanvas
           end
 
           def update_homepage_page_id!(page_id)
-            ActiveCanvas::Page.find(page_id) if page_id.present?
+            ActiveCanvas::Page.regular.find(page_id) if page_id.present?
             ActiveCanvas::Setting.homepage_page_id = page_id
           end
         end

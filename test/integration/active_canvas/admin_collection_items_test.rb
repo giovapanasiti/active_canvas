@@ -73,7 +73,7 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     ])
     get "/canvas/admin/collections/#{rich.id}/items/new"
     assert_response :success
-    assert_select "textarea[name=?]", "item[data][body]"
+    assert_select "lexxy-editor[name=?]", "item[data][body]"    # rich_text: Lexxy, not a plain textarea (see admin_collection_items_lexxy_test.rb)
     assert_select "input[type=number][name=?]", "item[data][count]"
     assert_select "input[type=date][name=?]", "item[data][when]"
     assert_select "select[name=?]", "item[data][pick]"
@@ -175,7 +175,7 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
 
     get "/canvas/admin/collections/#{rich.id}/items/#{item.id}/edit"
     assert_response :success
-    assert_select "textarea[name=?]", "item[data][body]", text: /<p>hi<\/p>/
+    assert_select "lexxy-editor[name=?][value=?]", "item[data][body]", "<p>hi</p>"    # rich_text: Lexxy (see admin_collection_items_lexxy_test.rb)
     assert_select "input[type=number][name=?][value=?]", "item[data][count]", "7"
     assert_select "input[type=date][name=?][value=?]", "item[data][when]", "2026-07-02"
     assert_select "select[name=?] option[selected][value=?]", "item[data][pick]", "b"
@@ -236,6 +236,56 @@ class ActiveCanvas::AdminCollectionItemsTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{published.id}/publish"
     assert_select "form[action=?]", "/canvas/admin/collections/#{@collection.id}/items/#{draft.id}/publish"
     assert_select "form[action=?][method=post] input[name=_method][value=delete]", "/canvas/admin/collections/#{@collection.id}/items/#{draft.id}"
+  end
+
+  test "the SEO fieldset is hidden when the collection has no pages" do
+    get "/canvas/admin/collections/#{@collection.id}/items/new"
+    assert_response :success
+    assert_select "#ac-item-seo", count: 0
+  end
+
+  test "the SEO fieldset renders with the media select + preview when the collection has_pages" do
+    @collection.update!(has_pages: true)
+    get "/canvas/admin/collections/#{@collection.id}/items/new"
+    assert_response :success
+    assert_select "#ac-item-seo"
+    assert_select "input[name=?]", "item[data][_seo][meta_title]"
+    assert_select "textarea[name=?]", "item[data][_seo][meta_description]"
+    assert_select "select[name=?][data-media-select]", "item[data][_seo][og_image_media_id]"
+  end
+
+  test "the item slug is marked required when has_pages" do
+    @collection.update!(has_pages: true)
+    get "/canvas/admin/collections/#{@collection.id}/items/new"
+    assert_includes response.body, "Item slug</label>"
+  end
+
+  test "create persists _seo and generates a slug when has_pages" do
+    @collection.update!(has_pages: true, title_field: "name")
+
+    assert_difference "ActiveCanvas::CollectionItem.count", 1 do
+      post "/canvas/admin/collections/#{@collection.id}/items", params: {
+        item: { data: { "name" => "Ada Lovelace",
+          "_seo" => { "meta_title" => "  Custom title  ", "meta_description" => "desc" } } }
+      }
+    end
+
+    item = ActiveCanvas::CollectionItem.last
+    assert_equal "ada-lovelace", item.slug
+    assert_equal "Custom title", item.draft_data["_seo"]["meta_title"]
+    assert_equal "desc", item.draft_data["_seo"]["meta_description"]
+  end
+
+  test "edit pre-fills the SEO fieldset from draft_data" do
+    @collection.update!(has_pages: true)
+    item = @collection.items.new
+    item.assign_fields("name" => "Ada", "_seo" => { "meta_title" => "T", "meta_description" => "D" })
+    item.save!
+
+    get "/canvas/admin/collections/#{@collection.id}/items/#{item.id}/edit"
+    assert_response :success
+    assert_select "input[name=?][value=?]", "item[data][_seo][meta_title]", "T"
+    assert_select "textarea[name=?]", "item[data][_seo][meta_description]", text: "D"
   end
 
   test "history keeps showing a field that was removed from the schema" do

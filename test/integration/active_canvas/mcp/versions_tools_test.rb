@@ -64,6 +64,22 @@ class ActiveCanvas::Mcp::VersionsToolsTest < ActionDispatch::IntegrationTest
     assert_nil err
   end
 
+  test "restore_page_version succeeds for a template version referencing the implicit item context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+    # Without the implicit context applied to the strict preview render, restoring this would
+    # fail with an "undefined variable" error even though the content is valid on a show template.
+    version = template.versions.create!(
+      content_before: template.content, content_after: "<h1>{{ item.name }}</h1>",
+      css_before: "", css_after: "", bindings_before: {}, bindings_after: {}
+    )
+
+    _, err = mcp_call(@rwp, "restore_page_version", { page_id: template.id, version_number: version.version_number })
+    assert_nil err
+    assert_equal "<h1>{{ item.name }}</h1>", template.reload.content
+  end
+
   test "restoring a version with invalid Liquid on a template_enabled page returns a line error and leaves the page unchanged" do
     page = ActiveCanvas::Page.create!(title: "Templated", page_type: @page_type, content: "<p>ok</p>", template_enabled: true)
     bad_version = page.versions.create!(

@@ -8,7 +8,7 @@ module ActiveCanvas
         @global_css = Setting.global_css
         @global_js = Setting.global_js
         @custom_head_html = Setting.custom_head_html
-        @pages = Page.published.order(:title)
+        @pages = Page.published.regular.order(:title)
 
         # Tailwind settings
         @tailwind_config = Setting.tailwind_config_js
@@ -64,7 +64,12 @@ module ActiveCanvas
       end
 
       def update
-        Setting.homepage_page_id = params[:homepage_page_id]
+        page_id = params[:homepage_page_id].presence
+        if page_id && !Page.regular.exists?(id: page_id)
+          return redirect_to admin_settings_path, alert: "The homepage must be a regular page."
+        end
+
+        Setting.homepage_page_id = page_id
 
         redirect_to admin_settings_path, notice: "Settings saved successfully."
       end

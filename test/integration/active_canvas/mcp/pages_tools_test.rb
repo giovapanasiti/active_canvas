@@ -152,6 +152,88 @@ class ActiveCanvas::Mcp::PagesToolsTest < ActionDispatch::IntegrationTest
     assert_equal version_count, page.versions.count
   end
 
+  test "list_pages excludes a collection's template pages by default and filters by collection_id" do
+    regular = create_full_page(title: "Regular", slug: "regular")
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true,
+      fields: [ { "label" => "Name", "type" => "text" } ])
+    template_ids = collection.template_pages.pluck(:id)
+
+    default_listing, = mcp_call(@rwp, "list_pages")
+    ids = default_listing["items"].map { |i| i["id"] }
+    assert_includes ids, regular.id
+    template_ids.each { |id| refute_includes ids, id }
+
+    by_collection, = mcp_call(@rwp, "list_pages", { collection_id: collection.id })
+    assert_equal template_ids.sort, by_collection["items"].map { |i| i["id"] }.sort
+    by_collection["items"].each { |i| assert_equal collection.id, i["collection_id"] }
+    assert_equal %w[index show].sort, by_collection["items"].map { |i| i["collection_role"] }.sort
+  end
+
+  test "list_pages includes nil collection_id/collection_role for a regular page" do
+    page = create_full_page
+    listed, = mcp_call(@rwp, "list_pages", { query: page.slug })
+    item = listed["items"].first
+    assert_nil item["collection_id"]
+    assert_nil item["collection_role"]
+  end
+
+  test "delete_page refuses to delete a template page" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true,
+      fields: [ { "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+
+    _, err = mcp_call(@rwp, "delete_page", { id: template.id })
+    assert_match(/removed with their collection/, err)
+    assert ActiveCanvas::Page.exists?(template.id)
+  end
+
+  test "update_page_content on a live template (its collection has_pages) requires the publish scope" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true,
+      fields: [ { "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+    rw = mcp_token(%w[read write])
+
+    _, err = mcp_call(rw, "update_page_content", { id: template.id, content: "<p>changed</p>" })
+    assert_match(/requires the 'publish' scope/, err)
+    refute_equal "<p>changed</p>", template.reload.content
+
+    _, err2 = mcp_call(@rwp, "update_page_content", { id: template.id, content: "<p>changed</p>" })
+    assert_nil err2
+    assert_equal "<p>changed</p>", template.reload.content
+  end
+
+  test "update_page_content saves a show template referencing the implicit item context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+
+    _, err = mcp_call(@rwp, "update_page_content", { id: template.id, content: "<h1>{{ item.name }}</h1>" })
+    assert_nil err
+    assert_equal "<h1>{{ item.name }}</h1>", template.reload.content
+  end
+
+  test "update_page_content saves an index template looping over the implicit items context" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true,
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "index")
+    content = %(<div data-ac-for="entry in items">{{ entry.name }}</div>)
+
+    _, err = mcp_call(@rwp, "update_page_content", { id: template.id, content: content })
+    assert_nil err
+    assert_equal content, template.reload.content
+  end
+
+  test "update_page_content still refuses invalid Liquid on a template" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true,
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    template = collection.template_pages.find_by!(collection_role: "show")
+    original_content = template.content
+
+    _, err = mcp_call(@rwp, "update_page_content", { id: template.id, content: "{% if %}" })
+    assert_match(/line/, err)
+    assert_equal original_content, template.reload.content
+  end
+
   test "delete_page destroys a page" do
     page = create_full_page
     deleted, = mcp_call(@rwp, "delete_page", { id: page.id })

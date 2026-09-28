@@ -13,7 +13,7 @@ module ActiveCanvas
     # Formats this importer can still read. Manifests are additive across
     # versions (new top-level keys default to empty when absent), so an older
     # manifest just imports fewer sections rather than being rejected.
-    SUPPORTED_FORMAT_VERSIONS = [ 1, 2 ].freeze
+    SUPPORTED_FORMAT_VERSIONS = [ 1, 2, 3 ].freeze
 
     # Whole-archive cap, checked before the zip is even opened (defends against
     # a huge/zip-bomb-style upload). Distinct from the per-media-entry cap,
@@ -34,7 +34,7 @@ module ActiveCanvas
     # clear InvalidArchive message instead of a TypeError/NoMethodError deep
     # inside some import_* method.
     ARRAY_SECTIONS = %w[
-      page_types partials pages page_redirects collections collection_items
+      page_types partials pages collection_template_pages page_redirects collections collection_items
       form_submissions media page_versions collection_item_versions ai_models settings
     ].freeze
 
@@ -74,9 +74,18 @@ module ActiveCanvas
               attach_media(pending_media)
               import_pages(manifest["pages"] || [])
               import_partials(manifest["partials"] || [])
-              import_page_versions(manifest["page_versions"] || [])
+              # page_redirects must be imported before collections: a has_pages
+              # collection's slug can't shadow a redirect (Collection#has_pages_
+              # slug_availability), and that check must see redirects THIS SAME
+              # manifest is restoring, not just ones already on the target.
               import_page_redirects(manifest["page_redirects"] || [])
+              # Collections (and the template pages they own) must be imported
+              # before page_versions, which resolves ANY page - regular or
+              # template - through the shared @page_remap source-id map built
+              # while importing both (see resolve_page).
               import_collections(manifest["collections"] || [])
+              import_collection_templates(manifest["collection_template_pages"] || [])
+              import_page_versions(manifest["page_versions"] || [])
               import_collection_items(manifest["collection_items"] || [])
               import_collection_item_versions(manifest["collection_item_versions"] || [])
               import_form_submissions(manifest["form_submissions"] || [])
@@ -203,7 +212,11 @@ module ActiveCanvas
       ActiveStorage::Attachment.where(record_type: "ActiveCanvas::Media", name: "file").delete_all
       ActiveStorage::Blob.where(id: media_blob_ids).delete_all
 
-      [ CollectionItemVersion, CollectionItem, Collection, FormSubmission, PageRedirect, PageVersion, Page, Partial, PageType ].each(&:delete_all)
+      # Children before parents: CollectionItem(Version) and Page (a template
+      # page's collection_id) both have a real DB foreign key into Collection,
+      # and Page also has one into PageType - Page must go before both, and
+      # Collection before neither depended on it later in this list.
+      [ CollectionItemVersion, CollectionItem, FormSubmission, PageRedirect, PageVersion, Page, Collection, Partial, PageType ].each(&:delete_all)
 
       if @include_secrets
         Setting.delete_all
@@ -318,7 +331,66 @@ module ActiveCanvas
     def import_collections(rows)
       rows.each do |r|
         rec = @mode == :merge ? Collection.find_or_initialize_by(slug: r["slug"]) : Collection.new(slug: r["slug"])
-        track(rec) { rec.update!(name: r["name"], fields: r["fields"] || []) }
+        track(rec) do
+          # A v2 manifest predates has_pages/per_page/show_in_sidebar/
+          # title_field/description_field/image_field: absence means "not a
+          # pages-enabled collection", i.e. the column defaults.
+          rec.update!(
+            name: r["name"],
+            fields: r["fields"] || [],
+            has_pages: r["has_pages"] || false,
+            per_page: r["per_page"] || 12,
+            show_in_sidebar: r["show_in_sidebar"] || false,
+            title_field: r["title_field"],
+            description_field: r["description_field"],
+            image_field: r["image_field"]
+          )
+        end
+      end
+    end
+
+    # Template pages (Part 4 "Model"): matched by [collection, role] rather
+    # than any id - never by slug (they don't have one). Matching this way
+    # (instead of always creating new, like a regular page) is what keeps
+    # Collection#ensure_templates! (fired as a side effect of import_collections
+    # turning has_pages on) from leaving a duplicate starter template behind
+    # once this pass writes the real, exported content over it - in BOTH
+    # modes, since a collection only ever has one template per role.
+    def import_collection_templates(rows)
+      rows.each do |r|
+        collection = Collection.find_by(slug: r["collection_slug"])
+        unless collection
+          @summary[:warnings] << "collection template page skipped: collection '#{r["collection_slug"]}' not found"
+          @summary[:skipped] += 1
+          next
+        end
+
+        pt = PageType.find_by(key: r["page_type_key"])
+        unless pt
+          @summary[:warnings] << "collection template page skipped: page_type '#{r["page_type_key"]}' not found"
+          @summary[:skipped] += 1
+          next
+        end
+
+        attrs = strip_nil_timestamps(r.slice(*Exporter::PAGE_ATTRS).except("slug"))
+        attrs["content"] = remap_media_refs(attrs["content"])
+        attrs["content_components"] = remap_content_components(attrs["content_components"])
+
+        rec = Page.find_or_initialize_by(collection: collection, collection_role: r["collection_role"])
+        rec.page_type = pt
+        track(rec) { rec.update!(attrs) }
+        # In replace mode a matched row is always the starter template
+        # Collection#ensure_templates! just created (nothing else could have
+        # made it, this collection is brand new): overwriting its content
+        # here is an ordinary UPDATE, so Page's after_update callback records
+        # it as a version - one this same page's real history (about to be
+        # replayed from the manifest below) does not know about, and would
+        # collide with on version_number. It's discarded, not meaningful
+        # history. Merge mode's matched row can be a genuine pre-existing
+        # template, so its update is real user-visible history and is kept -
+        # merge doesn't replay page_versions from the manifest at all.
+        rec.versions.delete_all if @mode == :replace
+        @page_remap[r["source_id"]] = rec.id if r["source_id"]
       end
     end
 
@@ -644,13 +716,38 @@ module ActiveCanvas
       return {} if data.blank?
       schema = CollectionSchema.new(collection.fields)
       data.each_with_object({}) do |(field_id, value), acc|
-        field_type = schema.field(field_id) && schema.field(field_id)["type"]
-        acc[field_id] = case field_type
-        when "media" then remap_media_id(value)
-        when "rich_text" then remap_media_refs(value)
-        else value
+        # "_seo" (Part 3) lives outside the fields namespace - it isn't a
+        # schema field, so it's remapped by hand instead of falling into the
+        # generic case below (which would copy its og_image_media_id verbatim).
+        acc[field_id] = if field_id == "_seo"
+          remap_item_seo(value)
+        else
+          field_type = schema.field(field_id) && schema.field(field_id)["type"]
+          case field_type
+          when "media" then remap_media_id(value)
+          when "rich_text" then remap_media_refs(value)
+          else value
+          end
         end
       end
+    end
+
+    # Same drop-and-warn policy as any other media reference: an unmapped
+    # og_image_media_id is removed from "_seo" rather than left pointing at a
+    # foreign/stale media id.
+    def remap_item_seo(seo)
+      return seo unless seo.is_a?(Hash)
+
+      seo = seo.dup
+      if seo.key?("og_image_media_id")
+        new_id = remap_media_id(seo["og_image_media_id"])
+        if new_id
+          seo["og_image_media_id"] = new_id
+        else
+          seo.delete("og_image_media_id")
+        end
+      end
+      seo
     end
 
     def track(record)

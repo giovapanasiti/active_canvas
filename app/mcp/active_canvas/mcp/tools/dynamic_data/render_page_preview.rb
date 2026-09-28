@@ -6,7 +6,7 @@ module ActiveCanvas
           MAX_BYTES = 500_000
 
           tool_name "render_page_preview"
-          description "Render a complete HTML page (layout, partials, CSS framework) from the page's saved state with optional unsaved overrides for content/content_css/content_js/bindings/template_enabled — nothing is saved. `bindings` may be a JSON object or a JSON-encoded string. html is truncated at 500 KB (truncated: true when it was)."
+          description "Render a complete HTML page (layout, partials, CSS framework) from the page's saved state with optional unsaved overrides for content/content_css/content_js/bindings/template_enabled — nothing is saved. `bindings` may be a JSON object or a JSON-encoded string. html is truncated at 500 KB (truncated: true when it was). On a collection's template page, its implicit item/items/collection/pagination assigns are applied automatically (an index template renders page 1)."
           input_schema(
             properties: {
               page_id: { type: "integer" },

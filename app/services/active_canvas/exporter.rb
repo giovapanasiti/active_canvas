@@ -4,7 +4,7 @@ require "json"
 module ActiveCanvas
   # Builds a self-contained ZIP (manifest.json + media/ files) of the whole instance.
   class Exporter
-    FORMAT_VERSION = 2
+    FORMAT_VERSION = 3
 
     PAGE_ATTRS = %w[
       slug title published content content_css content_js content_components
@@ -21,7 +21,7 @@ module ActiveCanvas
     AI_MODEL_ATTRS = %w[model_id provider name family model_type context_window max_tokens
                         input_price_per_million output_price_per_million input_modalities output_modalities
                         supports_functions active].freeze
-    COLLECTION_ATTRS = %w[slug name fields].freeze
+    COLLECTION_ATTRS = %w[slug name fields has_pages per_page show_in_sidebar title_field description_field image_field].freeze
     COLLECTION_ITEM_ATTRS = %w[slug status published_at data draft_data created_at updated_at].freeze
     COLLECTION_ITEM_VERSION_ATTRS = %w[version_number data changed_by change_summary created_at updated_at].freeze
     FORM_SUBMISSION_ATTRS = %w[form_key data ip user_agent created_at updated_at].freeze
@@ -70,7 +70,13 @@ module ActiveCanvas
     end
 
     def build_manifest(media_entries)
-      pages = Page.includes(:page_type).to_a
+      all_pages = Page.includes(:page_type, :collection).to_a
+      # Template pages (collection_id present, Part 4 "Model") are never
+      # routed by slug, so they can't be exported/matched like regular pages -
+      # they go in their own section below, referencing their collection by
+      # slug + role instead of a foreign key.
+      pages = all_pages.reject(&:template?)
+      template_pages = all_pages.select(&:template?)
       manifest = {
         "meta" => {
           "format_version" => FORMAT_VERSION, "exported_at" => Time.current.iso8601, "app_version" => ActiveCanvas::VERSION,
@@ -91,6 +97,15 @@ module ActiveCanvas
         # because a page's `slug` can be blank (nullable, not unique), so it
         # can't always identify the right page on its own. See Importer#resolve_page.
         "pages" => pages.map { |pg| pg.slice(*PAGE_ATTRS).merge("page_type_key" => pg.page_type.key, "source_id" => pg.id) },
+        # Template pages, keyed by their collection's slug + role rather than
+        # any id (Part 7): the importer restores them linked to the imported
+        # collection by upserting on [collection, role].
+        "collection_template_pages" => template_pages.map do |pg|
+          pg.slice(*PAGE_ATTRS).merge(
+            "page_type_key" => pg.page_type.key, "source_id" => pg.id,
+            "collection_slug" => pg.collection.slug, "collection_role" => pg.collection_role
+          )
+        end,
         "page_redirects" => PageRedirect.includes(:page).map { |r| { "from_slug" => r.from_slug, "page_slug" => r.page.slug, "page_source_id" => r.page_id } },
         "collections" => Collection.all.map { |c| c.slice(*COLLECTION_ATTRS) },
         "collection_items" => export_collection_items,

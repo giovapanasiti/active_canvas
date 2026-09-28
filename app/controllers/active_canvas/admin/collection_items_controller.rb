@@ -4,7 +4,7 @@ module ActiveCanvas
       MAX_ROWS = 1000
 
       before_action :set_collection
-      before_action :set_item, only: %i[edit update destroy publish unpublish history]
+      before_action :set_item, only: %i[edit update destroy publish unpublish history preview]
       before_action :load_media, only: %i[new create edit update]
 
       def index
@@ -61,6 +61,17 @@ module ActiveCanvas
 
       def history
         @versions = @item.versions.order(version_number: :desc)
+      end
+
+      # Draft preview (Part 3): the item's *show* template page rendered with
+      # its draft data, inside the public layout -- available whether the
+      # item is draft or published, with `noindex` so it can't get indexed.
+      # Shared with the `preview_collection_item` MCP tool via CollectionItemPreview.
+      def preview
+        result = ActiveCanvas::CollectionItemPreview.call(@item)
+        response.headers["Cache-Control"] = "no-store"
+
+        render html: result[:html].html_safe
       end
 
       private

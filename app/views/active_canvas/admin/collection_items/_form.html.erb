@@ -11,12 +11,52 @@
   <% end %>
 
   <div class="form-group">
-    <%= form.label :slug, "Item slug (optional)" %>
+    <%= form.label :slug, @collection.has_pages? ? "Item slug" : "Item slug (optional)" %>
     <%= form.text_field :slug, class: "form-control" %>
+    <% if @collection.has_pages? %>
+      <small>Used in the public URL: <code>/<%= @collection.slug %>/<slug></code>. Leave blank to generate one from the title field.</small>
+    <% end %>
   </div>
 
   <% @collection.fields.each do |field| %>
     <%= render "field_input", field: field, value: (@item.draft_data || {})[field["id"]], media: @media %>
+  <% end %>
+
+  <% if @collection.has_pages? %>
+    <% seo = (@item.draft_data || {})["_seo"] || {} %>
+    <fieldset class="form-group" id="ac-item-seo">
+      <legend>SEO</legend>
+
+      <div class="form-group">
+        <%= label_tag "item_data__seo_meta_title", "Meta title" %>
+        <%= text_field_tag "item[data][_seo][meta_title]", seo["meta_title"], id: "item_data__seo_meta_title", class: "form-control" %>
+        <small>Falls back to the title field, then the item slug.</small>
+      </div>
+
+      <div class="form-group">
+        <%= label_tag "item_data__seo_meta_description", "Meta description" %>
+        <%= text_area_tag "item[data][_seo][meta_description]", seo["meta_description"], id: "item_data__seo_meta_description", class: "form-control", rows: 2 %>
+        <small>Falls back to the description field, then the site default.</small>
+      </div>
+
+      <div class="form-group">
+        <%= label_tag "item_data__seo_og_image_media_id", "Open Graph image" %>
+        <% seo_media_id = seo["og_image_media_id"] %>
+        <% seo_media = @media.find { |m| m.id.to_s == seo_media_id.to_s } %>
+        <select name="item[data][_seo][og_image_media_id]" id="item_data__seo_og_image_media_id" class="form-control" data-media-select>
+          <option value="">&mdash; none &mdash;</option>
+          <% @media.each do |m| %>
+            <option value="<%= m.id %>" data-url="<%= m.url %>" <%= "selected" if seo_media_id.to_s == m.id.to_s %>><%= m.filename %></option>
+          <% end %>
+        </select>
+        <% if seo_media&.url.present? %>
+          <%= image_tag seo_media.url, class: "ac-media-preview", alt: "", style: "max-height:80px;margin-top:.5rem;" %>
+        <% else %>
+          <img class="ac-media-preview" alt="" style="max-height:80px;margin-top:.5rem;display:none;">
+        <% end %>
+        <small>Falls back to the image field, then the site default.</small>
+      </div>
+    </fieldset>
   <% end %>
 
   <div class="form-actions">
@@ -26,3 +66,12 @@
 <% end %>
 
 <%= javascript_include_tag "active_canvas/admin/media_select_preview" %>
+
+<%# Lexxy is ES-module only and its bundle does `await import("@rails/activestorage")`
+    as a bare specifier, which browsers cannot resolve without a map -- this project
+    has no importmap gem, so we provide a tiny inline one just for that specifier. %>
+<script type="importmap">
+  { "imports": { "@rails/activestorage": "<%= asset_path("activestorage.esm.js") %>" } }
+</script>
+<%= stylesheet_link_tag "lexxy" %>
+<%= javascript_include_tag "lexxy", type: "module" %>

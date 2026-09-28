@@ -3,7 +3,7 @@ require "test_helper"
 module ActiveCanvas
   class ImporterMediaTest < ActiveSupport::TestCase
     def export_now(**opts)
-      path = File.join(Dir.tmpdir, "ac_impm_#{rand(1_000_000)}.zip")
+      path = File.join(Dir.tmpdir, "ac_impm_#{SecureRandom.hex(8)}.zip")
       ActiveCanvas::Exporter.new(**opts).export_to(path)
       path
     end

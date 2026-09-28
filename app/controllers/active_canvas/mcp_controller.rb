@@ -15,6 +15,7 @@ module ActiveCanvas
     before_action :ensure_enabled
     before_action :authenticate_token
     before_action -> { check_rate_limit(namespace: "mcp", limit: ActiveCanvas.config.mcp_rate_limit_per_minute) }
+    around_action :with_request_scoped_renderer
 
     def handle
       ActiveCanvas::Current.editor = "MCP: #{@token.name}"
@@ -55,6 +56,12 @@ module ActiveCanvas
     end
 
     private
+
+    # Rich text attachments and preview renders use this request's host
+    # (ActionController::API never gets Action Text's own renderer hook).
+    def with_request_scoped_renderer(&block)
+      ActiveCanvas::RequestScopedRenderer.around(request, &block)
+    end
 
     def ensure_enabled
       render json: { error: "MCP is disabled" }, status: :not_found unless ActiveCanvas.config.enable_mcp

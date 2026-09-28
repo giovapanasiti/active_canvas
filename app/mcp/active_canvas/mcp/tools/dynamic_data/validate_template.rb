@@ -4,7 +4,7 @@ module ActiveCanvas
       module DynamicData
         class ValidateTemplate < BaseTool
           tool_name "validate_template"
-          description "Run unsaved content/bindings through the strict preview renderer and report the first Liquid error with its line/column, without saving anything. Returns { ok: true } or { ok: false, error: { message, line, column } } — a validation failure is a normal result, not a tool error. `bindings` may be a JSON object or a JSON-encoded string."
+          description "Run unsaved content/bindings through the strict preview renderer and report the first Liquid error with its line/column, without saving anything. Returns { ok: true } or { ok: false, error: { message, line, column } } — a validation failure is a normal result, not a tool error. `bindings` may be a JSON object or a JSON-encoded string. On a collection's template page, its implicit item/items/collection/pagination assigns are applied automatically."
           input_schema(
             properties: { page_id: { type: "integer" }, content: { type: "string" }, bindings: {} },
             required: [ "page_id", "content" ]
@@ -14,7 +14,10 @@ module ActiveCanvas
 
           def perform(args)
             page = ActiveCanvas::Page.find(args[:page_id])
-            ActiveCanvas::TemplateValidation.call(page, content: args[:content].to_s, bindings: parse_bindings(args[:bindings]))
+            ActiveCanvas::TemplateValidation.call(
+              page, content: args[:content].to_s, bindings: parse_bindings(args[:bindings]),
+              context: ActiveCanvas::TemplateEditorContext.live(page)
+            )
           end
         end
       end

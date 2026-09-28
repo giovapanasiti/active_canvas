@@ -3,6 +3,9 @@
 <div class="page-header">
   <h2>Edit item</h2>
   <div>
+    <% if @collection.has_pages? %>
+      <%= link_to "Preview", preview_admin_collection_item_path(@collection, @item), class: "btn btn-secondary", target: "_blank", rel: "noopener" %>
+    <% end %>
     <%= link_to "History", history_admin_collection_item_path(@collection, @item), class: "btn btn-secondary" %>
     <% if @item.status != "published" %>
       <%= button_to "Publish", publish_admin_collection_item_path(@collection, @item), method: :patch, class: "btn btn-primary", form: { style: "display:inline" } %>

@@ -107,6 +107,66 @@ class ActiveCanvas::Mcp::CollectionItemsToolsTest < ActionDispatch::IntegrationT
     assert ActiveCanvas::CollectionItem.exists?(item.id)
   end
 
+  test "create_collection_item and update_collection_item round trip seo" do
+    created, err = mcp_call(@rw, "create_collection_item", {
+      collection_id: @collection.id, slug: "ada", data: { "name" => "Ada" },
+      seo: { "meta_title" => "Ada Lovelace", "meta_description" => "A pioneer" }
+    })
+    assert_nil err
+    assert_equal "Ada Lovelace", created["seo"]["meta_title"]
+    assert_equal "A pioneer", created["seo"]["meta_description"]
+    assert_nil created["seo"]["og_image_media_id"]
+
+    updated, err2 = mcp_call(@rw, "update_collection_item", {
+      collection_id: @collection.id, id: created["id"], seo: { "meta_title" => "Ada L." }
+    })
+    assert_nil err2
+    assert_equal "Ada L.", updated["seo"]["meta_title"]
+    assert_nil updated["seo"]["meta_description"], "update_collection_item's seo replaces the whole _seo value"
+  end
+
+  test "collection_item serializer includes url when the collection has_pages, omits it otherwise" do
+    pages_collection = ActiveCanvas::Collection.create!(name: "Docs", slug: "docs", has_pages: true,
+      fields: [ { "label" => "Name", "type" => "text" } ])
+
+    with_pages, = mcp_call(@rw, "create_collection_item", { collection_id: pages_collection.id, slug: "getting-started", data: { "name" => "GS" } })
+    assert_equal "/canvas/docs/getting-started", with_pages["url"]
+
+    without_pages, = mcp_call(@rw, "create_collection_item", { collection_id: @collection.id, slug: "ada", data: { "name" => "Ada" } })
+    refute without_pages.key?("url")
+  end
+
+  test "preview_collection_item renders the show template with the item's draft data" do
+    pages_collection = ActiveCanvas::Collection.create!(name: "Docs", slug: "docs", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    item = pages_collection.items.new(slug: "draft-item")
+    item.assign_fields("name" => "Draft Title")
+    item.save!
+
+    result, err = mcp_call(@rw, "preview_collection_item", { collection_id: pages_collection.id, id: item.id })
+    assert_nil err
+    assert_includes result["html"], "Draft Title"
+    assert_equal false, result["truncated"]
+  end
+
+  test "preview_collection_item does not change the item or leak into the published snapshot" do
+    pages_collection = ActiveCanvas::Collection.create!(name: "Docs", slug: "docs", has_pages: true, title_field: "name",
+      fields: [ { "id" => "name", "label" => "Name", "type" => "text" } ])
+    item = pages_collection.items.new(slug: "draft-item")
+    item.assign_fields("name" => "Draft Title")
+    item.save!
+
+    mcp_call(@rw, "preview_collection_item", { collection_id: pages_collection.id, id: item.id })
+
+    assert_equal "draft", item.reload.status
+    assert_equal({}, item.data)
+  end
+
+  test "preview_collection_item is a tool error for an unknown item" do
+    _, err = mcp_call(@rw, "preview_collection_item", { collection_id: @collection.id, id: 999_999 })
+    assert_match(/not found/i, err)
+  end
+
   test "get_collection_item_history returns versions after a publish" do
     item = @collection.items.new
     item.assign_fields("name" => "Ada")

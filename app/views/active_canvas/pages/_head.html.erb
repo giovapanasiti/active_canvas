@@ -1,0 +1,60 @@
+<%# locals: (title:, description: nil, robots: nil, og_title: nil, og_description: nil, og_image: nil, twitter_card: nil, twitter_title: nil, twitter_description: nil, twitter_image: nil, canonical_url: nil, structured_data: nil) -%>
+<%# Shared head tags for a public page's <title>/meta/OG/Twitter/canonical/
+    structured-data blocks (see layouts/active_canvas/application.html.erb).
+    `pages/show` calls this with a regular page's own SEO fields; a
+    collection's template pages (collection_pages/show, collection_pages/index,
+    and the admin draft preview -- Part 4 "SEO & sitemap") call it with the
+    item/collection-resolved values instead, letting most locals fall back to
+    a sensible default derived from `title`. %>
+<% content_for :page_title, title %>
+
+<% content_for :seo_meta do %>
+  <% meta_description = description.presence || ActiveCanvas::Seo.default_meta_description.presence %>
+  <% if meta_description %>
+    <meta name="description" content="<%= meta_description %>">
+  <% end %>
+  <% if robots.present? %>
+    <meta name="robots" content="<%= robots %>">
+  <% end %>
+<% end %>
+
+<% content_for :og_meta do %>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="<%= og_title.presence || title %>">
+  <% if (resolved_og_description = og_description.presence || description.presence) %>
+    <meta property="og:description" content="<%= resolved_og_description %>">
+  <% end %>
+  <% resolved_og_image = og_image.presence || ActiveCanvas::Seo.default_og_image_url.presence %>
+  <% if resolved_og_image %>
+    <meta property="og:image" content="<%= resolved_og_image %>">
+  <% end %>
+  <meta property="og:url" content="<%= request.original_url %>">
+<% end %>
+
+<% content_for :twitter_meta do %>
+  <% resolved_twitter_card = twitter_card.presence || (og_image.present? ? "summary_large_image" : "summary") %>
+  <meta name="twitter:card" content="<%= resolved_twitter_card %>">
+  <meta name="twitter:title" content="<%= twitter_title.presence || og_title.presence || title %>">
+  <% resolved_twitter_description = twitter_description.presence || og_description.presence || description %>
+  <% if resolved_twitter_description.present? %>
+    <meta name="twitter:description" content="<%= resolved_twitter_description %>">
+  <% end %>
+  <% resolved_twitter_image = twitter_image.presence || og_image %>
+  <% if resolved_twitter_image.present? %>
+    <meta name="twitter:image" content="<%= resolved_twitter_image %>">
+  <% end %>
+<% end %>
+
+<% content_for :canonical do %>
+  <% if canonical_url.present? %>
+    <link rel="canonical" href="<%= canonical_url %>">
+  <% end %>
+<% end %>
+
+<% content_for :structured_data do %>
+  <% if structured_data.present? %>
+    <script type="application/ld+json">
+      <%= structured_data.html_safe %>
+    </script>
+  <% end %>
+<% end %>

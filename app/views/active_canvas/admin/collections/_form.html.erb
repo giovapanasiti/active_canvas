@@ -22,6 +22,48 @@
 
   <%= render "field_builder", form: form %>
 
+  <% readable_fields = @collection.fields.is_a?(Array) ? @collection.fields.grep(Hash) : [] %>
+  <% text_like_fields = readable_fields.select { |f| ActiveCanvas::Collection::TEXT_LIKE_FIELD_TYPES.include?(f["type"]) } %>
+  <% media_fields = readable_fields.select { |f| f["type"] == "media" } %>
+
+  <div class="form-group">
+    <label class="form-check">
+      <%= form.check_box :has_pages %>
+      Public pages
+    </label>
+    <small>Adds a paginated index at <code>/<%= @collection.slug %></code> and a page per item, designed in the editor.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :per_page, "Items per index page" %>
+    <%= form.number_field :per_page, min: 1, max: 100, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :title_field, "Title field" %>
+    <%= form.select :title_field, options_for_select(text_like_fields.map { |f| [ f["label"], f["id"] ] }, @collection.title_field), { include_blank: true }, class: "form-control" %>
+    <small>Used for slug generation and as the SEO/admin title fallback.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :description_field, "Description field" %>
+    <%= form.select :description_field, options_for_select(text_like_fields.map { |f| [ f["label"], f["id"] ] }, @collection.description_field), { include_blank: true }, class: "form-control" %>
+    <small>Fallback for an item's meta description.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :image_field, "Image field" %>
+    <%= form.select :image_field, options_for_select(media_fields.map { |f| [ f["label"], f["id"] ] }, @collection.image_field), { include_blank: true }, class: "form-control" %>
+    <small>Fallback for an item's Open Graph image.</small>
+  </div>
+
+  <div class="form-group">
+    <label class="form-check">
+      <%= form.check_box :show_in_sidebar %>
+      Show in admin sidebar
+    </label>
+  </div>
+
   <div class="form-actions">
     <%= form.submit "Save collection", class: "btn btn-primary" %>
     <%= link_to "Cancel", admin_collections_path, class: "btn btn-secondary" %>

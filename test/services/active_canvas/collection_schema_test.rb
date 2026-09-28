@@ -70,9 +70,14 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
     assert schema.coerce_for_liquid("title", "x").html_safe?, "escaped output is marked safe so the resolver leaves it alone"
   end
 
-  test "coerce_for_liquid keeps rich_text raw and marks it safe" do
+  # Spec change (2026-09-28 collection pages / Lexxy): rich_text is now rendered
+  # through Action Text (ActionText::Content#to_rendered_html_with_layout),
+  # which wraps the fragment in its trix-content layout div, rather than being
+  # echoed back verbatim. See collection_schema_rich_text_test.rb for the full
+  # rich_text coercion coverage (attachments, sanitization, blanks).
+  test "coerce_for_liquid renders rich_text through Action Text and marks it safe" do
     out = schema.coerce_for_liquid("body", "<b>x</b>")
-    assert_equal "<b>x</b>", out
+    assert_includes out, "<b>x</b>"
     assert out.html_safe?
   end
 
@@ -92,6 +97,26 @@ class ActiveCanvas::CollectionSchemaTest < ActiveSupport::TestCase
   test "coerce_all_for_storage coerces only the keys present" do
     out = schema.coerce_all_for_storage("title" => "a", "count" => "3", "unknown" => "x")
     assert_equal({ "title" => "a", "count" => 3 }, out)
+  end
+
+  test "coerce_seo trims strings and keeps a valid media id" do
+    media = ActiveCanvas::Media.new
+    media.file.attach(io: StringIO.new("x"), filename: "x.png", content_type: "image/png")
+    media.save!
+
+    out = schema.coerce_seo("meta_title" => "  Hello  ", "meta_description" => "  world  ", "og_image_media_id" => media.id.to_s)
+
+    assert_equal({ "meta_title" => "Hello", "meta_description" => "world", "og_image_media_id" => media.id }, out)
+  end
+
+  test "coerce_seo drops an unknown media id" do
+    out = schema.coerce_seo("meta_title" => "Hello", "og_image_media_id" => "999999")
+    assert_equal({ "meta_title" => "Hello" }, out)
+  end
+
+  test "coerce_seo drops blank values entirely" do
+    assert_equal({}, schema.coerce_seo("meta_title" => "  ", "meta_description" => "", "og_image_media_id" => ""))
+    assert_equal({}, schema.coerce_seo(nil))
   end
 
   test "missing_required_labels lists blank required non-boolean fields" do

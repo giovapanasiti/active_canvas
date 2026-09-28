@@ -4,14 +4,14 @@ module ActiveCanvas
   # Admin::PagesController#validate_template and the `validate_template` MCP
   # tool.
   class TemplateValidation
-    def self.call(page, content:, bindings:)
+    def self.call(page, content:, bindings:, context: {})
       preview = page.preview_with(content: content, bindings: bindings, template_enabled: true)
 
       if (message = InvalidBindingsCheck.message_for(preview))
         return { ok: false, error: { message: message, line: nil, column: nil } }
       end
 
-      TemplateRenderer.new(preview, mode: :preview).render
+      TemplateRenderer.new(preview, mode: :preview, context: context).render
       { ok: true, error: nil }
     rescue ActiveCanvas::DataSources::TemplateRenderError => e
       { ok: false, error: { message: e.message, line: e.line, column: e.column } }

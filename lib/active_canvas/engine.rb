@@ -24,6 +24,22 @@ module ActiveCanvas
       ]
     end
 
+    # Lexxy (Rails 8.0/8.1 fallback path) sets config.lexxy.override_action_text_defaults
+    # = true in its own Engine class body, at gem-require time -- before ANY
+    # initializer runs -- which globally aliases form.rich_text_area /
+    # rich_text_area_tag to Lexxy for the WHOLE host app. We want Lexxy only where
+    # we explicitly call lexxy_rich_textarea_tag (the collection rich_text field
+    # input), so a host app's own ActionText/Trix usage is left untouched.
+    #
+    # This initializer runs during the railtie-initializer boot phase, before the
+    # host's own config/initializers/*.rb (loaded later, in the Finisher phase) and
+    # well before Lexxy's `to_prepare` block actually reads the flag. So the host
+    # can still opt in to the app-wide override by setting it back to true in its
+    # own config/initializers/lexxy.rb -- that later assignment wins.
+    initializer "active_canvas.lexxy_host_isolation" do |app|
+      app.config.lexxy.override_action_text_defaults = false
+    end
+
     # Filter sensitive parameters from logs
     initializer "active_canvas.filter_parameters" do |app|
       app.config.filter_parameters += [

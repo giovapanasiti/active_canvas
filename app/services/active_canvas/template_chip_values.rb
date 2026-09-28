@@ -6,14 +6,14 @@ module ActiveCanvas
   class TemplateChipValues
     Result = Struct.new(:body, :invalid_bindings?, keyword_init: true)
 
-    def self.call(page, content:, bindings:)
+    def self.call(page, content:, bindings:, context: {})
       preview = page.preview_with(bindings: bindings, template_enabled: true)
 
       if (message = InvalidBindingsCheck.message_for(preview))
         return Result.new(body: { values: {}, loops: {}, error: message }, invalid_bindings?: true)
       end
 
-      Result.new(body: TemplateRenderer.new(preview, mode: :preview).chip_values(content), invalid_bindings?: false)
+      Result.new(body: TemplateRenderer.new(preview, mode: :preview, context: context).chip_values(content), invalid_bindings?: false)
     end
   end
 end

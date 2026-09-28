@@ -5,10 +5,16 @@ module ActiveCanvas
     MODES = %i[public preview].freeze
     PUBLIC_FALLBACK = "<!-- dynamic block unavailable -->".freeze
 
-    def initialize(page, mode:)
+    # `context:` is extra Liquid assigns merged **over** the page's resolved
+    # bindings (Part 4 "Implicit assigns") — used to give a collection's
+    # template pages their `item`/`items`/`collection`/`pagination` names
+    # (CollectionPageContext). A binding sharing one of those names is
+    # shadowed: context always wins.
+    def initialize(page, mode:, context: {})
       raise ArgumentError, "mode must be one of #{MODES.inspect}" unless MODES.include?(mode)
       @page = page
       @mode = mode
+      @context = (context || {}).transform_keys(&:to_s)
     end
 
     def render
@@ -32,7 +38,7 @@ module ActiveCanvas
       source = DirectiveExpander.new(source).expand
       source = decode_entities_in_liquid_tags(source)
 
-      assigns  = BindingResolver.new(@page.bindings, silent_errors: true).resolve
+      assigns  = BindingResolver.new(@page.bindings, silent_errors: true).resolve.merge(@context)
       template = Liquid::Template.parse(source, error_mode: :strict, line_numbers: true)
       template.resource_limits.render_length_limit = ActiveCanvas.config.template_render_length_limit
       template.resource_limits.render_score_limit  = ActiveCanvas.config.template_render_score_limit
@@ -68,7 +74,7 @@ module ActiveCanvas
       source = DirectiveExpander.new(@page.content.to_s).expand
       source = decode_entities_in_liquid_tags(source)
 
-      assigns  = BindingResolver.new(@page.bindings, silent_errors: !preview?).resolve
+      assigns  = BindingResolver.new(@page.bindings, silent_errors: !preview?).resolve.merge(@context)
       template = Liquid::Template.parse(source, error_mode: :strict, line_numbers: true)
       template.resource_limits.render_length_limit = ActiveCanvas.config.template_render_length_limit
       template.resource_limits.render_score_limit  = ActiveCanvas.config.template_render_score_limit

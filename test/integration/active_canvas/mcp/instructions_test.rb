@@ -13,6 +13,19 @@ class ActiveCanvas::Mcp::InstructionsTest < ActionDispatch::IntegrationTest
     assert_includes instructions, "publish"
   end
 
+  test "the instructions cover collection pages: reserved names, url shape and item seo" do
+    body = mcp_rpc(mcp_token, "initialize", {
+      protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" }
+    })
+    instructions = body.dig("result", "instructions")
+
+    assert_includes instructions, "has_pages"
+    assert_includes instructions, "preview_collection_item"
+    assert_includes instructions, "reserved names"
+    assert_includes instructions, "<collection-slug>"
+    assert_includes instructions, "og_image_media_id"
+  end
+
   test "the instructions do not claim partial saves are versioned" do
     body = mcp_rpc(mcp_token, "initialize", {
       protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" }

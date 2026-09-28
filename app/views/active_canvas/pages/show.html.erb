@@ -1,118 +1,18 @@
-<%# Page Title %>
-<% content_for :page_title, @page.meta_title.presence || @page.title %>
+<%= render "active_canvas/pages/head",
+      title: @page.meta_title.presence || @page.title,
+      description: @page.meta_description,
+      robots: @page.meta_robots,
+      og_title: @page.og_title,
+      og_description: @page.og_description,
+      og_image: @page.og_image,
+      twitter_card: @page.twitter_card,
+      twitter_title: @page.twitter_title,
+      twitter_description: @page.twitter_description,
+      twitter_image: @page.twitter_image,
+      canonical_url: @page.canonical_url,
+      structured_data: @page.structured_data %>
 
-<%# SEO Meta Tags %>
-<% content_for :seo_meta do %>
-  <% meta_description = @page.meta_description.presence || ActiveCanvas::Seo.default_meta_description.presence %>
-  <% if meta_description %>
-    <meta name="description" content="<%= meta_description %>">
-  <% end %>
-  <% if @page.meta_robots.present? %>
-    <meta name="robots" content="<%= @page.meta_robots %>">
-  <% end %>
-<% end %>
-
-<%# Open Graph Meta Tags %>
-<% content_for :og_meta do %>
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="<%= @page.og_title.presence || @page.meta_title.presence || @page.title %>">
-  <% if @page.og_description.present? || @page.meta_description.present? %>
-    <meta property="og:description" content="<%= @page.og_description.presence || @page.meta_description %>">
-  <% end %>
-  <% og_image = @page.og_image.presence || ActiveCanvas::Seo.default_og_image_url.presence %>
-  <% if og_image %>
-    <meta property="og:image" content="<%= og_image %>">
-  <% end %>
-  <meta property="og:url" content="<%= request.original_url %>">
-<% end %>
-
-<%# Twitter Card Meta Tags %>
-<% content_for :twitter_meta do %>
-  <% twitter_card_type = @page.twitter_card.presence || (@page.og_image.present? ? "summary_large_image" : "summary") %>
-  <meta name="twitter:card" content="<%= twitter_card_type %>">
-  <meta name="twitter:title" content="<%= @page.twitter_title.presence || @page.og_title.presence || @page.meta_title.presence || @page.title %>">
-  <% twitter_desc = @page.twitter_description.presence || @page.og_description.presence || @page.meta_description %>
-  <% if twitter_desc.present? %>
-    <meta name="twitter:description" content="<%= twitter_desc %>">
-  <% end %>
-  <% twitter_image = @page.twitter_image.presence || @page.og_image %>
-  <% if twitter_image.present? %>
-    <meta name="twitter:image" content="<%= twitter_image %>">
-  <% end %>
-<% end %>
-
-<%# Canonical URL %>
-<% content_for :canonical do %>
-  <% if @page.canonical_url.present? %>
-    <link rel="canonical" href="<%= @page.canonical_url %>">
-  <% end %>
-<% end %>
-
-<%# Structured Data (JSON-LD) %>
-<% content_for :structured_data do %>
-  <% if @page.structured_data.present? %>
-    <script type="application/ld+json">
-      <%= @page.structured_data.html_safe %>
-    </script>
-  <% end %>
-<% end %>
-
-<%# Page Content %>
-
-<%# Get active header and footer partials (only if table exists) %>
-<% partials_available = ActiveRecord::Base.connection.table_exists?('active_canvas_partials') rescue false %>
-<% header_partial = partials_available && @page.show_header? ? ActiveCanvas::Partial.active_header : nil %>
-<% footer_partial = partials_available && @page.show_footer? ? ActiveCanvas::Partial.active_footer : nil %>
-
-<%# Include compiled Tailwind CSS for partials %>
-<% if header_partial&.compiled_css.present? %>
-  <style><%= header_partial.compiled_css.html_safe %></style>
-<% end %>
-<% if footer_partial&.compiled_css.present? && footer_partial != header_partial %>
-  <style><%= footer_partial.compiled_css.html_safe %></style>
-<% end %>
-
-<%# Include compiled Tailwind CSS for page %>
-<% if @page.compiled_tailwind_css.present? %>
-  <style><%= @page.compiled_tailwind_css.html_safe %></style>
-<% end %>
-
-<%# Include custom CSS for partials %>
-<% if header_partial&.content_css.present? %>
-  <style><%= header_partial.content_css.html_safe %></style>
-<% end %>
-<% if footer_partial&.content_css.present? && footer_partial != header_partial %>
-  <style><%= footer_partial.content_css.html_safe %></style>
-<% end %>
-
-<% if @page.content_css.present? %>
-  <style><%= @page.content_css.html_safe %></style>
-<% end %>
-
-<%# Header %>
-<% if header_partial&.content.present? %>
-  <%= header_partial.rendered_content %>
-<% end %>
-
-<%# Main Page Content %>
-<%= @page.rendered_content(
+<%= render "active_canvas/pages/body",
+      page: @page,
       form_feedback: { submitted: params[:ac_submitted], error: params[:ac_form_error], form_key: params[:ac_form] },
-      form_action: public_form_submissions_path
-    ) %>
-
-<%# Footer %>
-<% if footer_partial&.content.present? %>
-  <%= footer_partial.rendered_content %>
-<% end %>
-
-<%# JavaScript for partials %>
-<% if header_partial&.content_js.present? %>
-  <script><%= header_partial.content_js.html_safe %></script>
-<% end %>
-<% if footer_partial&.content_js.present? && footer_partial != header_partial %>
-  <script><%= footer_partial.content_js.html_safe %></script>
-<% end %>
-
-<% if @page.content_js.present? %>
-  <script><%= @page.content_js.html_safe %></script>
-<% end %>
+      form_action: public_form_submissions_path %>

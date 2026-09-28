@@ -10,7 +10,7 @@ class ExportImportRoundTripTest < ActionDispatch::IntegrationTest
     ActiveCanvas::Setting.global_css = "body{}"
     bytes = media.file.download
 
-    path = File.join(Dir.tmpdir, "ac_rt_#{rand(1_000_000)}.zip")
+    path = File.join(Dir.tmpdir, "ac_rt_#{SecureRandom.hex(8)}.zip")
     ActiveCanvas::Exporter.new.export_to(path)
 
     # Wipe everything by importing in replace mode into the same DB
@@ -78,7 +78,7 @@ class ExportImportRoundTripTest < ActionDispatch::IntegrationTest
 
     token, plaintext = ActiveCanvas::ApiToken.issue!(name: "agent", scopes: %w[read])
 
-    path = File.join(Dir.tmpdir, "ac_rt_full_#{rand(1_000_000)}.zip")
+    path = File.join(Dir.tmpdir, "ac_rt_full_#{SecureRandom.hex(8)}.zip")
     ActiveCanvas::Exporter.new.export_to(path)
 
     ActiveCanvas::Importer.new(path, mode: :replace).run
@@ -139,5 +139,54 @@ class ExportImportRoundTripTest < ActionDispatch::IntegrationTest
     assert_equal 1, ActiveCanvas::Collection.count
     assert_equal 1, ActiveCanvas::CollectionItem.count
     assert_equal 2, ActiveCanvas::Media.count
+  end
+
+  # Part 7: a has_pages collection's public-page options, its two template
+  # pages (content + role, linked to the right collection, not duplicated by
+  # Collection#ensure_templates!) and an item's per-item SEO og_image_media_id
+  # all round-trip through a replace import.
+  test "replace-import round-trips a collection's page options, templates and item SEO media" do
+    pt = ActiveCanvas::PageType.create!(key: "default", name: "Default")
+    og_media = build_saved_media(filename: "og.png", content_type: "image/png")
+    og_bytes = og_media.file.download
+
+    collection = ActiveCanvas::Collection.create!(
+      name: "Team", slug: "team",
+      fields: [ { "label" => "Name", "type" => "text" } ],
+      has_pages: true, per_page: 5, show_in_sidebar: true
+    )
+    collection.update!(title_field: collection.fields.first["id"])
+    collection.template_pages.find_by(collection_role: "index").update!(content: "<p>index tpl</p>")
+    collection.template_pages.find_by(collection_role: "show").update!(content: "<p>show tpl</p>")
+
+    item = collection.items.create!
+    item.assign_fields("name" => "Ada", "_seo" => { "meta_title" => "Ada's page", "og_image_media_id" => og_media.id.to_s })
+    item.save!
+    item.publish!
+
+    path = File.join(Dir.tmpdir, "ac_rt_collection_pages_#{SecureRandom.hex(8)}.zip")
+    ActiveCanvas::Exporter.new.export_to(path)
+
+    ActiveCanvas::Importer.new(path, mode: :replace).run
+
+    new_collection = ActiveCanvas::Collection.find_by(slug: "team")
+    assert_equal true, new_collection.has_pages
+    assert_equal 5, new_collection.per_page
+    assert_equal true, new_collection.show_in_sidebar
+    assert_equal collection.fields.first["id"], new_collection.title_field
+
+    assert_equal 2, new_collection.template_pages.count
+    index_tpl = new_collection.template_pages.find_by(collection_role: "index")
+    show_tpl = new_collection.template_pages.find_by(collection_role: "show")
+    assert_equal "<p>index tpl</p>", index_tpl.content
+    assert_equal "<p>show tpl</p>", show_tpl.content
+    assert_nil index_tpl.slug
+    assert_nil show_tpl.slug
+
+    new_media = ActiveCanvas::Media.find_by(filename: "og.png")
+    assert_equal og_bytes, new_media.file.download
+    new_item = new_collection.items.first
+    assert_equal new_media.id, new_item.data["_seo"]["og_image_media_id"]
+    assert_equal "Ada's page", new_item.data["_seo"]["meta_title"]
   end
 end

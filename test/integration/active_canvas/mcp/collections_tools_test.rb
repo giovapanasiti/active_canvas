@@ -66,9 +66,9 @@ class ActiveCanvas::Mcp::CollectionsToolsTest < ActionDispatch::IntegrationTest
     assert_equal true, deleted["deleted"]
   end
 
-  test "list_collections' items_count does not run one query per collection" do
+  test "list_collections' items_count and template page ids do not run one query per collection" do
     12.times do |i|
-      collection = ActiveCanvas::Collection.create!(name: "Coll #{i}", slug: "coll-#{i}", fields: fields)
+      collection = ActiveCanvas::Collection.create!(name: "Coll #{i}", slug: "coll-#{i}", fields: fields, has_pages: i.even?)
       2.times do |j|
         item = collection.items.new
         item.assign_fields("name" => "Item #{j}")
@@ -80,7 +80,67 @@ class ActiveCanvas::Mcp::CollectionsToolsTest < ActionDispatch::IntegrationTest
     query_count = count_sql_queries { result, = mcp_call(@rw, "list_collections", { limit: 50 }) }
 
     assert_equal Array.new(12, 2), result["items"].map { |i| i["items_count"] }
-    assert_operator query_count, :<=, 6, "expected a flat query count, not one COUNT per collection"
+    has_pages_items = result["items"].select { |i| i["has_pages"] }
+    assert_equal 6, has_pages_items.length
+    has_pages_items.each do |i|
+      refute_nil i["index_template_page_id"]
+      refute_nil i["show_template_page_id"]
+    end
+    assert_operator query_count, :<=, 7, "expected a flat query count, not one query per collection"
+  end
+
+  test "create_collection and update_collection round trip the public-pages options" do
+    created, err = mcp_call(@rw, "create_collection", {
+      name: "Team", fields: fields, has_pages: true, per_page: 6, show_in_sidebar: true, title_field: "name"
+    })
+    assert_nil err
+    assert_equal true, created["has_pages"]
+    assert_equal 6, created["per_page"]
+    assert_equal true, created["show_in_sidebar"]
+    assert_equal "name", created["title_field"]
+    assert_equal "/canvas/team", created["index_url"]
+    refute_nil created["index_template_page_id"]
+    refute_nil created["show_template_page_id"]
+
+    updated, err2 = mcp_call(@rw, "update_collection", {
+      id: created["id"], per_page: 9, show_in_sidebar: false, description_field: "bio"
+    })
+    assert_nil err2
+    assert_equal 9, updated["per_page"]
+    assert_equal false, updated["show_in_sidebar"]
+    assert_equal "bio", updated["description_field"]
+  end
+
+  test "a collection without has_pages has no index_url or template page ids" do
+    created, = mcp_call(@rw, "create_collection", { name: "Team", fields: fields })
+    assert_equal false, created["has_pages"]
+    refute created.key?("index_url")
+    refute created.key?("index_template_page_id")
+    refute created.key?("show_template_page_id")
+  end
+
+  test "update_collection's has_pages toggle requires the publish scope when the collection has published items" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: fields, has_pages: true)
+    item = collection.items.new
+    item.assign_fields("name" => "Ada")
+    item.save!
+    item.publish!
+
+    _, err = mcp_call(@rw, "update_collection", { id: collection.id, has_pages: false })
+    assert_match(/published items.*publish/, err)
+    assert collection.reload.has_pages?
+
+    rwp = mcp_token(%w[read write publish])
+    updated, err2 = mcp_call(rwp, "update_collection", { id: collection.id, has_pages: false })
+    assert_nil err2
+    assert_equal false, updated["has_pages"]
+  end
+
+  test "update_collection's has_pages toggle does not require publish when the collection has no published items" do
+    collection = ActiveCanvas::Collection.create!(name: "Team", slug: "team", fields: fields)
+    updated, err = mcp_call(@rw, "update_collection", { id: collection.id, has_pages: true })
+    assert_nil err
+    assert_equal true, updated["has_pages"]
   end
 
   test "collection write tools are not listed for a read-only token" do

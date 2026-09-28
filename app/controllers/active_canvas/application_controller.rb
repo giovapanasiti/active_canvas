@@ -3,8 +3,15 @@ module ActiveCanvas
     include ActiveCanvas::CurrentUser
 
     before_action :active_canvas_authenticate_public
+    around_action :with_request_scoped_renderer
 
     private
+
+    # Collection rich text attachments render against this request's host,
+    # with the host app's routes (see RequestScopedRenderer).
+    def with_request_scoped_renderer(&block)
+      ActiveCanvas::RequestScopedRenderer.around(request, &block)
+    end
 
     def active_canvas_authenticate_public
       auth = ActiveCanvas.config.authenticate_public

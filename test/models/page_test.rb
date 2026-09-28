@@ -17,5 +17,20 @@ module ActiveCanvas
       page = create_page(content: "<p>hello</p>")
       assert page.rendered_content.html_safe?
     end
+
+    test "a slug used by a collection with has_pages is rejected" do
+      ActiveCanvas::Collection.create!(name: "Team", slug: "team", has_pages: true)
+      page = create_page(content: "<p>hi</p>")
+      page.slug = "team"
+      assert_not page.valid?
+      assert_includes page.errors[:slug].join, "collection"
+    end
+
+    test "a slug used by a collection without has_pages is allowed" do
+      ActiveCanvas::Collection.create!(name: "Team", slug: "team")
+      page = create_page(content: "<p>hi</p>")
+      page.slug = "team"
+      assert page.valid?
+    end
   end
 end

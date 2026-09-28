@@ -1,5 +1,6 @@
 require "liquid"
 require "mcp"
+require "lexxy"
 require "active_canvas/version"
 require "active_canvas/configuration"
 require "active_canvas/data_sources/errors"

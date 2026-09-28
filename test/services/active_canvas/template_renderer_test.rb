@@ -308,4 +308,41 @@ class ActiveCanvas::TemplateRendererTest < ActiveSupport::TestCase
     )
     assert_equal "<!-- dynamic block unavailable -->", ActiveCanvas::TemplateRenderer.new(page, mode: :public).render
   end
+
+  test "context is merged into the assigns available to render" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ item }}!", template_enabled: true
+    )
+    renderer = ActiveCanvas::TemplateRenderer.new(page, mode: :public, context: { "item" => "World" })
+    assert_equal "Hello World!", renderer.render
+  end
+
+  test "context names win over a binding of the same name" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ name }}!", template_enabled: true,
+      bindings: { "name" => { "source" => "_literal", "value" => "Binding" } }
+    )
+    renderer = ActiveCanvas::TemplateRenderer.new(page, mode: :public, context: { "name" => "Context" })
+    assert_equal "Hello Context!", renderer.render
+  end
+
+  test "context is available to chip_values too" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: %(<span data-ac-id="1">{{ item }}</span>), template_enabled: true
+    )
+    renderer = ActiveCanvas::TemplateRenderer.new(page, mode: :preview, context: { "item" => "Widget" })
+    assert_equal "Widget", renderer.chip_values(page.content)[:values]["1"]
+  end
+
+  test "context is honored in preview (strict) mode as well as public mode" do
+    page = ActiveCanvas::Page.create!(
+      title: "Dyn", page_type: @page_type,
+      content: "Hello {{ name }}!", template_enabled: true
+    )
+    renderer = ActiveCanvas::TemplateRenderer.new(page, mode: :preview, context: { "name" => "Context" })
+    assert_equal "Hello Context!", renderer.render
+  end
 end

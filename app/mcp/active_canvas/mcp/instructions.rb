@@ -98,6 +98,40 @@ module ActiveCanvas
         lighter check: what each `{{ }}`/loop/condition currently evaluates to,
         without a full render.
 
+        ## Collection pages
+
+        A collection can have its own public pages: set `has_pages: true`
+        (`create_collection` / `update_collection`) and it gets an index page
+        at `/<collection-slug>` and a show page at
+        `/<collection-slug>/<item-slug>` for each published item — both
+        engine-mount aware, given back as `index_url` / each item's `url`.
+        Turning `has_pages` on or off requires the 'publish' scope in
+        addition to 'write' when the collection has published items, since it
+        changes what's live on the site.
+
+        Turning it on creates two template pages automatically (an `index`
+        and a `show`, `list_pages`' `collection_id` filter finds them —
+        they're excluded from a plain `list_pages` call). Design them with
+        the same tools as any dynamic page (`get_page`, `update_page_content`,
+        `validate_template`, `render_page_preview`, `preview_template_values`)
+        — each one already has its implicit Liquid assigns applied for you:
+        the show template gets `item` (the current item's fields, plus `url`
+        and `seo`) and `collection`; the index template gets `items` (a page
+        of item rows), `collection` and `pagination`. `item`, `items`,
+        `collection` and `pagination` are reserved names — a binding can't
+        reuse them. Editing a template page whose collection `has_pages`
+        requires the 'publish' scope, the same as editing a published page;
+        `delete_page` refuses a template outright (it's removed with its
+        collection). `preview_collection_item` renders the show template with
+        one item's unsaved draft data, for checking an edit before it's
+        published.
+
+        Per-item SEO: an item's `seo` (on `create_collection_item` /
+        `update_collection_item`) is `{ meta_title, meta_description,
+        og_image_media_id }`, all optional — each falls back to the
+        collection's `title_field` / `description_field` / `image_field`
+        (in that order to the item's slug for the title) when blank.
+
         ## Versions
 
         Versions exist for pages only. Every page content save

@@ -32,6 +32,7 @@ ActiveCanvas::Engine.routes.draw do
           patch :publish
           patch :unpublish
           get :history
+          get :preview
         end
       end
     end
@@ -74,7 +75,16 @@ ActiveCanvas::Engine.routes.draw do
   root to: "pages#home"
   post "forms", to: "form_submissions#create", as: :public_form_submissions
   get ":slug", to: "pages#show", as: :public_page,
-    constraints: ->(req) { ActiveCanvas::Page.published.exists?(slug: req.params[:slug]) }
+    constraints: ->(req) { ActiveCanvas::Page.published.regular.exists?(slug: req.params[:slug]) }
   get ":slug", to: "redirects#show", as: :page_redirect,
     constraints: ->(req) { ActiveCanvas::PageRedirect.exists?(from_slug: req.params[:slug]) }
+
+  # A collection's public pages (Part 4 "Public routing"): only matched for a
+  # collection slug that actually has_pages, so a regular page/redirect slug
+  # above always wins and a collection with has_pages off 404s like any other
+  # unmatched path.
+  get ":collection_slug", to: "collection_pages#index", as: :public_collection_index,
+    constraints: ->(req) { ActiveCanvas::Collection.with_pages.exists?(slug: req.params[:collection_slug]) }
+  get ":collection_slug/:item_slug", to: "collection_pages#show", as: :public_collection_item,
+    constraints: ->(req) { ActiveCanvas::Collection.with_pages.exists?(slug: req.params[:collection_slug]) }
 end

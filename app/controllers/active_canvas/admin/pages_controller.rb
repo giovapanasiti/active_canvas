@@ -4,7 +4,7 @@ module ActiveCanvas
       before_action :set_page, only: %i[show edit update destroy content update_content editor save_editor versions validate_template sample_data chip_values preview_iframe]
 
       def index
-        @pages = ActiveCanvas::Page.includes(:page_type).order(created_at: :desc)
+        @pages = ActiveCanvas::Page.includes(:page_type).regular.order(created_at: :desc)
         @media_count = ActiveCanvas::Media.count
         @media_total_size = ActiveCanvas::Media.sum(:byte_size)
       end
@@ -54,6 +54,8 @@ module ActiveCanvas
       end
 
       def editor
+        @implicit_bindings = ActiveCanvas::TemplateEditorContext.schema(@page)
+
         respond_to do |format|
           format.html { render layout: "active_canvas/admin/editor" }
           format.json do
@@ -103,7 +105,8 @@ module ActiveCanvas
       # and reports the first error with its position. Never returns HTML.
       def validate_template
         result = ActiveCanvas::TemplateValidation.call(
-          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}
+          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {},
+          context: ActiveCanvas::TemplateEditorContext.live(@page)
         )
         render json: result, status: result[:ok] ? :ok : :unprocessable_entity
       end
@@ -114,7 +117,8 @@ module ActiveCanvas
       # occurrence and how many items each loop renders.
       def chip_values
         result = ActiveCanvas::TemplateChipValues.call(
-          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {}
+          @page, content: params[:content].to_s, bindings: parse_bindings(params[:bindings]) || {},
+          context: ActiveCanvas::TemplateEditorContext.live(@page)
         )
         render json: result.body, status: result.invalid_bindings? ? :unprocessable_entity : :ok
       end
@@ -132,6 +136,8 @@ module ActiveCanvas
       # editor's current unsaved state, for the preview modal's iframe. Uses the
       # page's own template_enabled flag so a static page previews as static.
       def preview_iframe
+        # PagePreview renders against this request's host: the admin base
+        # controller wraps every action in RequestScopedRenderer.around.
         result = ActiveCanvas::PagePreview.call(
           @page,
           content: params[:content]&.to_s,

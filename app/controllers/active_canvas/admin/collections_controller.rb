@@ -44,7 +44,8 @@ module ActiveCanvas
       end
 
       def collection_params
-        params.require(:collection).permit(:name, :slug, :fields_json)
+        params.require(:collection).permit(:name, :slug, :fields_json, :has_pages, :per_page,
+          :show_in_sidebar, :title_field, :description_field, :image_field)
       end
     end
   end

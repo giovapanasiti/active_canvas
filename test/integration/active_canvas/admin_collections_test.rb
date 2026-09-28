@@ -133,4 +133,102 @@ class ActiveCanvas::AdminCollectionsTest < ActionDispatch::IntegrationTest
     get "/canvas/admin/collections"
     assert_select "nav a[href=?]", "/canvas/admin/collections"
   end
+
+  test "new renders selects for title, description and image field" do
+    get "/canvas/admin/collections/new"
+    assert_response :success
+    assert_select "select[name=?]", "collection[title_field]"
+    assert_select "select[name=?]", "collection[description_field]"
+    assert_select "select[name=?]", "collection[image_field]"
+    assert_select "input[type=checkbox][name=?]", "collection[has_pages]"
+    assert_select "input[type=checkbox][name=?]", "collection[show_in_sidebar]"
+  end
+
+  test "create persists has_pages, per_page, show_in_sidebar and the field references" do
+    fields = [ { "label" => "Name", "type" => "text" }, { "label" => "Photo", "type" => "media" } ].to_json
+
+    post "/canvas/admin/collections", params: { collection: {
+      name: "Team", slug: "team", fields_json: fields,
+      has_pages: "1", per_page: "24", show_in_sidebar: "1",
+      title_field: "name", description_field: "name", image_field: "photo"
+    } }
+
+    collection = ActiveCanvas::Collection.last
+    assert_equal true, collection.has_pages
+    assert_equal 24, collection.per_page
+    assert_equal true, collection.show_in_sidebar
+    assert_equal "name", collection.title_field
+    assert_equal "name", collection.description_field
+    assert_equal "photo", collection.image_field
+  end
+
+  test "edit pre-selects the current field references and checkbox state" do
+    collection = create_collection(fields: [ { "label" => "Name", "type" => "text" } ])
+    collection.update!(has_pages: true, show_in_sidebar: true, title_field: "name")
+
+    get "/canvas/admin/collections/#{collection.id}/edit"
+    assert_response :success
+    assert_select "input[type=checkbox][name=?][checked]", "collection[has_pages]"
+    assert_select "input[type=checkbox][name=?][checked]", "collection[show_in_sidebar]"
+    assert_select "select[name=?] option[selected][value=?]", "collection[title_field]", "name"
+  end
+
+  test "edit shows Design index/item page buttons once has_pages is on" do
+    collection = create_collection
+    collection.update!(has_pages: true)
+    index_page = collection.template_pages.find_by(collection_role: "index")
+    show_page = collection.template_pages.find_by(collection_role: "show")
+
+    get "/canvas/admin/collections/#{collection.id}/edit"
+
+    assert_response :success
+    assert_select "a[href=?]", "/canvas/admin/pages/#{index_page.id}/editor", text: "Design index page"
+    assert_select "a[href=?]", "/canvas/admin/pages/#{show_page.id}/editor", text: "Design item page"
+  end
+
+  test "edit does not show Design page buttons when has_pages is off" do
+    collection = create_collection
+
+    get "/canvas/admin/collections/#{collection.id}/edit"
+
+    assert_response :success
+    assert_no_match(/Design index page|Design item page/, response.body)
+  end
+
+  test "update rejects a has_pages slug that collides with a reserved path" do
+    collection = create_collection
+
+    patch "/canvas/admin/collections/#{collection.id}", params: { collection: { name: "Team", slug: "admin", has_pages: "1" } }
+
+    assert_response :unprocessable_entity
+    assert_select ".error-messages"
+  end
+
+  test "the sidebar lists only show_in_sidebar collections, ordered by name, and highlights the active one" do
+    shown = create_collection(name: "Blog", slug: "blog")
+    shown.update!(show_in_sidebar: true)
+    also_shown = create_collection(name: "Authors", slug: "authors")
+    also_shown.update!(show_in_sidebar: true)
+    hidden = create_collection(name: "Hidden", slug: "hidden")
+
+    get "/canvas/admin/collections/#{shown.id}/items"
+
+    assert_response :success
+    assert_select "nav a[href=?].active", "/canvas/admin/collections/#{shown.id}/items"
+    assert_select "nav a[href=?]", "/canvas/admin/collections/#{also_shown.id}/items"
+    assert_select "nav a[href=?]", "/canvas/admin/collections/#{hidden.id}/items", count: 0
+    assert_select "nav a[href=?].active", "/canvas/admin/collections", count: 0
+
+    body = response.body
+    assert_operator body.index("Authors"), :<, body.index("Blog")
+  end
+
+  test "the generic Collections link stays active for a collection with no sidebar entry" do
+    hidden = create_collection(name: "Hidden", slug: "hidden")
+
+    get "/canvas/admin/collections/#{hidden.id}/items"
+
+    assert_response :success
+    assert_select "nav a[href=?].active", "/canvas/admin/collections"
+  end
 end

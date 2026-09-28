@@ -142,7 +142,7 @@ module ActiveCanvas
         page_id = homepage_page_id
         return nil unless page_id&.positive?
 
-        Page.published.find_by(id: page_id)
+        Page.published.regular.find_by(id: page_id)
       end
 
       def css_framework

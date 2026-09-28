@@ -1,0 +1,5 @@
+<%# The index head (Part 4 "SEO & sitemap"): title = collection name only,
+    composed with the site title template by the layout like any other page. %>
+<%= render "active_canvas/pages/head", title: @collection.name %>
+
+<%= render "active_canvas/pages/body", page: @page, context: @context %>

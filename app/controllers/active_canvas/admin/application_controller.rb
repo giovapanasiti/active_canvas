@@ -9,8 +9,15 @@ module ActiveCanvas
       before_action :enforce_authentication_configured
       before_action :active_canvas_authenticate_admin
       before_action :set_current_editor
+      around_action :with_request_scoped_renderer
 
       private
+
+      # Previews and rich text attachments render against this request's
+      # host, with the host app's routes (see RequestScopedRenderer).
+      def with_request_scoped_renderer(&block)
+        ActiveCanvas::RequestScopedRenderer.around(request, &block)
+      end
 
       # A readable label for version history: a name or email when the host's
       # user object has one, otherwise its to_s.

@@ -17,6 +17,7 @@
   function init() {
     loadBindings();
     renderBindings();
+    renderImplicit();
     const addBtn = document.getElementById('ac-add-binding-btn');
     const emptyAddBtn = document.getElementById('ac-empty-add-btn');
     addBtn.disabled = true;
@@ -132,6 +133,53 @@
     }
     const params = Object.entries(spec.params || {}).filter(([, v]) => v != null && v !== '');
     return `<span class="data-panel-row-params">${params.length ? params.map(([k, v]) => `${escape(k)}: ${escape(v)}`).join(' · ') : 'default parameters'}</span>`;
+  }
+
+  // Read-only "Template data" section for a collection's template pages
+  // (Part 4 "Editor"): the implicit `item`/`items`/`collection`/`pagination`
+  // names, with a chip per field, so an author can insert `{{ item.x }}` /
+  // `{{ entry.x }}` (inside a loop over `items`) / `{{ pagination.x }}`
+  // without adding a binding for them. The schema (field ids only, no live
+  // values) comes from the editor config; chip_values resolves the actual
+  // values once the chip is in the canvas.
+  function renderImplicit() {
+    const list = document.getElementById('ac-implicit-list');
+    if (!list) return;
+    const config = window.ActiveCanvasEditor && window.ActiveCanvasEditor.config;
+    const implicit = (config && config.implicitBindings) || {};
+    list.innerHTML = Object.keys(implicit).map(name => implicitRowHTML(name, implicit[name])).join('');
+    wireImplicitChips(list);
+  }
+
+  function implicitRowHTML(name, spec) {
+    const varName = spec.item_name || name;
+    const fields = spec.fields || [];
+    const fieldChips = fields.map(field => {
+      const snippet = `{{ ${varName}.${field.id} }}`;
+      return `<button type="button" class="data-panel-chip" data-snippet="${escape(snippet)}" title="Copy ${escape(snippet)}">${escape(field.id)}</button>`;
+    }).join('');
+    const loopChip = spec.item_name ? loopChipHTML(name, varName, fields) : '';
+    return `
+      <li class="data-panel-row data-panel-row-implicit">
+        <div class="data-panel-row-header">
+          <strong class="data-panel-row-name">${escape(name)}</strong>
+          <span class="data-panel-row-source">from the collection</span>
+        </div>
+        <div class="data-panel-row-chips">${fieldChips}${loopChip}</div>
+      </li>
+    `;
+  }
+
+  function loopChipHTML(name, varName, fields) {
+    const firstField = fields[0] ? fields[0].id : 'id';
+    const snippet = `<div data-ac-for="${varName} in ${name}">{{ ${varName}.${firstField} }}</div>`;
+    return `<button type="button" class="data-panel-chip" data-snippet="${escape(snippet)}" title="Copy loop">for&hellip;</button>`;
+  }
+
+  function wireImplicitChips(list) {
+    list.querySelectorAll('.data-panel-chip').forEach(chip => {
+      chip.addEventListener('click', () => copySnippet(chip));
+    });
   }
 
   function wireRowEvents(list) {
