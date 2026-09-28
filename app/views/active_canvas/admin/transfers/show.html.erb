@@ -1,0 +1,25 @@
+<% content_for :page_title, "Export / Import" %>
+
+<div class="card">
+  <h3>Export</h3>
+  <p class="help-text">Download a single .zip with all settings, page types, pages, partials, redirects, form submissions, collections &amp; items, media (with files), versions, and AI models. Provider API keys are only included if you check the box below; API tokens issued for MCP access are never included, in any case.</p>
+  <%= form_with url: export_admin_transfer_path, method: :get do %>
+    <label><%= check_box_tag "include_versions", "1", true %> Include page versions (history)</label><br>
+    <label><%= check_box_tag "include_ai_models", "1", true %> Include AI models</label><br>
+    <label><%= check_box_tag "include_secrets", "1", true %> Include API keys / secrets
+      <strong style="color:#b91c1c;">&#9888; the zip will contain your API keys in clear text</strong></label><br>
+    <%= submit_tag "Download export.zip", class: "btn btn-primary" %>
+  <% end %>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+  <h3>Import</h3>
+  <p class="help-text">Upload a previously exported .zip. <strong style="color:#b91c1c;">Only import archives you trust</strong> &mdash; they can set site-wide scripts and HTML.</p>
+  <%= form_with url: import_admin_transfer_path, method: :post, multipart: true,
+        html: { onsubmit: "return this.mode.value !== 'replace' || confirm('Replace will DELETE all current ActiveCanvas data, then import. Continue?');" } do %>
+    <%= file_field_tag "file", accept: "application/zip,.zip" %><br><br>
+    <label><%= radio_button_tag "mode", "merge", true %> Merge &mdash; update existing by key, add new (non-destructive)</label><br>
+    <label><%= radio_button_tag "mode", "replace" %> Replace &mdash; <strong style="color:#b91c1c;">delete all current ActiveCanvas data</strong>, then import (exact clone)</label><br><br>
+    <%= submit_tag "Import", class: "btn btn-primary" %>
+  <% end %>
+</div>

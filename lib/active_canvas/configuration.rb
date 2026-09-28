@@ -133,6 +133,13 @@ module ActiveCanvas
     # Per-token rate limit for the MCP endpoint (requests per minute)
     attr_accessor :mcp_rate_limit_per_minute
 
+    # ==> Export / Import
+    # Maximum total *uncompressed* media bytes accepted in one import archive
+    # (checked against the zip's own entry sizes before any bytes are read).
+    # Independent of max_upload_size: a backup can legitimately contain far
+    # more total media than any single upload would allow.
+    attr_accessor :import_max_media_bytes
+
     # Dangerous content types that are always blocked
     DANGEROUS_CONTENT_TYPES = %w[
       application/x-executable
@@ -228,6 +235,9 @@ module ActiveCanvas
       # MCP server
       @enable_mcp = true
       @mcp_rate_limit_per_minute = 120
+
+      # Export / Import
+      @import_max_media_bytes = 1.gigabyte
     end
 
     # Get effective allowed content types (includes SVG if enabled, excludes dangerous types)

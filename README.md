@@ -18,6 +18,7 @@ A mountable Rails engine that turns any Rails app into a full-featured CMS. Incl
 - **Page Types** -- Categorize pages (blog posts, landing pages, etc.)
 - **Dynamic Content** -- Bind host-app data sources or admin-managed collections, repeat and show elements with attributes, see real data while editing ([docs](docs/dynamic_content.md))
 - **Collections** -- Typed content lists (text, rich text, number, boolean, date, media, select) with draft and published versions, editable in the admin without code
+- **Export / Import** -- Back up or migrate a whole instance as a single zip, with merge or replace-clone modes
 - **Authentication** -- Pluggable auth (Devise, custom, or HTTP Basic)
 - **Isolated Namespace** -- No conflicts with your host application
 
@@ -246,6 +247,25 @@ The admin Settings area has an **SEO** tab for the site-wide options that sit ab
 
 Both `/sitemap.xml` and `/robots.txt` are served relative to wherever the engine is mounted, so they still work if you mount ActiveCanvas somewhere other than the root. If you need them at the domain root, mount the engine at `/` or reverse-proxy those two paths.
 
+## Export / Import
+
+The admin **Export / Import** page (Configure section) backs up or migrates a whole ActiveCanvas instance as a single `.zip`.
+
+**Export** downloads everything: settings (including SEO), page types, pages (with version history), partials, redirects, form submissions, collections and their items (with item version history), AI models, and media -- both the records and the actual file bytes. Page versions, AI models and API keys/secrets are each optional (checkboxes); secrets are decrypted into the zip in clear text when included, so treat it like any other credential backup. **API tokens issued for MCP access are never exported** -- they're bearer credentials tied to the instance that issued them, not portable data.
+
+**Import** accepts a previously exported zip in one of two modes:
+
+- **Merge** -- upserts by natural key (slug, `partial_type`, `model_id`, etc.), leaving anything not in the zip untouched. Historical, append-only data (page/collection-item version history, form submissions) is only ever added, never merged, so re-importing the same zip doesn't duplicate it.
+- **Replace** -- deletes all existing ActiveCanvas data first, then imports, producing an exact clone. API tokens are never deleted, even in replace mode. A section you deliberately excluded from the *export* (page versions, AI models, or secrets) is left alone on the target rather than wiped with nothing to restore it -- for example, replace-importing a zip exported with "Include API keys" unchecked keeps the target's own provider API keys. Version history is the one exception: since a page/item itself is always replaced, excluding versions from the export still means their old version history is gone once the page/item is replaced (a warning in the import summary says so).
+
+Only import archives you trust. An import can set site-wide scripts and HTML (global CSS/JS, custom head HTML, page content), so treat an untrusted `.zip` the same as untrusted code.
+
+Media referenced from content (`<img data-ac-media-id="N">`), from a collection item's `media`-type fields, and from the SEO favicon/default-OG-image settings all get **new ids** on import (since media rows are recreated), so every one of those references is rewritten to point at the freshly imported media; a reference whose media wasn't imported (e.g. it failed the content-type check below) is dropped rather than left pointing at the wrong thing, and noted in the import summary. The homepage setting is remapped the same way, by the page's slug rather than its old id.
+
+Import is wrapped in a single transaction (a failure rolls back every write), validates the zip's format version and internal consistency (entry/size caps, no two media rows sharing one file) before touching anything, and holds imported media to the exact same content-type/SVG/size rules as a normal upload -- a backup is not a way to smuggle in an otherwise-disallowed file. The total uncompressed media an archive may contain is capped by `config.import_max_media_bytes` (default 1 GB, independent of `max_upload_size`). Media bytes are uploaded to storage before the database transaction starts (storage writes aren't transactional), so if anything later in the same import fails, those just-uploaded files are explicitly purged rather than left as orphans. A corrupt or malicious upload (not a real zip, an oversized archive, an invalid record) redirects back with a clear error instead of a server error.
+
+**Known limitations:** media URLs embedded inside `og_image`, `twitter_image`, `custom_head_html`, or a GrapesJS `content_components` JSON blob are not guaranteed to be rewritten on import (only `data-ac-media-id` attributes in plain HTML `content`, and collection `media`/`rich_text` fields, are reliably remapped) -- re-point those manually after a cross-instance import if needed. Merge mode also overwrites a collection's field schema (`fields`) wholesale from the manifest rather than merging field-by-field.
+
 ## MCP server (agents)
 
 ActiveCanvas exposes an [MCP](https://modelcontextprotocol.io) server so a coding agent can manage pages, partials, collections, media, forms and settings the same way an admin would in the UI -- roughly 50 tools covering everything from `list_pages` to `update_page_content` to `publish_collection_item`.
@@ -407,6 +427,9 @@ ActiveCanvas.configure do |config|
   # === Security ===
   config.sanitize_content = true
   config.ai_rate_limit_per_minute = 30
+
+  # === Export / Import ===
+  config.import_max_media_bytes = 1.gigabyte       # total uncompressed media allowed in one import archive
 end
 ```
 

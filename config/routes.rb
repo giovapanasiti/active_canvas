@@ -36,6 +36,10 @@ ActiveCanvas::Engine.routes.draw do
       end
     end
     resources :api_tokens, only: %i[create destroy]
+    resource :transfer, only: [:show], controller: "transfers" do
+      get  :export
+      post :import
+    end
     resource :settings, only: [:show, :update] do
       patch :update_seo
       patch :update_global_css

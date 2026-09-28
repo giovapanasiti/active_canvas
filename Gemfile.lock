@@ -7,6 +7,7 @@ PATH
       mcp (>= 1.6.1, < 2)
       rails (>= 8.0.0)
       ruby_llm (>= 1.0)
+      rubyzip (>= 2.3)
 
 GEM
   remote: https://rubygems.org/

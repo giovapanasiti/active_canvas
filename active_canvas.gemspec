@@ -23,4 +23,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "liquid", ">= 5.4"
   spec.add_dependency "csv", ">= 3.0"
   spec.add_dependency "mcp", ">= 1.6.1", "< 2"
+  spec.add_dependency "rubyzip", ">= 2.3"
 end
