@@ -233,6 +233,91 @@ Every content change creates a version automatically. View the version history f
 
 Configure the maximum versions kept per page (default: 50, set to 0 for unlimited).
 
+## MCP server (agents)
+
+ActiveCanvas exposes an [MCP](https://modelcontextprotocol.io) server so a coding agent can manage pages, partials, collections, media, forms and settings the same way an admin would in the UI -- roughly 50 tools covering everything from `list_pages` to `update_page_content` to `publish_collection_item`.
+
+For a step-by-step walkthrough with screenshots, see [Using ActiveCanvas from Claude Code](docs/mcp-claude-code.md).
+
+### Enabling it
+
+MCP is on by default. Turn it off with:
+
+```ruby
+ActiveCanvas.configure do |config|
+  config.enable_mcp = false          # /canvas/mcp returns 404 when disabled
+  config.mcp_rate_limit_per_minute = 120  # per token
+end
+```
+
+Access tokens are stored in a new table, so run the engine's migrations first:
+
+```bash
+bin/rails active_canvas:install:migrations
+bin/rails db:migrate
+```
+
+### Creating a token
+
+Open **Settings → API tokens** in the admin, give it a name and an access level (Read only / Read & write / Full incl. publish), and create it. The plaintext token is shown once -- copy it immediately, it cannot be shown again.
+
+### Connecting an agent
+
+The settings page shows your MCP endpoint URL and ready-to-copy snippets for each client. For example, with an endpoint of `https://yourapp.example.com/canvas/mcp`:
+
+**Claude Code**
+
+```bash
+claude mcp add --transport http active-canvas https://yourapp.example.com/canvas/mcp --header "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+**Codex** (`~/.codex/config.toml`)
+
+```toml
+[mcp_servers.active_canvas]
+url = "https://yourapp.example.com/canvas/mcp"
+bearer_token_env_var = "ACTIVE_CANVAS_TOKEN"
+```
+
+Export the token before launching Codex: `export ACTIVE_CANVAS_TOKEN=<YOUR_TOKEN>`.
+
+**OpenCode** (`opencode.json`)
+
+```json
+{
+  "mcp": {
+    "active-canvas": {
+      "type": "remote",
+      "url": "https://yourapp.example.com/canvas/mcp",
+      "headers": { "Authorization": "Bearer <YOUR_TOKEN>" }
+    }
+  }
+}
+```
+
+### Scopes
+
+| Scope | Grants |
+|---|---|
+| `read` | Every read-only tool: list/get pages, versions, page types, partials, media, forms, collections, collection items, settings, AI status. |
+| `write` | Adds: create/update/delete pages, page types, collections and collection items **while unpublished**; media upload/delete; form submission delete; `generate_image`. |
+| `publish` | Adds: any mutation of an already-published page or collection item (update, update content, delete, restore version, publish/unpublish); `update_partial` (header/footer are live on every page); `update_site_settings`, `recompile_tailwind`; every AI settings tool (`update_ai_settings`, `sync_ai_models`, `set_ai_models_active`, `create_ai_model`, `delete_ai_model`). |
+
+`write` implies `read`; `publish` implies `write`. A token only ever sees the tools its scopes grant.
+
+### Security notes
+
+- Tokens are stored as a SHA-256 digest only -- the plaintext is shown once and never persisted.
+- Revoke a token any time from the API tokens tab; access is lost on its next request. Tokens can also carry an optional expiry date.
+- Requests are rate limited per token (`config.mcp_rate_limit_per_minute`, default 120/minute).
+- Changing already-published content always requires the `publish` scope, even for a token that otherwise has `write`.
+
+### Upgrading
+
+- Run `bin/rails active_canvas:install:migrations && bin/rails db:migrate` before using MCP -- the API tokens table is added by an engine migration, not by upgrading the gem alone.
+- A page whose slug is `mcp` is shadowed by the `/canvas/mcp` endpoint (the route is matched first) and will never be reachable at its public URL. Avoid that slug.
+- If your host app adds an `inflect.acronym "MCP"` (or `"AI"`) inflection rule in `config/initializers/inflections.rb`, constant loading for `ActiveCanvas::Mcp` (and `ActiveCanvas::Ai*`) will break -- Zeitwerk expects `mcp_controller.rb` to resolve to `McpController`, not `MCPController`. Don't add those acronyms, or open an issue if you need to.
+
 ## Authentication
 
 **The admin interface is open by default.** Configure authentication before deploying to production.
