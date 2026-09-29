@@ -315,6 +315,12 @@
         white-space: nowrap;
       }
 
+      /* <button> (e.g. from button_to) doesn't inherit font like <a> does */
+      button.btn {
+        font-family: inherit;
+        line-height: inherit;
+      }
+
       .btn svg {
         width: 16px;
         height: 16px;
@@ -594,6 +600,31 @@
         display: flex;
         gap: 0.5rem;
         justify-content: flex-end;
+      }
+
+      /* A flex <td> stops being a table cell and detaches from its row,
+         so action cells stay table cells and space their children inline. */
+      td.actions {
+        display: table-cell;
+        text-align: right;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+
+      td.actions > *,
+      td.actions form .btn {
+        vertical-align: middle;
+      }
+
+      /* Children are inline, so the whitespace between them adds to this gap */
+      td.actions > * + * {
+        margin-left: 0.25rem;
+      }
+
+      td.actions form {
+        display: inline-block;
+        margin-top: 0;
+        margin-bottom: 0;
       }
 
       /* Detail View */
